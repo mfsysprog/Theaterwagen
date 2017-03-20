@@ -170,7 +170,9 @@ class FixtureHandler : public CivetHandler
 		mg_printf(conn,
 		          "HTTP/1.1 200 OK\r\nContent-Type: "
 		          "text/html\r\nConnection: close\r\n\r\n");
-		if(CivetServer::getParam(conn, "hidden", dummy))
+
+		/* if parameter submit is present the submit button was pushed */
+		if(CivetServer::getParam(conn, "submit", dummy))
 		{
 		   for (int i = 0; i < 8; i++)
 		   {
@@ -184,7 +186,7 @@ class FixtureHandler : public CivetHandler
 		{
 			mg_printf(conn, "<html><body>");
 			mg_printf(conn, "<form action=\"/fixture1\" method=\"get\">");
-			mg_printf(conn, "<input type=\"hidden\" name=\"hidden\" value=\"submit\">");
+			mg_printf(conn, "<input type=\"hidden\" name=\"submit\" value=\"true\">");
 			for (int i = 0; i < 8; i++)
 			{
 			   std::stringstream ss;
