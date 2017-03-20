@@ -33,7 +33,7 @@ int debug = 0;
 int verbose = 0;
 usb_dev_handle *handle = NULL;
 int val=8,channel=1;
-unsigned char values[512];
+unsigned char values[512] = {0};
 int nBytes;
 
 static int usbGetStringAscii(usb_dev_handle *dev, int index, int langid,
@@ -156,7 +156,7 @@ SDL_Texture* convertCV_MatToSDL_Texture(const cv::Mat &matImg, SDL_Renderer *ren
     }
 }
 
-class AHandler : public CivetHandler
+class FixtureHandler : public CivetHandler
 {
   private:
 	bool
@@ -165,18 +165,41 @@ class AHandler : public CivetHandler
 	          struct mg_connection *conn)
 	{
 		std::string s[8] = "";
+		std::string dummy;
 		std::string param = "chan";
 		mg_printf(conn,
 		          "HTTP/1.1 200 OK\r\nContent-Type: "
 		          "text/html\r\nConnection: close\r\n\r\n");
-		for (int i = 0; i < 8; i++)
+		if(CivetServer::getParam(conn, "hidden", dummy))
 		{
-			CivetServer::getParam(conn, (param + std::to_string(i+1)).c_str(), s[i]);
-			values[i]=atoi(s[i].c_str());
+		   for (int i = 0; i < 8; i++)
+		   {
+			 CivetServer::getParam(conn, (param + std::to_string(i+1)).c_str(), s[i]);
+			 values[i]=atoi(s[i].c_str());
+		   }
+		   mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/fixture1\" /></head><body>");
+		   mg_printf(conn, "<h2>Changes committed...!</h2>");
 		}
-
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/\" /></head><body>");
-	    mg_printf(conn, "<h2>Setting channels using \"%s\" !</h2>", method);
+		else
+		{
+			mg_printf(conn, "<html><body>");
+			mg_printf(conn, "<form action=\"/fixture1\" method=\"get\">");
+			mg_printf(conn, "<input type=\"hidden\" name=\"hidden\" value=\"submit\">");
+			for (int i = 0; i < 8; i++)
+			{
+			   std::stringstream ss;
+			   const char* channel = (std::to_string(i+1)).c_str();
+			   const char* value = (std::to_string(values[i])).c_str();
+			   ss << "<label for=\"chan" << channel << "\">Channel" << channel << "</label>"
+					 "<input id=\"chan" << channel << "\"" <<
+					 " type=\"range\" min=\"0\" max=\"255\" step=\"1\" value=\"" <<
+					 value << "\"" << " name=\"chan" << channel << "\"/>" << "</br>";
+		       mg_printf(conn, ss.str().c_str());
+			}
+			mg_printf(conn, "<input type=\"submit\" value=\"Submit\" id=\"submit\" />");
+			mg_printf(conn, "<a href=\"/\">Home</a>");
+			mg_printf(conn, "</body></html>");
+		}
 
 		nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
 			                                    cmd_SetChannelRange, val, channel - 1, (char *)values, val, 1000);
@@ -215,8 +238,8 @@ int main(int, char**){
     // CivetServer server(options); // <-- C style start
 	CivetServer server(cpp_options); // <-- C++ style start
 
-	AHandler h_a;
-	server.addHandler("/start", h_a);
+	FixtureHandler h_a[2];
+	server.addHandler("/fixture1", h_a[0]);
 
     usb_set_debug(0);
 
