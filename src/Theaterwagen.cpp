@@ -17,6 +17,7 @@
 #include <SFML/Audio.hpp>
 #include "UploadHandler.hpp"
 #include "MusicFactory.hpp"
+#include "SoundFactory.hpp"
 
 using namespace std;
 
@@ -242,6 +243,8 @@ int main(int, char**){
 	server->addHandler("/schip", s1.getHandler());
 
 	MusicFactory m1;
+
+	SoundFactory sf1;
 
 	/*
 	while(!(s1.Full(LEFT)))

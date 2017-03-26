@@ -1,12 +1,12 @@
 /*
- * MusicFactory.hpp
+ * SoundFactory.hpp
  *
  *  Created on: Mar 21, 2017
  *      Author: erik
  */
 
-#ifndef MUSICFACTORY_HPP_
-#define MUSICFACTORY_HPP_
+#ifndef SOUNDFACTORY_HPP_
+#define SOUNDFACTORY_HPP_
 
 #include <string>
 #include <iostream>
@@ -24,37 +24,37 @@
 
 extern CivetServer* server;
 
-class MusicFactory {
+class SoundFactory {
 	private:
-	class MusicFactoryHandler : public CivetHandler
+	class SoundFactoryHandler : public CivetHandler
 	{
 		public:
-		MusicFactoryHandler(MusicFactory& musicfactory);
-		~MusicFactoryHandler();
+		SoundFactoryHandler(SoundFactory& soundfactory);
+		~SoundFactoryHandler();
 		private:
 		bool handleGet(CivetServer *server, struct mg_connection *conn);
 		bool handlePost(CivetServer *server, struct mg_connection *conn);
 		bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
-		MusicFactory& musicfactory;
+		SoundFactory& soundfactory;
 	};
-	class Music {
+	class Sound {
 		public:
-		Music(std::string fn);
-		~Music();
+		Sound(std::string fn);
+		~Sound();
 		std::string getUuid();
 		std::string getFilename();
 		std::string getUrl();
 		private:
-		class MusicHandler : public CivetHandler
+		class SoundHandler : public CivetHandler
 		{
 			public:
-			MusicHandler(Music& music);
-			~MusicHandler();
+			SoundHandler(Sound& sound);
+			~SoundHandler();
 			private:
 			bool handleGet(CivetServer *server, struct mg_connection *conn);
 			bool handlePost(CivetServer *server, struct mg_connection *conn);
 			bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
-			Music& music;
+			Sound& sound;
 		};
 		void Pause();
 		void Play();
@@ -68,19 +68,20 @@ class MusicFactory {
 		std::string filename;
 		std::string url;
 		uuid_t uuid;
-		sf::Music* sfm;
-	    MusicHandler* mh;
+		sf::Sound* sfm;
+		sf::SoundBuffer* sfmbuffer;
+	    SoundHandler* mh;
 	};
 	public:
-	MusicFactory();
-	~MusicFactory();
-	MusicFactory::Music* addMusic(std::string fn);
-	void deleteMusic(std::string uuid);
+	SoundFactory();
+	~SoundFactory();
+	SoundFactory::Sound* addSound(std::string fn);
+	void deleteSound(std::string uuid);
 
 	private:
-	std::map<std::string, MusicFactory::Music*> musicmap;
-	MusicFactoryHandler* mfh;
+	std::map<std::string, SoundFactory::Sound*> soundmap;
+	SoundFactoryHandler* mfh;
 };
 
 
-#endif /* MUSICFACTORY_HPP_ */
+#endif /* SOUNDFACTORY_HPP_ */
