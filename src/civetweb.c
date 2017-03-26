@@ -5281,6 +5281,7 @@ mg_getc(struct mg_connection *conn)
 int
 mg_read(struct mg_connection *conn, void *buf, size_t len)
 {
+
 	if (len > INT_MAX) {
 		len = INT_MAX;
 	}
@@ -5289,9 +5290,9 @@ mg_read(struct mg_connection *conn, void *buf, size_t len)
 		return 0;
 	}
 
+
 	if (conn->is_chunked) {
 		size_t all_read = 0;
-
 		while (len > 0) {
 
 			if (conn->is_chunked == 2) {
@@ -5367,7 +5368,6 @@ mg_read(struct mg_connection *conn, void *buf, size_t len)
 				conn->chunk_remainder = chunkSize;
 			}
 		}
-
 		return (int)all_read;
 	}
 	return mg_read_inner(conn, buf, len);

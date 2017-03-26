@@ -532,7 +532,8 @@ mg_handle_form_request(struct mg_connection *conn,
 		while (content_type[bl] == ' ') {
 			bl++;
 		}
-
+				
+		
 		/* There has to be a BOUNDARY definition in the Content-Type header */
 		if (mg_strncasecmp(content_type + bl, "BOUNDARY=", 9)) {
 			/* Malformed request */
@@ -541,7 +542,7 @@ mg_handle_form_request(struct mg_connection *conn,
 
 		boundary = content_type + bl + 9;
 		bl = strlen(boundary);
-
+				
 		if (bl + 800 > sizeof(buf)) {
 			/* Sanity check:  The algorithm can not work if bl >= sizeof(buf),
 			 * and it will not work effectively, if the buf is only a few byte
@@ -565,12 +566,14 @@ mg_handle_form_request(struct mg_connection *conn,
 				/* read error */
 				return -1;
 			}
+				
 			buf_fill += r;
 			buf[buf_fill] = 0;
 			if (buf_fill < 1) {
 				/* No data */
 				return -1;
 			}
+				
 
 			if (buf[0] != '-' || buf[1] != '-') {
 				/* Malformed request */
@@ -578,8 +581,10 @@ mg_handle_form_request(struct mg_connection *conn,
 			}
 			if (strncmp(buf + 2, boundary, bl)) {
 				/* Malformed request */
+				
 				return -1;
 			}
+				
 			if (buf[bl + 2] != '\r' || buf[bl + 3] != '\n') {
 				/* Every part must end with \r\n, if there is another part.
 				 * The end of the request has an extra -- */
@@ -591,7 +596,7 @@ mg_handle_form_request(struct mg_connection *conn,
 				/* End of the request */
 				break;
 			}
-
+				
 			/* Next, we need to get the part header: Read until \r\n\r\n */
 			hbuf = buf + bl + 4;
 			hend = strstr(hbuf, "\r\n\r\n");
@@ -605,7 +610,6 @@ mg_handle_form_request(struct mg_connection *conn,
 				/* Malformed request */
 				return -1;
 			}
-
 			/* Skip \r\n\r\n */
 			hend += 4;
 
@@ -614,9 +618,10 @@ mg_handle_form_request(struct mg_connection *conn,
 			content_disp = get_header(&part_header, "Content-Disposition");
 			if (!content_disp) {
 				/* Malformed request */
+				
 				return -1;
 			}
-
+				
 			/* Get the mandatory name="..." part of the Content-Disposition
 			 * header. */
 			nbeg = strstr(content_disp, "name=\"");
@@ -630,7 +635,7 @@ mg_handle_form_request(struct mg_connection *conn,
 				/* Malformed request */
 				return -1;
 			}
-
+			
 			/* Get the optional filename="..." part of the Content-Disposition
 			 * header. */
 			fbeg = strstr(content_disp, "filename=\"");
