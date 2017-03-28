@@ -243,8 +243,10 @@ int main(int, char**){
 	server->addHandler("/schip", s1.getHandler());
 
 	MusicFactory m1;
+	m1.load();
 
 	SoundFactory sf1;
+	sf1.load();
 
 	/*
 	while(!(s1.Full(LEFT)))

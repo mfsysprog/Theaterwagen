@@ -54,6 +54,24 @@ SoundFactory::Sound::Sound(std::string fn){
 	server->addHandler(url, mh);
 }
 
+SoundFactory::Sound::Sound(std::string uuidstr, std::string fn, bool loop, float volume, float pitch){
+	mh = new SoundFactory::Sound::SoundHandler(*this);
+	sfm = new sf::Sound();
+	sfmbuffer = new sf::SoundBuffer();
+	sfmbuffer->loadFromFile(fn);
+	sfm->setBuffer(*sfmbuffer);
+	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
+	this->filename = fn;
+
+	std::stringstream ss;
+	ss << "/sound-" << this->getUuid();
+	url = ss.str().c_str();
+	server->addHandler(url, mh);
+
+	setLoop(loop);
+	setVolume(volume);
+	setPitch(pitch);
+}
 
 SoundFactory::Sound::~Sound(){
 	delete mh;
@@ -73,6 +91,48 @@ SoundFactory::Sound::SoundHandler::~SoundHandler(){
 /* overige functies
  *
  */
+
+void SoundFactory::load(){
+	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
+	assert(node.IsSequence());
+	for (std::size_t i=0;i<node.size();i++) {
+		assert(node[i].IsMap());
+		std::string uuidstr = node[i]["uuid"].as<std::string>();
+		std::string fn = node[i]["filename"].as<std::string>();
+		bool loop = node[i]["loop"].as<bool>();
+		float volume = node[i]["volume"].as<float>();
+		float pitch = node[i]["pitch"].as<float>();
+		SoundFactory::Sound * sound = new SoundFactory::Sound(uuidstr, fn, loop, volume, pitch);
+		std::string uuid_str = sound->getUuid();
+		soundmap.insert(std::make_pair(uuid_str,sound));
+	}
+}
+
+void SoundFactory::save(){
+	YAML::Emitter emitter;
+	std::ofstream fout(CONFIG_FILE);
+	std::map<std::string, SoundFactory::Sound*>::iterator it = soundmap.begin();
+
+	emitter << YAML::BeginSeq;
+	for (std::pair<std::string, SoundFactory::Sound*> element  : soundmap)
+	{
+		emitter << YAML::BeginMap;
+		emitter << YAML::Key << "uuid";
+		emitter << YAML::Value << element.first;
+		emitter << YAML::Key << "filename";
+		emitter << YAML::Value << element.second->filename;
+		emitter << YAML::Key << "loop";
+		emitter << YAML::Value << element.second->getLoop();
+		emitter << YAML::Key << "volume";
+		emitter << YAML::Value << element.second->getVolume();
+		emitter << YAML::Key << "pitch";
+		emitter << YAML::Value << element.second->getPitch();
+		emitter << YAML::EndMap;
+	}
+	emitter << YAML::EndSeq;
+	fout << emitter.c_str();
+}
+
 
 std::string SoundFactory::Sound::getUuid(){
 	char uuid_str[37];
@@ -179,15 +239,28 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	   this->soundfactory.deleteSound(value);
 	}
 	else
-	/* if parameter submit is present the submit button was pushed */
-	if(CivetServer::getParam(conn, "submit", dummy))
+	/* if parameter save is present the save button was pushed */
+	if(CivetServer::getParam(conn, "save", dummy))
 	{
-	   mg_printf(conn,
+		mg_printf(conn,
 		          "HTTP/1.1 200 OK\r\nContent-Type: "
 		          "text/html\r\nConnection: close\r\n\r\n");
-	   mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/soundfactory\" /></head><body>");
-	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
-	   mg_printf(conn, "</body></html>");
+		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/soundfactory\" /></head><body>");
+		mg_printf(conn, "<h2>Geluid opgeslagen...!</h2>");
+		mg_printf(conn, "</body></html>");
+		this->soundfactory.save();
+	}
+	else
+	/* if parameter load is present the load button was pushed */
+	if(CivetServer::getParam(conn, "load", dummy))
+	{
+		mg_printf(conn,
+		          "HTTP/1.1 200 OK\r\nContent-Type: "
+		          "text/html\r\nConnection: close\r\n\r\n");
+		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/soundfactory\" /></head><body>");
+		mg_printf(conn, "<h2>Geluid ingeladen...!</h2>");
+		mg_printf(conn, "</body></html>");
+		this->soundfactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", value))
 	{
@@ -257,9 +330,15 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
 	    }
-	    ss << "</br>";
-	    ss << "<form action=\"/soundfactory\" method=\"POST\">";
+	    ss << "<br>";
+	    ss << "<form style ='float: left; padding: 5px;' action=\"/soundfactory\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Nieuw</button>";
+	    ss << "</form>";
+	    ss << "<form style ='float: left; padding: 5px;' action=\"/soundfactory\" method=\"POST\">";
+	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">Opslaan</button>";
+	    ss << "</form>";
+	    ss << "<form style ='float: left; padding: 5px;' action=\"/soundfactory\" method=\"POST\">";
+	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	    ss << "<a href=\"/\">Home</a>";

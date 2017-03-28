@@ -12,6 +12,7 @@
 #include <iostream>
 #include <functional>
 #include <sstream>
+#include <fstream>
 #include <wiringPi.h>
 #include "CivetServer.h"
 #include <SFML/Audio.hpp>
@@ -19,8 +20,11 @@
 #include <cstring>
 #include <dirent.h>
 #include <uuid/uuid.h>
+#include "boost/shared_ptr.hpp"
+#include "yaml-cpp/yaml.h"
 
 #define RESOURCES_DIR "/home/erik/resources/"
+#define CONFIG_FILE "/home/erik/config/soundfactory.yaml"
 
 extern CivetServer* server;
 
@@ -38,7 +42,9 @@ class SoundFactory {
 		SoundFactory& soundfactory;
 	};
 	class Sound {
+		friend class SoundFactory;
 		public:
+		Sound(std::string uuidstr, std::string fn, bool loop, float volume, float pitch);
 		Sound(std::string fn);
 		~Sound();
 		std::string getUuid();
@@ -77,8 +83,10 @@ class SoundFactory {
 	~SoundFactory();
 	SoundFactory::Sound* addSound(std::string fn);
 	void deleteSound(std::string uuid);
+	void load();
 
 	private:
+	void save();
 	std::map<std::string, SoundFactory::Sound*> soundmap;
 	SoundFactoryHandler* mfh;
 };

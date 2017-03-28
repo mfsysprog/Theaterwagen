@@ -52,6 +52,22 @@ MusicFactory::Music::Music(std::string fn){
 	server->addHandler(url, mh);
 }
 
+MusicFactory::Music::Music(std::string uuidstr, std::string fn, bool loop, float volume, float pitch){
+	mh = new MusicFactory::Music::MusicHandler(*this);
+	sfm = new sf::Music();
+	sfm->openFromFile(fn);
+	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
+	this->filename = fn;
+
+	std::stringstream ss;
+	ss << "/music-" << this->getUuid();
+	url = ss.str().c_str();
+	server->addHandler(url, mh);
+
+	setLoop(loop);
+	setVolume(volume);
+	setPitch(pitch);
+}
 
 MusicFactory::Music::~Music(){
 	delete mh;
@@ -71,6 +87,47 @@ MusicFactory::Music::MusicHandler::~MusicHandler(){
 /* overige functies
  *
  */
+
+void MusicFactory::load(){
+	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
+	assert(node.IsSequence());
+	for (std::size_t i=0;i<node.size();i++) {
+		assert(node[i].IsMap());
+		std::string uuidstr = node[i]["uuid"].as<std::string>();
+		std::string fn = node[i]["filename"].as<std::string>();
+		bool loop = node[i]["loop"].as<bool>();
+		float volume = node[i]["volume"].as<float>();
+		float pitch = node[i]["pitch"].as<float>();
+		MusicFactory::Music * music = new MusicFactory::Music(uuidstr, fn, loop, volume, pitch);
+		std::string uuid_str = music->getUuid();
+		musicmap.insert(std::make_pair(uuid_str,music));
+	}
+}
+
+void MusicFactory::save(){
+	YAML::Emitter emitter;
+	std::ofstream fout(CONFIG_FILE);
+	std::map<std::string, MusicFactory::Music*>::iterator it = musicmap.begin();
+
+	emitter << YAML::BeginSeq;
+	for (std::pair<std::string, MusicFactory::Music*> element  : musicmap)
+	{
+		emitter << YAML::BeginMap;
+		emitter << YAML::Key << "uuid";
+		emitter << YAML::Value << element.first;
+		emitter << YAML::Key << "filename";
+		emitter << YAML::Value << element.second->filename;
+		emitter << YAML::Key << "loop";
+		emitter << YAML::Value << element.second->getLoop();
+		emitter << YAML::Key << "volume";
+		emitter << YAML::Value << element.second->getVolume();
+		emitter << YAML::Key << "pitch";
+		emitter << YAML::Value << element.second->getPitch();
+		emitter << YAML::EndMap;
+	}
+	emitter << YAML::EndSeq;
+	fout << emitter.c_str();
+}
 
 std::string MusicFactory::Music::getUuid(){
 	char uuid_str[37];
@@ -178,15 +235,28 @@ bool MusicFactory::MusicFactoryHandler::handleAll(const char *method,
 	   this->musicfactory.deleteMusic(value);
 	}
 	else
- 	/* if parameter submit is present the submit button was pushed */
-	if(CivetServer::getParam(conn, "submit", dummy))
+	/* if parameter save is present the save button was pushed */
+	if(CivetServer::getParam(conn, "save", dummy))
 	{
-	   mg_printf(conn,
+		mg_printf(conn,
 		          "HTTP/1.1 200 OK\r\nContent-Type: "
 		          "text/html\r\nConnection: close\r\n\r\n");
-	   mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/musicfactory\" /></head><body>");
-	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
-	   mg_printf(conn, "</body></html>");
+		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/musicfactory\" /></head><body>");
+		mg_printf(conn, "<h2>Muziek opgeslagen...!</h2>");
+		mg_printf(conn, "</body></html>");
+		this->musicfactory.save();
+	}
+	else
+	/* if parameter load is present the load button was pushed */
+	if(CivetServer::getParam(conn, "load", dummy))
+	{
+		mg_printf(conn,
+		          "HTTP/1.1 200 OK\r\nContent-Type: "
+		          "text/html\r\nConnection: close\r\n\r\n");
+		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/musicfactory\" /></head><body>");
+		mg_printf(conn, "<h2>Muziek ingeladen...!</h2>");
+		mg_printf(conn, "</body></html>");
+		this->musicfactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", value))
 	{
@@ -260,7 +330,14 @@ bool MusicFactory::MusicFactoryHandler::handleAll(const char *method,
 	    ss << "<form style ='float: left; padding: 5px;' action=\"/musicfactory\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Nieuw</button>";
 	    ss << "</form>";
+	    ss << "<form style ='float: left; padding: 5px;' action=\"/musicfactory\" method=\"POST\">";
+	   	ss << "<button type=\"submit\" name=\"save\" id=\"save\">Opslaan</button>";
+	    ss << "</form>";
+	    ss << "<form style ='float: left; padding: 5px;' action=\"/musicfactory\" method=\"POST\">";
+	   	ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
+	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
+
 	    ss << "<a href=\"/\">Home</a>";
 	    mg_printf(conn, ss.str().c_str());
 		mg_printf(conn, "</body></html>");
