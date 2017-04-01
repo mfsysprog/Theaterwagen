@@ -89,6 +89,10 @@ MusicFactory::Music::MusicHandler::~MusicHandler(){
  */
 
 void MusicFactory::load(){
+	for (std::pair<std::string, MusicFactory::Music*> element  : musicmap)
+	{
+		deleteMusic(element.first);
+	}
 	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
 	assert(node.IsSequence());
 	for (std::size_t i=0;i<node.size();i++) {

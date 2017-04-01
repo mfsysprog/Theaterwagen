@@ -49,6 +49,7 @@ class SceneFactory {
 		Scene(FixtureFactory* ff, std::string uuidstr, std::string naam, std::string omschrijving, unsigned char* channels);
 		Scene(FixtureFactory* ff, std::string naam, std::string omschrijving);
 		~Scene();
+		void Play();
 		std::string getUuid();
 		std::string getNaam();
 		std::string getOmschrijving();

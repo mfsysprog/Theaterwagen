@@ -71,6 +71,10 @@ FixtureFactory::Fixture::FixtureHandler::~FixtureHandler(){
  */
 
 void FixtureFactory::load(){
+	for (std::pair<int, FixtureFactory::Fixture*> element  : fixturemap)
+	{
+		deleteFixture(element.first);
+	}
 	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
 	assert(node.IsSequence());
 	for (std::size_t i=0;i<node.size();i++) {

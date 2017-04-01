@@ -7,6 +7,106 @@
 
 #include "SceneFactory.hpp"
 #include "FixtureFactory.hpp"
+#include "usb.h"
+#include "uDMX_cmds.h"
+
+#define USBDEV_SHARED_VENDOR 0x16C0  /* Obdev's free shared VID */
+#define USBDEV_SHARED_PRODUCT 0x05DC /* Obdev's free shared PID */
+/* Use obdev's generic shared VID/PID pair and follow the rules outlined
+ * in firmware/usbdrv/USBID-License.txt.
+ */
+
+int debug = 0;
+int verbose = 0;
+usb_dev_handle *handle = NULL;
+
+static int usbGetStringAscii(usb_dev_handle *dev, int index, int langid,
+                             char *buf, int buflen) {
+    char buffer[256];
+    int rval, i;
+
+    if ((rval = usb_control_msg(dev, USB_ENDPOINT_IN, USB_REQ_GET_DESCRIPTOR,
+                                (USB_DT_STRING << 8) + index, langid, buffer,
+                                sizeof(buffer), 1000)) < 0)
+        return rval;
+    if (buffer[1] != USB_DT_STRING)
+        return 0;
+    if ((unsigned char)buffer[0] < rval)
+        rval = (unsigned char)buffer[0];
+    rval /= 2;
+    /* lossy conversion to ISO Latin1 */
+    for (i = 1; i < rval; i++) {
+        if (i > buflen) /* destination buffer overflow */
+            break;
+        buf[i - 1] = buffer[2 * i];
+        if (buffer[2 * i + 1] != 0) /* outside of ISO Latin1 range */
+            buf[i - 1] = '?';
+    }
+    buf[i - 1] = 0;
+    return i - 1;
+}
+
+/*
+ * uDMX uses the free shared default VID/PID.
+ * To avoid talking to some other device we check the vendor and
+ * device strings returned.
+ */
+static usb_dev_handle *findDevice(void) {
+    struct usb_bus *bus;
+    struct usb_device *dev;
+    char string[256];
+    int len;
+    usb_dev_handle *handle = 0;
+
+    usb_find_busses();
+    usb_find_devices();
+    for (bus = usb_busses; bus; bus = bus->next) {
+        for (dev = bus->devices; dev; dev = dev->next) {
+            if (dev->descriptor.idVendor == USBDEV_SHARED_VENDOR &&
+                dev->descriptor.idProduct == USBDEV_SHARED_PRODUCT) {
+                if (debug) { printf("Found device with %x:%x\n",
+                               USBDEV_SHARED_VENDOR, USBDEV_SHARED_PRODUCT); }
+
+                /* open the device to query strings */
+                handle = usb_open(dev);
+                if (!handle) {
+                    fprintf(stderr, "Warning: cannot open USB device: %s\n",
+                            usb_strerror());
+                    continue;
+                }
+
+                /* now find out whether the device actually is a uDMX */
+                len = usbGetStringAscii(handle, dev->descriptor.iManufacturer,
+                                        0x0409, string, sizeof(string));
+                if (len < 0) {
+                    fprintf(stderr, "warning: cannot query manufacturer for device: %s\n",
+                            usb_strerror());
+                    goto skipDevice;
+                }
+                if (debug) { printf("Device vendor is %s\n",string); }
+                if (strcmp(string, "www.anyma.ch") != 0)
+                    goto skipDevice;
+
+                len = usbGetStringAscii(handle, dev->descriptor.iProduct, 0x0409, string, sizeof(string));
+                if (len < 0) {
+                    fprintf(stderr, "warning: cannot query product for device: %s\n", usb_strerror());
+                    goto skipDevice;
+                }
+                if (debug) { printf("Device product is %s\n",string); }
+                if (strcmp(string, "uDMX") == 0)
+                    break;
+
+            skipDevice:
+                usb_close(handle);
+                handle = NULL;
+            }
+        }
+        if (handle)
+            break;
+    }
+    return handle;
+}
+
 
 /*
  * SceneFactory Constructor en Destructor
@@ -15,6 +115,17 @@ SceneFactory::SceneFactory(FixtureFactory* ff){
     mfh = new SceneFactory::SceneFactoryHandler(*this);
     this->ff = ff;
 	server->addHandler("/scenefactory", mfh);
+    usb_set_debug(0);
+
+    usb_init();
+    handle = findDevice();
+
+    if (handle == NULL) {
+        fprintf(stderr,
+                "Could not find USB device www.anyma.ch/uDMX (vid=0x%x pid=0x%x)\n",
+                USBDEV_SHARED_VENDOR, USBDEV_SHARED_PRODUCT);
+        //exit(1);
+    }
 }
 
 SceneFactory::~SceneFactory(){
@@ -26,6 +137,7 @@ SceneFactory::~SceneFactory(){
 	    delete it->second;
 	    scenemap.erase(it);
 	}
+    usb_close(handle);
 }
 
 /*
@@ -89,6 +201,10 @@ SceneFactory::Scene::SceneHandler::~SceneHandler(){
  */
 
 void SceneFactory::load(){
+	for (std::pair<std::string, SceneFactory::Scene*> element  : scenemap)
+	{
+		deleteScene(element.first);
+	}
 	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
 	assert(node.IsSequence());
 	for (std::size_t i=0;i<node.size();i++) {
@@ -99,7 +215,7 @@ void SceneFactory::load(){
 		unsigned char* channels = new unsigned char[512];
 		for (std::size_t k=0;k < 512;k++)
 		{
-			fprintf(stderr,"Value for channel %i:  %u\n",k,atoi(node[i]["channels"][k].as<std::string>().c_str()));
+			//fprintf(stderr,"Value for channel %i:  %u\n",k,atoi(node[i]["channels"][k].as<std::string>().c_str()));
 			channels[k] = atoi(node[i]["channels"][k].as<std::string>().c_str());
 		}
 		SceneFactory::Scene * scene = new SceneFactory::Scene(ff, uuidstr, naam, omschrijving, channels);
@@ -145,6 +261,14 @@ std::string SceneFactory::Scene::getUuid(){
 
 std::string SceneFactory::Scene::getUrl(){
 	return url;
+}
+
+void SceneFactory::Scene::Play(){
+	int nBytes;
+	nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+		                                    cmd_SetChannelRange, 512, 0, (char *)this->channels, 512, 1000);
+	if (nBytes < 0)
+	   fprintf(stderr, "USB error: %s\n", usb_strerror());
 }
 
 SceneFactory::Scene* SceneFactory::addScene(std::string naam, std::string omschrijving){
@@ -337,12 +461,20 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 				std::stringstream channel;
 				channel << "chan" << i;
 				CivetServer::getParam(conn,channel.str().c_str(), value);
-				scene.channels[i] = atoi(value.c_str());
+				scene.channels[i-1] = atoi(value.c_str());
 		  	}
 		}
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << scene.getUrl() << "\"/></head><body>";
 		mg_printf(conn, ss.str().c_str());
 		mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
+	} else
+	if(CivetServer::getParam(conn, "play", dummy))
+	{
+		scene.Play();
+		std::stringstream ss;
+		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << scene.getUrl() << "\"/></head><body>";
+	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, "<h2>Playing...!</h2>");
 	} else
 	{
 		mg_printf(conn, "<h2>&nbsp;</h2>");
@@ -369,12 +501,13 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    		ss << "<label for=\"chan" << i << "\">" << i << "</label>";
 	    		ss << "<input id=\"chan" << i << "\"" <<
 					  " type=\"range\" min=\"0\" max=\"255\" step=\"1\" value=\"" <<
-					  std::to_string(scene.channels[i]).c_str() << "\"" << " name=\"chan" << i << "\"/>" << "</br>";
+					  std::to_string(scene.channels[i-1]).c_str() << "\"" << " name=\"chan" << i << "\"/>" << "</br>";
 
 	    	}
 	    }
 		ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 		ss <<  "</br>";
+		ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">Play</button>";
 	    ss << "</form>";
 		ss <<  "</br>";
 		ss << "<a href=\"/scenefactory\">Scenes</a>";

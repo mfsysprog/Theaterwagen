@@ -93,6 +93,10 @@ SoundFactory::Sound::SoundHandler::~SoundHandler(){
  */
 
 void SoundFactory::load(){
+	for (std::pair<std::string, SoundFactory::Sound*> element  : soundmap)
+	{
+		deleteSound(element.first);
+	}
 	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
 	assert(node.IsSequence());
 	for (std::size_t i=0;i<node.size();i++) {
