@@ -443,6 +443,8 @@ bool MusicFactory::Music::MusicHandler::handleAll(const char *method,
 		ss << "<button type=\"submit\" name=\"pause\" value=\"pause\" id=\"pause\">Pause</button>";
 		ss << "</form>";
 		ss <<  "<br>";
+		ss << "<a href=\"/soundfactory\">Geluid</a>";
+		ss <<  "<br>";
 		ss << "<a href=\"/musicfactory\">Muziek</a>";
 		ss <<  "<br>";
 		ss << "<a href=\"/\">Home</a>";

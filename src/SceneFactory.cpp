@@ -470,8 +470,21 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	} else
 	if(CivetServer::getParam(conn, "play", dummy))
 	{
-		scene.Play();
+		if(CivetServer::getParam(conn,"naam", value))
+		  		scene.naam = value;
+		if(CivetServer::getParam(conn,"omschrijving", value))
+		  		scene.omschrijving = value;
 		std::stringstream ss;
+		for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
+			for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
+			{
+				std::stringstream channel;
+				channel << "chan" << i;
+				CivetServer::getParam(conn,channel.str().c_str(), value);
+				scene.channels[i-1] = atoi(value.c_str());
+		  	}
+		}
+		scene.Play();
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << scene.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
 	   	mg_printf(conn, "<h2>Playing...!</h2>");
@@ -505,8 +518,8 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 
 	    	}
 	    }
+	    ss << "<br>";
 		ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
-		ss <<  "</br>";
 		ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">Play</button>";
 	    ss << "</form>";
 		ss <<  "</br>";

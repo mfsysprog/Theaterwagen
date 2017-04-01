@@ -448,6 +448,8 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		ss <<  "</br>";
 		ss << "<a href=\"/soundfactory\">Geluiden</a>";
 		ss <<  "</br>";
+		ss << "<a href=\"/musicfactory\">Muziek</a>";
+		ss <<  "</br>";
 		ss << "<a href=\"/\">Home</a>";
 		mg_printf(conn, ss.str().c_str());
 		mg_printf(conn, "</body></html>");
