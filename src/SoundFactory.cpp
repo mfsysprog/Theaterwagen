@@ -321,23 +321,23 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 		std::map<std::string, SoundFactory::Sound*>::iterator it = soundfactory.soundmap.begin();
 		ss << "<h2>Beschikbare geluiden:</h2>";
 	    for (std::pair<std::string, SoundFactory::Sound*> element : soundfactory.soundmap) {
-	    	ss << "<form style ='float: left; padding: 5px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
+	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
 	    	ss << "</form>";
-	    	ss << "<form style ='float: left; padding: 5px;' action=\"/soundfactory\" method=\"POST\">";
+	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/soundfactory\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.second->getUuid() << "\" id=\"delete\">Verwijderen</button>&nbsp;";
 			ss << "Filename:&nbsp;" << element.second->getFilename();
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
 	    }
 	    ss << "<br>";
-	    ss << "<form style ='float: left; padding: 5px;' action=\"/soundfactory\" method=\"POST\">";
+	    ss << "<form style ='float: left; padding: 0px;' action=\"/soundfactory\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Nieuw</button>";
 	    ss << "</form>";
-	    ss << "<form style ='float: left; padding: 5px;' action=\"/soundfactory\" method=\"POST\">";
+	    ss << "<form style ='float: left; padding: 0px;' action=\"/soundfactory\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">Opslaan</button>";
 	    ss << "</form>";
-	    ss << "<form style ='float: left; padding: 5px;' action=\"/soundfactory\" method=\"POST\">";
+	    ss << "<form style ='float: left; padding: 0px;' action=\"/soundfactory\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";

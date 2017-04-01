@@ -16,6 +16,8 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include "UploadHandler.hpp"
+#include "FixtureFactory.hpp"
+#include "SceneFactory.hpp"
 #include "MusicFactory.hpp"
 #include "SoundFactory.hpp"
 
@@ -224,12 +226,13 @@ int main(int, char**){
 
     usb_init();
     handle = findDevice();
+    /*
     if (handle == NULL) {
         fprintf(stderr,
                 "Could not find USB device www.anyma.ch/uDMX (vid=0x%x pid=0x%x)\n",
                 USBDEV_SHARED_VENDOR, USBDEV_SHARED_PRODUCT);
         exit(1);
-    }
+    }*/
 
 	const size_t num_faces = 2;
 	//FaceDetectorAndTracker detector("haarcascade_frontalface_default.xml", 0, num_faces);
@@ -242,11 +245,20 @@ int main(int, char**){
 	Schip s1(27,22,17,18);
 	server->addHandler("/schip", s1.getHandler());
 
-	MusicFactory m1;
-	m1.load();
+	FixtureFactory fixture1;
+	/*todo: terminate called after throwing an instance of 'YAML::BadFile'
+	 *
+	 */
+	//fixture1.load();
 
-	SoundFactory sf1;
-	sf1.load();
+	SceneFactory scene1(&fixture1);
+	//scene1.load();
+
+	MusicFactory music1;
+	//music1.load();
+
+	SoundFactory sound1;
+	//sound1.load();
 
 	/*
 	while(!(s1.Full(LEFT)))

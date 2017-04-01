@@ -149,9 +149,11 @@ bool UploadHandler::handleAll(const char *method,
 		std::stringstream ss;
 	    ss << "<h2>File upload. Maximaal " << MAX_FILES << " bestanden per keer. </h2>";
 	    ss << "<input type=\"file\" name=\"file\" id=\"file\" multiple>";
-	    ss <<  "</br>";
+	    ss <<  "<br>";
+	    ss <<  "<br>";
 	    ss << "<input type=\"submit\" value=\"Upload...\" id=\"submit\">";
-	    ss <<  "</br>";
+	    ss <<  "<br>";
+	    ss <<  "<br>";
 	    ss << "<a href=\"/\">Home</a>";
 	    mg_printf(conn, ss.str().c_str());
 		mg_printf(conn, "</body></html>");
