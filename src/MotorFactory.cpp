@@ -544,6 +544,9 @@ MotorFactory::Motor::Motor(std::string naam, std::string omschrijving, int GPIO_
 	mh = new MotorFactory::Motor::MotorHandler(*this);
 	uuid_generate( (unsigned char *)&uuid );
 
+	this->naam = naam;
+	this->omschrijving = omschrijving;
+
 	/*
 	 * initialise gpio
 	 */
@@ -579,6 +582,9 @@ MotorFactory::Motor::Motor(std::string naam, std::string omschrijving, int GPIO_
 MotorFactory::Motor::Motor(std::string uuidstr, std::string naam, std::string omschrijving, int GPIO_left_sensor, int GPIO_right_sensor, int GPIO_left_relay, int GPIO_right_relay){
 	mh = new MotorFactory::Motor::MotorHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
+
+	this->naam = naam;
+	this->omschrijving = omschrijving;
 
 	/*
 	 * initialise gpio
@@ -782,7 +788,6 @@ void MotorFactory::Motor::Stop(direction dir){
 void MotorFactory::Motor::Start(direction dir){
 	switch (dir){
 			case LEFT:
-				std::cout << "Start left called!" << std::endl;
 				pinMode(left_sensor, INPUT);
 				if (!(digitalRead(left_sensor))){
 						/*
@@ -797,7 +802,6 @@ void MotorFactory::Motor::Start(direction dir){
 				else full_left=true;
 			break;
 			case RIGHT:
-				std::cout << "Start right called!" << std::endl;
 				pinMode(right_sensor, INPUT);
 				if (!(digitalRead(right_sensor))){
 						/*
@@ -1005,6 +1009,11 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 	   motor.left_relay = atoi(s[2].c_str());
 	   CivetServer::getParam(conn,"right-relay", s[3]);
 	   motor.right_relay = atoi(s[3].c_str());
+	   CivetServer::getParam(conn,"naam", s[4]);
+	   motor.naam = s[4].c_str();
+	   CivetServer::getParam(conn,"omschrijving", s[5]);
+	   motor.omschrijving = s[5].c_str();
+
 
 	   std::stringstream ss;
 	   ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << motor.getUrl() << "\"/></head><body>";
@@ -1048,6 +1057,13 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 		std::stringstream ss;
 		ss << "<h2>Motor:</h2>";
 		ss << "<form action=\"" << motor.getUrl() << "\" method=\"POST\">";
+		ss << "<label for=\"naam\">Naam:</label>"
+					  "<input id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
+					  motor.naam << "\" name=\"naam\"/>" << "</br>";
+		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
+					  "<input id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
+					  motor.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
+		ss << "<br>";
 	    ss << "Huidige status sensor links:&nbsp;" << digitalRead(motor.left_sensor) << "</br>";
 	    ss << "Huidige status sensor rechts:&nbsp;" << digitalRead(motor.right_sensor) << "</br>";
 	    ss << "Huidige status relais links:&nbsp;" << digitalRead(motor.left_relay) << "</br>";
@@ -1058,16 +1074,16 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"right\" value=\"right\" id=\"right\">RECHTS</button></br>";
 		ss << "<h2>GPIO pins:</h2>";
 		ss << "<label for=\"left-sensor\">Left Sensor GPIO pin:</label>"
-			  "<input id=\"left-sensor type=\"text\" size=\"4\" value=\"" <<
+			  "<input id=\"left-sensor\" type=\"text\" size=\"4\" value=\"" <<
 			  motor.left_sensor << "\" name=\"left-sensor\"/>" << "</br>";
 	    ss << "<label for=\"right-sensor\">Right Sensor GPIO pin:</label>"
-	          "<input id=\"right-sensor type=\"text\" size=\"4\" value=\"" <<
+	          "<input id=\"right-sensor\" type=\"text\" size=\"4\" value=\"" <<
 	    	  motor.right_sensor << "\" name=\"right-sensor\"/>" << "</br>";
 	    ss << "<label for=\"left-relay\">Left Relay GPIO pin:</label>"
 	    	  "<input id=\"left-relay type=\"text\" size=\"4\" value=\"" <<
 	    	  motor.left_relay << "\" name=\"left-relay\"/>" << "</br>";
 	    ss << "<label for=\"right-relay\">Right Relay GPIO pin:</label>"
-	    	  "<input id=\"right-relay type=\"text\" size=\"4\" value=\"" <<
+	    	  "<input id=\"right-relay\" type=\"text\" size=\"4\" value=\"" <<
 	    	  motor.right_relay << "\" name=\"right-relay\"/>" << "</br>";
 	    ss <<  "</br>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
