@@ -192,8 +192,9 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.release.532648542.1922758505" name="Schip.h" rcbsApplicability="disable" resourcePath="src/Schip.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="face_dlib.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
+						<entry excluding="Schip.h|Schip.cpp|face_dlib.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

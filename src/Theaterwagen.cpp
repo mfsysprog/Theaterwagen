@@ -10,7 +10,6 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "FaceDetectorAndTracker.h"
 #include "FaceSwapper.h"
-#include "Schip.h"
 #include "CivetServer.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
@@ -19,6 +18,7 @@
 #include "SceneFactory.hpp"
 #include "MusicFactory.hpp"
 #include "SoundFactory.hpp"
+#include "MotorFactory.hpp"
 
 using namespace std;
 
@@ -56,8 +56,8 @@ int main(int, char**){
 		return 1;
 	}
 
-	Schip s1(27,22,17,18);
-	server->addHandler("/schip", s1.getHandler());
+	//Schip s1(27,22,17,18);
+	//server->addHandler("/schip", s1.getHandler());
 
 	FixtureFactory fixture1;
 	fixture1.load();
@@ -70,6 +70,9 @@ int main(int, char**){
 
 	SoundFactory sound1;
 	sound1.load();
+
+	MotorFactory motor1;
+	//motor1.load();
 
 	/*
 	while(!(s1.Full(LEFT)))
