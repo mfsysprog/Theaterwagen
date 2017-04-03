@@ -554,24 +554,8 @@ MotorFactory::Motor::Motor(std::string naam, std::string omschrijving, int GPIO_
 	left_sensor = GPIO_left_sensor;
 	right_relay = GPIO_right_relay;
 	right_sensor = GPIO_right_sensor;
-	/*
-	 * set relay to output and full stop
-	 */
-	pinMode(left_relay, OUTPUT);
-	pinMode(right_relay, OUTPUT);
-	digitalWrite(left_relay, HIGH);
-	digitalWrite(right_relay, HIGH);
-	/*
-	 * Initialize callback functions to Dummy
-	 */
-	cbfunc_motor[getPosition(LEFT,this->left_sensor)] = std::bind(&Motor::Dummy,this);
-	cbfunc_motor[getPosition(RIGHT,this->right_sensor)] = std::bind(&Motor::Dummy,this);
-	if ( myWiringPiISR (left_sensor, INT_EDGE_FALLING, LEFT) < 0 ) {
-		 std::cerr << "Error setting interrupt for left GPIO sensor " << std::endl;
-	 }
-	if ( myWiringPiISR (right_sensor, INT_EDGE_FALLING, RIGHT) < 0 ) {
-	     std::cerr << "Error setting interrupt for right GPIO sensor " << std::endl;
-	}
+
+	Initialize();
 
 	std::stringstream ss;
 	ss << "/motor-" << this->getUuid();
@@ -593,24 +577,8 @@ MotorFactory::Motor::Motor(std::string uuidstr, std::string naam, std::string om
 	left_sensor = GPIO_left_sensor;
 	right_relay = GPIO_right_relay;
 	right_sensor = GPIO_right_sensor;
-	/*
-	 * set relay to output and full stop
-	 */
-	pinMode(left_relay, OUTPUT);
-	pinMode(right_relay, OUTPUT);
-	digitalWrite(left_relay, HIGH);
-	digitalWrite(right_relay, HIGH);
-	/*
-	 * Initialize callback functions to Dummy
-	 */
-	cbfunc_motor[getPosition(LEFT,this->left_sensor)] = std::bind(&Motor::Dummy,this);
-	cbfunc_motor[getPosition(RIGHT,this->right_sensor)] = std::bind(&Motor::Dummy,this);
-	if ( myWiringPiISR (left_sensor, INT_EDGE_FALLING, LEFT) < 0 ) {
-		 std::cerr << "Error setting interrupt for left GPIO sensor " << std::endl;
-	 }
-	if ( myWiringPiISR (right_sensor, INT_EDGE_FALLING, RIGHT) < 0 ) {
-	     std::cerr << "Error setting interrupt for right GPIO sensor " << std::endl;
-	}
+
+	Initialize();
 
 	std::stringstream ss;
 	ss << "/motor-" << this->getUuid();
@@ -687,6 +655,28 @@ void MotorFactory::save(){
 	fout << emitter.c_str();
 }
 
+void MotorFactory::Motor::Initialize(){
+	/*
+	 * set relay to output and full stop
+	 */
+	pinMode(left_relay, OUTPUT);
+	pinMode(right_relay, OUTPUT);
+	digitalWrite(left_relay, HIGH);
+	digitalWrite(right_relay, HIGH);
+	pinMode(left_sensor, INPUT);
+	pinMode(right_sensor, INPUT);
+	/*
+	 * Initialize callback functions to Dummy
+	 */
+	cbfunc_motor[getPosition(LEFT,this->left_sensor)] = std::bind(&Motor::Dummy,this);
+	cbfunc_motor[getPosition(RIGHT,this->right_sensor)] = std::bind(&Motor::Dummy,this);
+	if ( myWiringPiISR (left_sensor, INT_EDGE_RISING, LEFT) < 0 ) {
+		 std::cerr << "Error setting interrupt for left GPIO sensor " << std::endl;
+	 }
+	if ( myWiringPiISR (right_sensor, INT_EDGE_RISING, RIGHT) < 0 ) {
+	     std::cerr << "Error setting interrupt for right GPIO sensor " << std::endl;
+	}
+}
 
 std::string MotorFactory::Motor::getUuid(){
 	char uuid_str[37];
@@ -940,8 +930,9 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
+   	   ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
        ss <<  "</br>";
-       ss << "<a href=\"/motorfactory\">Motors</a>";
+       ss << "<a href=\"/motorfactory\">Motoren</a>";
        ss <<  "</br>";
        ss << "<a href=\"/\">Home</a>";
        mg_printf(conn, ss.str().c_str());
@@ -1014,6 +1005,7 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 	   CivetServer::getParam(conn,"omschrijving", s[5]);
 	   motor.omschrijving = s[5].c_str();
 
+	   motor.Initialize();
 
 	   std::stringstream ss;
 	   ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << motor.getUrl() << "\"/></head><body>";
@@ -1064,11 +1056,13 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 					  "<input id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
 					  motor.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
 		ss << "<br>";
-	    ss << "Huidige status sensor links:&nbsp;" << digitalRead(motor.left_sensor) << "</br>";
-	    ss << "Huidige status sensor rechts:&nbsp;" << digitalRead(motor.right_sensor) << "</br>";
-	    ss << "Huidige status relais links:&nbsp;" << digitalRead(motor.left_relay) << "</br>";
-	    ss << "Huidige status relais rechts:&nbsp;" << digitalRead(motor.right_relay) << "</br>";
-	    ss <<  "</br>";
+	    ss << "Huidige status sensor links:&nbsp;" << digitalRead(motor.left_sensor) << "<br>";
+	    ss << "Huidige status sensor rechts:&nbsp;" << digitalRead(motor.right_sensor) << "<br>";
+	    ss << "Huidige status relais links:&nbsp;" << digitalRead(motor.left_relay) << "<br>";
+	    ss << "Huidige status relais rechts:&nbsp;" << digitalRead(motor.right_relay) << "<br>";
+	    ss <<  "<br>";
+	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
+	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"left\" value=\"left\" id=\"left\">LINKS</button>";
 	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">STOP</button>";
 	    ss << "<button type=\"submit\" name=\"right\" value=\"right\" id=\"right\">RECHTS</button></br>";
@@ -1088,6 +1082,9 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 	    ss <<  "</br>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss <<  "</br>";
+	    ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
+	    ss << "<a href=\"/motorfactory\">Motoren</a>";
+	    ss << "<br>";
 	    ss << "<a href=\"/\">Home</a>";
 	    mg_printf(conn, ss.str().c_str());
 	}

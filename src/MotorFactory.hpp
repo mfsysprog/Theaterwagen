@@ -76,6 +76,7 @@ class MotorFactory {
 		int myWiringPiISR(int val, int mask, direction dir);
 		void Stop();
 		void Stop(direction);
+		void Initialize();
 		void Dummy();
 		std::string url;
 		std::string naam;
