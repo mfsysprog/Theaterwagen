@@ -29,6 +29,7 @@
 extern CivetServer* server;
 
 class MusicFactory {
+	friend int main(int, char**);
 	private:
 	class MusicFactoryHandler : public CivetHandler
 	{
@@ -50,6 +51,9 @@ class MusicFactory {
 		std::string getUuid();
 		std::string getFilename();
 		std::string getUrl();
+		void Pause();
+		void Play();
+		void Stop();
 		private:
 		class MusicHandler : public CivetHandler
 		{
@@ -62,9 +66,6 @@ class MusicFactory {
 			bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
 			Music& music;
 		};
-		void Pause();
-		void Play();
-		void Stop();
 		bool getLoop();
 		void setLoop(bool loop);
 		void setVolume(float vol);

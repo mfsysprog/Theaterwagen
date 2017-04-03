@@ -19,6 +19,7 @@
 #include "MusicFactory.hpp"
 #include "SoundFactory.hpp"
 #include "MotorFactory.hpp"
+#include "ToggleFactory.hpp"
 
 using namespace std;
 
@@ -72,8 +73,12 @@ int main(int, char**){
 	sound1.load();
 
 	MotorFactory motor1;
-	//motor1.load();
+	motor1.load();
 
+	ToggleFactory toggle1;
+	toggle1.load();
+
+	music1.musicmap.find("c0f5d6cf-1cd6-4a22-b2c8-05b9b5e3e836")->second->Play();
 	/*
 	while(!(s1.Full(LEFT)))
 	{
