@@ -31,6 +31,7 @@
 extern CivetServer* server;
 
 class SceneFactory {
+	friend class ChaseFactory;
 	private:
 	class SceneFactoryHandler : public CivetHandler
 	{
@@ -45,6 +46,7 @@ class SceneFactory {
 	};
 	class Scene {
 		friend class SceneFactory;
+		friend class ChaseFactory;
 		public:
 		Scene(FixtureFactory* ff, std::string uuidstr, std::string naam, std::string omschrijving, unsigned char* channels);
 		Scene(FixtureFactory* ff, std::string naam, std::string omschrijving);

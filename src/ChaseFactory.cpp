@@ -1,5 +1,5 @@
 /*
- * ToggleFactory.cpp
+ * ChaseFactory.cpp
  *
  *  Created on: April 2, 2017
  *      Author: erik
@@ -7,43 +7,56 @@
  *
  */
 
-#include "ToggleFactory.hpp"
+#include "ChaseFactory.hpp"
 
 /*
- * ToggleFactory Constructor en Destructor
+ * ChaseFactory Constructor en Destructor
  */
-ToggleFactory::ToggleFactory(){
-    mfh = new ToggleFactory::ToggleFactoryHandler(*this);
-	server->addHandler("/togglefactory", mfh);
+ChaseFactory::ChaseFactory(){
+    mfh = new ChaseFactory::ChaseFactoryHandler(*this);
+	server->addHandler("/chasefactory", mfh);
 	load();
+
+	fixture = new FixtureFactory();
+	scene = new SceneFactory(fixture);
+	music = new MusicFactory();
+	sound = new SoundFactory();
+	motor = new MotorFactory();
+	toggle = new ToggleFactory();
 }
 
-ToggleFactory::~ToggleFactory(){
+ChaseFactory::~ChaseFactory(){
 	delete mfh;
-	std::map<std::string, ToggleFactory::Toggle*>::iterator it = togglemap.begin();
-	if (it != togglemap.end())
+	std::map<std::string, ChaseFactory::Chase*>::iterator it = chasemap.begin();
+	if (it != chasemap.end())
 	{
 	    // found it - delete it
 	    delete it->second;
-	    togglemap.erase(it);
+	    chasemap.erase(it);
 	}
+	delete fixture;
+	delete scene;
+	delete music;
+	delete sound;
+	delete motor;
+	delete toggle;
 }
 
 /*
- * ToggleFactoryHandler Constructor en Destructor
+ * ChaseFactoryHandler Constructor en Destructor
  */
-ToggleFactory::ToggleFactoryHandler::ToggleFactoryHandler(ToggleFactory& togglefactory):togglefactory(togglefactory){
+ChaseFactory::ChaseFactoryHandler::ChaseFactoryHandler(ChaseFactory& chasefactory):chasefactory(chasefactory){
 }
 
 
-ToggleFactory::ToggleFactoryHandler::~ToggleFactoryHandler(){
+ChaseFactory::ChaseFactoryHandler::~ChaseFactoryHandler(){
 }
 
 /*
- * Toggle Constructor en Destructor
+ * Chase Constructor en Destructor
  */
-ToggleFactory::Toggle::Toggle(std::string naam, std::string omschrijving, int GPIO_relay){
-	mh = new ToggleFactory::Toggle::ToggleHandler(*this);
+ChaseFactory::Chase::Chase(std::string naam, std::string omschrijving, int GPIO_relay){
+	mh = new ChaseFactory::Chase::ChaseHandler(*this);
 	uuid_generate( (unsigned char *)&uuid );
 
 	this->naam = naam;
@@ -57,13 +70,13 @@ ToggleFactory::Toggle::Toggle(std::string naam, std::string omschrijving, int GP
 	Initialize();
 
 	std::stringstream ss;
-	ss << "/toggle-" << this->getUuid();
+	ss << "/chase-" << this->getUuid();
 	url = ss.str().c_str();
 	server->addHandler(url, mh);
 }
 
-ToggleFactory::Toggle::Toggle(std::string uuidstr, std::string naam, std::string omschrijving, int GPIO_relay){
-	mh = new ToggleFactory::Toggle::ToggleHandler(*this);
+ChaseFactory::Chase::Chase(std::string uuidstr, std::string naam, std::string omschrijving, int GPIO_relay){
+	mh = new ChaseFactory::Chase::ChaseHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 
 	this->naam = naam;
@@ -77,22 +90,22 @@ ToggleFactory::Toggle::Toggle(std::string uuidstr, std::string naam, std::string
 	Initialize();
 
 	std::stringstream ss;
-	ss << "/toggle-" << this->getUuid();
+	ss << "/chase-" << this->getUuid();
 	url = ss.str().c_str();
 	server->addHandler(url, mh);
 }
 
-ToggleFactory::Toggle::~Toggle(){
+ChaseFactory::Chase::~Chase(){
 	delete mh;
 }
 
 /*
- * Toggle Handler Constructor en Destructor
+ * Chase Handler Constructor en Destructor
  */
-ToggleFactory::Toggle::ToggleHandler::ToggleHandler(ToggleFactory::Toggle& toggle):toggle(toggle){
+ChaseFactory::Chase::ChaseHandler::ChaseHandler(ChaseFactory::Chase& chase):chase(chase){
 }
 
-ToggleFactory::Toggle::ToggleHandler::~ToggleHandler(){
+ChaseFactory::Chase::ChaseHandler::~ChaseHandler(){
 }
 
 
@@ -100,10 +113,10 @@ ToggleFactory::Toggle::ToggleHandler::~ToggleHandler(){
  *
  */
 
-void ToggleFactory::load(){
-	for (std::pair<std::string, ToggleFactory::Toggle*> element  : togglemap)
+void ChaseFactory::load(){
+	for (std::pair<std::string, ChaseFactory::Chase*> element  : chasemap)
 	{
-		deleteToggle(element.first);
+		deleteChase(element.first);
 	}
 
 	char filename[] = CONFIG_FILE;
@@ -124,19 +137,19 @@ void ToggleFactory::load(){
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
 		int relay = node[i]["relay"].as<int>();
-		ToggleFactory::Toggle * toggle = new ToggleFactory::Toggle(uuidstr, naam, omschrijving, relay);
-		std::string uuid_str = toggle->getUuid();
-		togglemap.insert(std::make_pair(uuid_str,toggle));
+		ChaseFactory::Chase * chase = new ChaseFactory::Chase(uuidstr, naam, omschrijving, relay);
+		std::string uuid_str = chase->getUuid();
+		chasemap.insert(std::make_pair(uuid_str,chase));
 	}
 }
 
-void ToggleFactory::save(){
+void ChaseFactory::save(){
 	YAML::Emitter emitter;
 	std::ofstream fout(CONFIG_FILE);
-	std::map<std::string, ToggleFactory::Toggle*>::iterator it = togglemap.begin();
+	std::map<std::string, ChaseFactory::Chase*>::iterator it = chasemap.begin();
 
 	emitter << YAML::BeginSeq;
-	for (std::pair<std::string, ToggleFactory::Toggle*> element  : togglemap)
+	for (std::pair<std::string, ChaseFactory::Chase*> element  : chasemap)
 	{
 		emitter << YAML::BeginMap;
 		emitter << YAML::Key << "uuid";
@@ -153,7 +166,7 @@ void ToggleFactory::save(){
 	fout << emitter.c_str();
 }
 
-void ToggleFactory::Toggle::Initialize(){
+void ChaseFactory::Chase::Initialize(){
 	/*
 	 * set relay to output and full stop
 	 */
@@ -161,73 +174,73 @@ void ToggleFactory::Toggle::Initialize(){
 	digitalWrite(relay, HIGH);
 }
 
-std::string ToggleFactory::Toggle::getUuid(){
+std::string ChaseFactory::Chase::getUuid(){
 	char uuid_str[37];
 	uuid_unparse(uuid,uuid_str);
 	return uuid_str;
 }
 
-std::string ToggleFactory::Toggle::getUrl(){
+std::string ChaseFactory::Chase::getUrl(){
 	return url;
 }
 
-ToggleFactory::Toggle* ToggleFactory::addToggle(std::string naam, std::string omschrijving, int GPIO_relay){
-	ToggleFactory::Toggle * toggle = new ToggleFactory::Toggle(naam, omschrijving, GPIO_relay);
-	std::string uuid_str = toggle->getUuid();
-	togglemap.insert(std::make_pair(uuid_str,toggle));
-	return toggle;
+ChaseFactory::Chase* ChaseFactory::addChase(std::string naam, std::string omschrijving, int GPIO_relay){
+	ChaseFactory::Chase * chase = new ChaseFactory::Chase(naam, omschrijving, GPIO_relay);
+	std::string uuid_str = chase->getUuid();
+	chasemap.insert(std::make_pair(uuid_str,chase));
+	return chase;
 }
 
-void ToggleFactory::deleteToggle(std::string uuid){
-	std::map<std::string, ToggleFactory::Toggle*>::iterator it = togglemap.begin();
-    it = togglemap.find(uuid);
-	if (it != togglemap.end())
+void ChaseFactory::deleteChase(std::string uuid){
+	std::map<std::string, ChaseFactory::Chase*>::iterator it = chasemap.begin();
+    it = chasemap.find(uuid);
+	if (it != chasemap.end())
 	{
 	    // found it - delete it
 	    delete it->second;
-	    togglemap.erase(it);
+	    chasemap.erase(it);
 	}
 }
 
-void ToggleFactory::Toggle::Stop(){
+void ChaseFactory::Chase::Stop(){
 	digitalWrite(relay, HIGH);
 	delay(1000);
 }
 
-void ToggleFactory::Toggle::Start(){
+void ChaseFactory::Chase::Start(){
 	digitalWrite(relay, LOW);
 	delay(1000);
 }
 
-std::string ToggleFactory::Toggle::getNaam(){
+std::string ChaseFactory::Chase::getNaam(){
 	return naam;
 }
 
-std::string ToggleFactory::Toggle::getOmschrijving(){
+std::string ChaseFactory::Chase::getOmschrijving(){
 	return omschrijving;
 }
 
-bool ToggleFactory::ToggleFactoryHandler::handleGet(CivetServer *server, struct mg_connection *conn)
+bool ChaseFactory::ChaseFactoryHandler::handleGet(CivetServer *server, struct mg_connection *conn)
 	{
-		return ToggleFactory::ToggleFactoryHandler::handleAll("GET", server, conn);
+		return ChaseFactory::ChaseFactoryHandler::handleAll("GET", server, conn);
 	}
 
-bool ToggleFactory::ToggleFactoryHandler::handlePost(CivetServer *server, struct mg_connection *conn)
+bool ChaseFactory::ChaseFactoryHandler::handlePost(CivetServer *server, struct mg_connection *conn)
 	{
-		return ToggleFactory::ToggleFactoryHandler::handleAll("POST", server, conn);
+		return ChaseFactory::ChaseFactoryHandler::handleAll("POST", server, conn);
 	}
 
-bool ToggleFactory::Toggle::ToggleHandler::handleGet(CivetServer *server, struct mg_connection *conn)
+bool ChaseFactory::Chase::ChaseHandler::handleGet(CivetServer *server, struct mg_connection *conn)
 	{
-		return ToggleFactory::Toggle::ToggleHandler::handleAll("GET", server, conn);
+		return ChaseFactory::Chase::ChaseHandler::handleAll("GET", server, conn);
 	}
 
-bool ToggleFactory::Toggle::ToggleHandler::handlePost(CivetServer *server, struct mg_connection *conn)
+bool ChaseFactory::Chase::ChaseHandler::handlePost(CivetServer *server, struct mg_connection *conn)
 	{
-		return ToggleFactory::Toggle::ToggleHandler::handleAll("POST", server, conn);
+		return ChaseFactory::Chase::ChaseHandler::handleAll("POST", server, conn);
 	}
 
-bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
+bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
           CivetServer *server,
           struct mg_connection *conn)
 {
@@ -239,9 +252,9 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 	   mg_printf(conn,
 		          "HTTP/1.1 200 OK\r\nContent-Type: "
 			   	  "text/html\r\nConnection: close\r\n\r\n");
-	   mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"0;url=/togglefactory\" /></head><body>");
+	   mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"0;url=/chasefactory\" /></head><body>");
 	   mg_printf(conn, "</body></html>");
-	   this->togglefactory.deleteToggle(value);
+	   this->chasefactory.deleteChase(value);
 	}
 	else
 	/* if parameter save is present the save button was pushed */
@@ -250,10 +263,10 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 		mg_printf(conn,
 		          "HTTP/1.1 200 OK\r\nContent-Type: "
 		          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/togglefactory\" /></head><body>");
-		mg_printf(conn, "<h2>Toggle opgeslagen...!</h2>");
+		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/chasefactory\" /></head><body>");
+		mg_printf(conn, "<h2>Chase opgeslagen...!</h2>");
 		mg_printf(conn, "</body></html>");
-		this->togglefactory.save();
+		this->chasefactory.save();
 	}
 	else
 	/* if parameter load is present the load button was pushed */
@@ -262,10 +275,10 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 		mg_printf(conn,
 		          "HTTP/1.1 200 OK\r\nContent-Type: "
 		          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/togglefactory\" /></head><body>");
-		mg_printf(conn, "<h2>Toggle ingeladen...!</h2>");
+		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/chasefactory\" /></head><body>");
+		mg_printf(conn, "<h2>Chase ingeladen...!</h2>");
 		mg_printf(conn, "</body></html>");
-		this->togglefactory.load();
+		this->chasefactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", dummy))
 	{
@@ -276,13 +289,13 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 		CivetServer::getParam(conn, "relay", value);
 		int relay = atoi(value.c_str());
 
-		ToggleFactory::Toggle* toggle = togglefactory.addToggle(naam, omschrijving, relay);
+		ChaseFactory::Chase* chase = chasefactory.addChase(naam, omschrijving, relay);
 
 		mg_printf(conn,
 				          "HTTP/1.1 200 OK\r\nContent-Type: "
 				          "text/html\r\nConnection: close\r\n\r\n");
 		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << toggle->getUrl() << "\"/></head><body>";
+		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << chase->getUrl() << "\"/></head><body>";
 		mg_printf(conn, ss.str().c_str());
 		mg_printf(conn, "</body></html>");
 	}
@@ -293,7 +306,7 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 		         "text/html\r\nConnection: close\r\n\r\n");
        mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
 	   std::stringstream ss;
-	   ss << "<form action=\"/togglefactory\" method=\"POST\">";
+	   ss << "<form action=\"/chasefactory\" method=\"POST\">";
 	   ss << "<label for=\"naam\">Naam:</label>"
   			 "<input id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
@@ -305,7 +318,7 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
    	   ss << "</form>";
    	   ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
        ss <<  "</br>";
-       ss << "<a href=\"/togglefactory\">Aan/Uit</a>";
+       ss << "<a href=\"/chasefactory\">Aan/Uit</a>";
        ss <<  "</br>";
        ss << "<a href=\"/\">Home</a>";
        mg_printf(conn, ss.str().c_str());
@@ -319,13 +332,13 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 			          "text/html\r\nConnection: close\r\n\r\n");
 		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
 		std::stringstream ss;
-		std::map<std::string, ToggleFactory::Toggle*>::iterator it = togglefactory.togglemap.begin();
+		std::map<std::string, ChaseFactory::Chase*>::iterator it = chasefactory.chasemap.begin();
 		ss << "<h2>Beschikbare Aan/Uit:</h2>";
-	    for (std::pair<std::string, ToggleFactory::Toggle*> element : togglefactory.togglemap) {
+	    for (std::pair<std::string, ChaseFactory::Chase*> element : chasefactory.chasemap) {
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
 	    	ss << "</form>";
-	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/togglefactory\" method=\"POST\">";
+	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/chasefactory\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.first << "\" id=\"delete\">Verwijderen</button>&nbsp;";
 			ss << "Naam:&nbsp;" << element.second->getNaam() << " &nbsp;";
 			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
@@ -333,13 +346,13 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 			ss << "<br style=\"clear:both\">";
 	    }
 	    ss << "<br>";
-	    ss << "<form style ='float: left; padding: 0px;' action=\"/togglefactory\" method=\"POST\">";
+	    ss << "<form style ='float: left; padding: 0px;' action=\"/chasefactory\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Nieuw</button>";
 	    ss << "</form>";
-	    ss << "<form style ='float: left; padding: 0px;' action=\"/togglefactory\" method=\"POST\">";
+	    ss << "<form style ='float: left; padding: 0px;' action=\"/chasefactory\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">Opslaan</button>";
 	    ss << "</form>";
-	    ss << "<form style ='float: left; padding: 0px;' action=\"/togglefactory\" method=\"POST\">";
+	    ss << "<form style ='float: left; padding: 0px;' action=\"/chasefactory\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
@@ -351,7 +364,7 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 	return true;
 }
 
-bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
+bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
           CivetServer *server,
           struct mg_connection *conn)
 {
@@ -366,34 +379,34 @@ bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "submit", dummy))
 	{
 	   CivetServer::getParam(conn,"relay", s[0]);
-	   toggle.relay = atoi(s[0].c_str());
+	   chase.relay = atoi(s[0].c_str());
 	   CivetServer::getParam(conn,"naam", s[1]);
-	   toggle.naam = s[1].c_str();
+	   chase.naam = s[1].c_str();
 	   CivetServer::getParam(conn,"omschrijving", s[2]);
-	   toggle.omschrijving = s[2].c_str();
+	   chase.omschrijving = s[2].c_str();
 
-	   toggle.Initialize();
+	   chase.Initialize();
 
 	   std::stringstream ss;
-	   ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << toggle.getUrl() << "\"/></head><body>";
+	   ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/></head><body>";
 	   mg_printf(conn, ss.str().c_str());
 	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	}
 	/* if parameter start is present start button was pushed */
 	else if(CivetServer::getParam(conn, "start", dummy))
 	{
-		toggle.Start();
+		chase.Start();
 		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << toggle.getUrl() << "\"/></head><body>";
+		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
 	   	mg_printf(conn, "<h2>Starten...!</h2>");
 	}
 	/* if parameter stop is present stop button was pushed */
 	else if(CivetServer::getParam(conn, "stop", dummy))
 	{
-		toggle.Stop();
+		chase.Stop();
 		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << toggle.getUrl() << "\"/></head><body>";
+		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
 	   	mg_printf(conn, "<h2>Stoppen...!</h2>");
 	}
@@ -406,15 +419,15 @@ bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
 	{
 		std::stringstream ss;
 		ss << "<h2>Aan/Uit:</h2>";
-		ss << "<form action=\"" << toggle.getUrl() << "\" method=\"POST\">";
+		ss << "<form action=\"" << chase.getUrl() << "\" method=\"POST\">";
 		ss << "<label for=\"naam\">Naam:</label>"
 					  "<input id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
-					  toggle.naam << "\" name=\"naam\"/>" << "</br>";
+					  chase.naam << "\" name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
 					  "<input id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
-					  toggle.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
+					  chase.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
 		ss << "<br>";
-	    ss << "Huidige status relais:&nbsp;" << digitalRead(toggle.relay) << "<br>";
+	    ss << "Huidige status relais:&nbsp;" << digitalRead(chase.relay) << "<br>";
 	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
 	    ss <<  "<br>";
@@ -423,12 +436,12 @@ bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
 		ss << "<h2>GPIO pin:</h2>";
 	    ss << "<label for=\"relay\">Right Relay GPIO pin:</label>"
 	    	  "<input id=\"relay\" type=\"text\" size=\"4\" value=\"" <<
-	    	  toggle.relay << "\" name=\"relay\"/>" << "</br>";
+	    	  chase.relay << "\" name=\"relay\"/>" << "</br>";
 	    ss <<  "</br>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss <<  "</br>";
 	    ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
-	    ss << "<a href=\"/togglefactory\">Aan/Uit</a>";
+	    ss << "<a href=\"/chasefactory\">Aan/Uit</a>";
 	    ss << "<br>";
 	    ss << "<a href=\"/\">Home</a>";
 	    mg_printf(conn, ss.str().c_str());

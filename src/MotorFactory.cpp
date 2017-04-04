@@ -514,6 +514,7 @@ static fptr getCallBack(direction dir, int gpio)
 MotorFactory::MotorFactory(){
     mfh = new MotorFactory::MotorFactoryHandler(*this);
 	server->addHandler("/motorfactory", mfh);
+	load();
 }
 
 MotorFactory::~MotorFactory(){
@@ -609,10 +610,21 @@ void MotorFactory::load(){
 	{
 		deleteMotor(element.first);
 	}
+
+	char filename[] = CONFIG_FILE;
+	std::fstream file;
+	file.open(filename, std::fstream::in | std::fstream::out | std::fstream::app);
+	/* als bestand nog niet bestaat, dan leeg aanmaken */
+	if (!file)
+	{
+		file.open(filename,  std::fstream::in | std::fstream::out | std::fstream::trunc);
+        file <<"\n";
+        file.close();
+	}
+	else file.close();
+
 	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
-	assert(node.IsSequence());
 	for (std::size_t i=0;i<node.size();i++) {
-		assert(node[i].IsMap());
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();

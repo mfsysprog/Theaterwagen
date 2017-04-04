@@ -10,6 +10,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <functional>
 #include <sstream>
 #include <fstream>
@@ -31,6 +32,7 @@ extern CivetServer* server;
 class FixtureFactory {
 	friend class SceneHandler;
 	friend class SceneFactory;
+	friend class ChaseFactory;
 	private:
 	class FixtureFactoryHandler : public CivetHandler
 	{
@@ -47,6 +49,7 @@ class FixtureFactory {
 		friend class FixtureFactory;
 		friend class SceneHandler;
 		friend class SceneFactory;
+		friend class ChaseFactory;
 		public:
 		Fixture(std::string naam, std::string omschrijving, int base_channel, int number_channels);
 		~Fixture();

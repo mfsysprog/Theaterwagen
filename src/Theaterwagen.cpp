@@ -60,6 +60,9 @@ int main(int, char**){
 	//Schip s1(27,22,17,18);
 	//server->addHandler("/schip", s1.getHandler());
 
+	ChaseFactory chase;
+
+	/*
 	FixtureFactory fixture1;
 	fixture1.load();
 
@@ -79,6 +82,11 @@ int main(int, char**){
 	toggle1.load();
 
 	music1.musicmap.find("c0f5d6cf-1cd6-4a22-b2c8-05b9b5e3e836")->second->Play();
+	*/
+	/*
+	 * http://paramitech.com/dynamically-udating-select-list-using-jquery-and-ajax/
+	 * idee voor chasefactory
+	 */
 	/*
 	while(!(s1.Full(LEFT)))
 	{

@@ -1,12 +1,12 @@
 /*
- * ToggleFactory.hpp
+ * ChaseFactory.hpp
  *
  *  Created on: Mar 21, 2017
  *      Author: erik
  */
 
-#ifndef TOGGLEFACTORY_HPP_
-#define TOGGLEFACTORY_HPP_
+#ifndef CHASEFACTORY_HPP_
+#define CHASEFACTORY_HPP_
 
 #include <string>
 #include <iostream>
@@ -21,33 +21,37 @@
 #include <uuid/uuid.h>
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
+#include "FixtureFactory.hpp"
+#include "SceneFactory.hpp"
+#include "MusicFactory.hpp"
+#include "SoundFactory.hpp"
+#include "MotorFactory.hpp"
+#include "ToggleFactory.hpp"
 
 #define RESOURCES_DIR "/home/erik/resources/"
-#define CONFIG_FILE "/home/erik/config/togglefactory.yaml"
+#define CONFIG_FILE "/home/erik/config/chasefactory.yaml"
 
 extern CivetServer* server;
 
-class ToggleFactory {
-	friend class ChaseFactory;
+class ChaseFactory {
 	private:
-	class ToggleFactoryHandler : public CivetHandler
+	class ChaseFactoryHandler : public CivetHandler
 	{
 		public:
-		ToggleFactoryHandler(ToggleFactory& togglefactory);
-		~ToggleFactoryHandler();
+		ChaseFactoryHandler(ChaseFactory& chasefactory);
+		~ChaseFactoryHandler();
 		private:
 		bool handleGet(CivetServer *server, struct mg_connection *conn);
 		bool handlePost(CivetServer *server, struct mg_connection *conn);
 		bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
-		ToggleFactory& togglefactory;
+		ChaseFactory& chasefactory;
 	};
-	class Toggle {
+	class Chase {
 	public:
-		friend class ToggleFactory;
 		friend class ChaseFactory;
-		Toggle(std::string naam, std::string omschrijving, int GPIO_relay);
-		Toggle(std::string uuidstr, std::string naam, std::string omschrijving, int GPIO_relay);
-		~Toggle();
+		Chase(std::string naam, std::string omschrijving, int GPIO_relay);
+		Chase(std::string uuidstr, std::string naam, std::string omschrijving, int GPIO_relay);
+		~Chase();
 		std::string getUuid();
 		std::string getNaam();
 		std::string getOmschrijving();
@@ -55,19 +59,19 @@ class ToggleFactory {
 		void Stop();
 		void Start();
 		private:
-		class ToggleHandler : public CivetHandler
+		class ChaseHandler : public CivetHandler
 		{
 			public:
-			ToggleHandler(Toggle& schip);
-			~ToggleHandler();
+			ChaseHandler(Chase& schip);
+			~ChaseHandler();
 			private:
 			bool handleGet(CivetServer *server, struct mg_connection *conn);
 			bool handlePost(CivetServer *server, struct mg_connection *conn);
 			bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
-			Toggle& toggle;
+			Chase& chase;
 		};
 		private:
-		ToggleHandler* mh;
+		ChaseHandler* mh;
 		void Initialize();
 		std::string url;
 		std::string naam;
@@ -76,17 +80,25 @@ class ToggleFactory {
 		int relay;
 	};
 	public:
-	ToggleFactory();
-	~ToggleFactory();
-	ToggleFactory::Toggle* addToggle(std::string naam, std::string omschrijving, int GPIO_relay);
-	void deleteToggle(std::string uuid);
+	ChaseFactory();
+	~ChaseFactory();
+	ChaseFactory::Chase* addChase(std::string naam, std::string omschrijving, int GPIO_relay);
+	void deleteChase(std::string uuid);
 	void load();
 
 	private:
 	void save();
-	std::map<std::string, ToggleFactory::Toggle*> togglemap;
-	ToggleFactoryHandler* mfh;
+
+	FixtureFactory* fixture;
+	SceneFactory* scene;
+	MusicFactory* music;
+	SoundFactory* sound;
+	MotorFactory* motor;
+	ToggleFactory* toggle;
+
+	std::map<std::string, ChaseFactory::Chase*> chasemap;
+	ChaseFactoryHandler* mfh;
 };
 
 
-#endif /* TOGGLEFACTORY_HPP_ */
+#endif /* CHASEFACTORY_HPP_ */

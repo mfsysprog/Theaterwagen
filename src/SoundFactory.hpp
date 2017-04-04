@@ -29,6 +29,7 @@
 extern CivetServer* server;
 
 class SoundFactory {
+	friend class ChaseFactory;
 	private:
 	class SoundFactoryHandler : public CivetHandler
 	{
@@ -43,6 +44,7 @@ class SoundFactory {
 	};
 	class Sound {
 		friend class SoundFactory;
+		friend class ChaseFactory;
 		public:
 		Sound(std::string uuidstr, std::string fn, bool loop, float volume, float pitch);
 		Sound(std::string fn);

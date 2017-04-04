@@ -35,6 +35,7 @@ enum direction : int {
 typedef void (*fptr)();
 
 class MotorFactory {
+	friend class ChaseFactory;
 	private:
 	class MotorFactoryHandler : public CivetHandler
 	{
@@ -50,6 +51,7 @@ class MotorFactory {
 	class Motor {
 	public:
 		friend class MotorFactory;
+		friend class ChaseFactory;
 		Motor(std::string naam, std::string omschrijving, int GPIO_left_sensor, int GPIO_right_sensor, int GPIO_left_relay, int GPIO_right_relay);
 		Motor(std::string uuidstr, std::string naam, std::string omschrijving, int GPIO_left_sensor, int GPIO_right_sensor, int GPIO_left_relay, int GPIO_right_relay);
 		~Motor();
