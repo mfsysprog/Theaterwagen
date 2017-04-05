@@ -14,12 +14,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include "UploadHandler.hpp"
-#include "FixtureFactory.hpp"
-#include "SceneFactory.hpp"
-#include "MusicFactory.hpp"
-#include "SoundFactory.hpp"
-#include "MotorFactory.hpp"
-#include "ToggleFactory.hpp"
+#include "ChaseFactory.hpp"
 
 using namespace std;
 

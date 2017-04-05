@@ -55,19 +55,22 @@ ChaseFactory::ChaseFactoryHandler::~ChaseFactoryHandler(){
 /*
  * Chase Constructor en Destructor
  */
-ChaseFactory::Chase::Chase(std::string naam, std::string omschrijving, int GPIO_relay){
+ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string naam, std::string omschrijving):cf(cf){
 	mh = new ChaseFactory::Chase::ChaseHandler(*this);
 	uuid_generate( (unsigned char *)&uuid );
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
 
-	/*
-	 * initialise gpio
-	 */
-	relay = GPIO_relay;
+	sequence_list = new std::list<sequence_item>();
+	sequence_item scene1 = {"Scene::Play","3fb4e958-48a6-4b8d-b556-f44944c4e156",5000};
+	sequence_list->push_back(scene1);
+	sequence_item scene2 = {"Scene::Play","936491c6-8bb2-4bd0-a512-594eda61a9bc",2000};
+	sequence_list->push_back(scene2);
+	sequence_item scene3 = {"Scene::Play","a6b424a9-54ac-4b1d-b2ab-def8b58e50ec",3000};
+	sequence_list->push_back(scene3);
 
-	Initialize();
+	Start();
 
 	std::stringstream ss;
 	ss << "/chase-" << this->getUuid();
@@ -75,19 +78,22 @@ ChaseFactory::Chase::Chase(std::string naam, std::string omschrijving, int GPIO_
 	server->addHandler(url, mh);
 }
 
-ChaseFactory::Chase::Chase(std::string uuidstr, std::string naam, std::string omschrijving, int GPIO_relay){
+ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving):cf(cf){
 	mh = new ChaseFactory::Chase::ChaseHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
 
-	/*
-	 * initialise gpio
-	 */
-	relay = GPIO_relay;
+	sequence_list = new std::list<sequence_item>();
+	sequence_item scene1 = {"Scene::Play","3fb4e958-48a6-4b8d-b556-f44944c4e156",5000};
+	sequence_list->push_back(scene1);
+	sequence_item scene2 = {"Scene::Play","936491c6-8bb2-4bd0-a512-594eda61a9bc",2000};
+	sequence_list->push_back(scene2);
+	sequence_item scene3 = {"Scene::Play","a6b424a9-54ac-4b1d-b2ab-def8b58e50ec",3000};
+	sequence_list->push_back(scene3);
 
-	Initialize();
+	Start();
 
 	std::stringstream ss;
 	ss << "/chase-" << this->getUuid();
@@ -136,8 +142,7 @@ void ChaseFactory::load(){
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
-		int relay = node[i]["relay"].as<int>();
-		ChaseFactory::Chase * chase = new ChaseFactory::Chase(uuidstr, naam, omschrijving, relay);
+		ChaseFactory::Chase * chase = new ChaseFactory::Chase(*this, uuidstr, naam, omschrijving);
 		std::string uuid_str = chase->getUuid();
 		chasemap.insert(std::make_pair(uuid_str,chase));
 	}
@@ -158,20 +163,10 @@ void ChaseFactory::save(){
 		emitter << YAML::Value << element.second->naam;
 		emitter << YAML::Key << "omschrijving";
 		emitter << YAML::Value << element.second->omschrijving;
-		emitter << YAML::Key << "relay";
-		emitter << YAML::Value << element.second->relay;
 		emitter << YAML::EndMap;
 	}
 	emitter << YAML::EndSeq;
 	fout << emitter.c_str();
-}
-
-void ChaseFactory::Chase::Initialize(){
-	/*
-	 * set relay to output and full stop
-	 */
-	pinMode(relay, OUTPUT);
-	digitalWrite(relay, HIGH);
 }
 
 std::string ChaseFactory::Chase::getUuid(){
@@ -184,8 +179,8 @@ std::string ChaseFactory::Chase::getUrl(){
 	return url;
 }
 
-ChaseFactory::Chase* ChaseFactory::addChase(std::string naam, std::string omschrijving, int GPIO_relay){
-	ChaseFactory::Chase * chase = new ChaseFactory::Chase(naam, omschrijving, GPIO_relay);
+ChaseFactory::Chase* ChaseFactory::addChase(std::string naam, std::string omschrijving){
+	ChaseFactory::Chase * chase = new ChaseFactory::Chase(*this, naam, omschrijving);
 	std::string uuid_str = chase->getUuid();
 	chasemap.insert(std::make_pair(uuid_str,chase));
 	return chase;
@@ -203,13 +198,20 @@ void ChaseFactory::deleteChase(std::string uuid){
 }
 
 void ChaseFactory::Chase::Stop(){
-	digitalWrite(relay, HIGH);
 	delay(1000);
 }
 
 void ChaseFactory::Chase::Start(){
-	digitalWrite(relay, LOW);
-	delay(1000);
+
+	while (true)
+	{
+		std::list<sequence_item>::const_iterator it;
+		for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
+		{
+			cf.scene->scenemap.find((*it).uuid)->second->Play();
+			delay((*it).millisecond);
+		}
+	};
 }
 
 std::string ChaseFactory::Chase::getNaam(){
@@ -286,10 +288,8 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 		std::string naam = value;
 		CivetServer::getParam(conn, "omschrijving", value);
 		std::string omschrijving = value;
-		CivetServer::getParam(conn, "relay", value);
-		int relay = atoi(value.c_str());
 
-		ChaseFactory::Chase* chase = chasefactory.addChase(naam, omschrijving, relay);
+		ChaseFactory::Chase* chase = chasefactory.addChase(naam, omschrijving);
 
 		mg_printf(conn,
 				          "HTTP/1.1 200 OK\r\nContent-Type: "
@@ -311,14 +311,10 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
   			 "<input id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
 	         "<input id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
-	   ss << "<label for=\"relay\">Relais GPIO:</label>"
-	   	     "<input id=\"relay\" type=\"text\" size=\"3\" name=\"relay\"/>" << "</br>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
-   	   ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
-       ss <<  "</br>";
-       ss << "<a href=\"/chasefactory\">Aan/Uit</a>";
+   	   ss << "<a href=\"/chasefactory\">Chases</a>";
        ss <<  "</br>";
        ss << "<a href=\"/\">Home</a>";
        mg_printf(conn, ss.str().c_str());
@@ -333,7 +329,7 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
 		std::stringstream ss;
 		std::map<std::string, ChaseFactory::Chase*>::iterator it = chasefactory.chasemap.begin();
-		ss << "<h2>Beschikbare Aan/Uit:</h2>";
+		ss << "<h2>Beschikbare Chases:</h2>";
 	    for (std::pair<std::string, ChaseFactory::Chase*> element : chasefactory.chasemap) {
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
@@ -378,14 +374,10 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	/* if parameter submit is present the submit button was pushed */
 	if(CivetServer::getParam(conn, "submit", dummy))
 	{
-	   CivetServer::getParam(conn,"relay", s[0]);
-	   chase.relay = atoi(s[0].c_str());
-	   CivetServer::getParam(conn,"naam", s[1]);
-	   chase.naam = s[1].c_str();
-	   CivetServer::getParam(conn,"omschrijving", s[2]);
-	   chase.omschrijving = s[2].c_str();
-
-	   chase.Initialize();
+	   CivetServer::getParam(conn,"naam", s[0]);
+	   chase.naam = s[0].c_str();
+	   CivetServer::getParam(conn,"omschrijving", s[1]);
+	   chase.omschrijving = s[1].c_str();
 
 	   std::stringstream ss;
 	   ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/></head><body>";
@@ -418,7 +410,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	/* initial page display */
 	{
 		std::stringstream ss;
-		ss << "<h2>Aan/Uit:</h2>";
+		ss << "<h2>Chases:</h2>";
 		ss << "<form action=\"" << chase.getUrl() << "\" method=\"POST\">";
 		ss << "<label for=\"naam\">Naam:</label>"
 					  "<input id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
@@ -427,21 +419,14 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 					  "<input id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
 					  chase.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
 		ss << "<br>";
-	    ss << "Huidige status relais:&nbsp;" << digitalRead(chase.relay) << "<br>";
-	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
 	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"start\" value=\"start\" id=\"start\">START</button>";
 	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">STOP</button>";
-		ss << "<h2>GPIO pin:</h2>";
-	    ss << "<label for=\"relay\">Right Relay GPIO pin:</label>"
-	    	  "<input id=\"relay\" type=\"text\" size=\"4\" value=\"" <<
-	    	  chase.relay << "\" name=\"relay\"/>" << "</br>";
 	    ss <<  "</br>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss <<  "</br>";
-	    ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
-	    ss << "<a href=\"/chasefactory\">Aan/Uit</a>";
+	    ss << "<a href=\"/chasefactory\">Chases</a>";
 	    ss << "<br>";
 	    ss << "<a href=\"/\">Home</a>";
 	    mg_printf(conn, ss.str().c_str());

@@ -33,6 +33,12 @@
 
 extern CivetServer* server;
 
+struct sequence_item {
+	std::string action;
+	std::string uuid;
+	int millisecond;
+};
+
 class ChaseFactory {
 	private:
 	class ChaseFactoryHandler : public CivetHandler
@@ -49,8 +55,8 @@ class ChaseFactory {
 	class Chase {
 	public:
 		friend class ChaseFactory;
-		Chase(std::string naam, std::string omschrijving, int GPIO_relay);
-		Chase(std::string uuidstr, std::string naam, std::string omschrijving, int GPIO_relay);
+		Chase(ChaseFactory& cf, std::string naam, std::string omschrijving);
+		Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving);
 		~Chase();
 		std::string getUuid();
 		std::string getNaam();
@@ -71,18 +77,18 @@ class ChaseFactory {
 			Chase& chase;
 		};
 		private:
+		ChaseFactory& cf;
 		ChaseHandler* mh;
-		void Initialize();
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
+		std::list<sequence_item>* sequence_list;
 		uuid_t uuid;
-		int relay;
 	};
 	public:
 	ChaseFactory();
 	~ChaseFactory();
-	ChaseFactory::Chase* addChase(std::string naam, std::string omschrijving, int GPIO_relay);
+	ChaseFactory::Chase* addChase(std::string naam, std::string omschrijving);
 	void deleteChase(std::string uuid);
 	void load();
 
