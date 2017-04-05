@@ -19,6 +19,7 @@
 #include <cstring>
 #include <dirent.h>
 #include <uuid/uuid.h>
+#include <thread>
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
 #include "FixtureFactory.hpp"
@@ -35,8 +36,7 @@ extern CivetServer* server;
 
 struct sequence_item {
 	std::string action;
-	std::string uuid;
-	int millisecond;
+	std::string uuid_or_milliseconds;
 };
 
 class ChaseFactory {
@@ -56,7 +56,7 @@ class ChaseFactory {
 	public:
 		friend class ChaseFactory;
 		Chase(ChaseFactory& cf, std::string naam, std::string omschrijving);
-		Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving);
+		Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, std::list<sequence_item>* sequence_list);
 		~Chase();
 		std::string getUuid();
 		std::string getNaam();
@@ -77,8 +77,10 @@ class ChaseFactory {
 			Chase& chase;
 		};
 		private:
+		void Action();
 		ChaseFactory& cf;
 		ChaseHandler* mh;
+		volatile bool running;
 		std::string url;
 		std::string naam;
 		std::string omschrijving;

@@ -253,10 +253,11 @@ void SceneFactory::save(){
 		emitter << YAML::Key << "omschrijving";
 		emitter << YAML::Value << element.second->omschrijving;
 		emitter << YAML::Key << "channels";
+		emitter << YAML::Flow;
 		emitter << YAML::BeginSeq;
 		for (unsigned int i = 0; i < 512 ; i++)
 		{
-			emitter << YAML::Value << std::to_string(element.second->channels[i]);
+			emitter << std::to_string(element.second->channels[i]);
 		}
 		emitter << YAML::EndSeq;
 		emitter << YAML::EndMap;

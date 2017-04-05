@@ -61,16 +61,23 @@ ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string naam, std::string omsch
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
+	this->running = false;
 
 	sequence_list = new std::list<sequence_item>();
-	sequence_item scene1 = {"Scene::Play","3fb4e958-48a6-4b8d-b556-f44944c4e156",5000};
+	sequence_item music1 = {"Music   ::Play","c0f5d6cf-1cd6-4a22-b2c8-05b9b5e3e836"};
+	sequence_list->push_back(music1);
+	sequence_item scene1 = {"Scene   ::Play","3fb4e958-48a6-4b8d-b556-f44944c4e156"};
 	sequence_list->push_back(scene1);
-	sequence_item scene2 = {"Scene::Play","936491c6-8bb2-4bd0-a512-594eda61a9bc",2000};
+	sequence_item time1 = {"Time    ::Wait","12000"};
+	sequence_list->push_back(time1);
+	sequence_item scene2 = {"Scene   ::Play","936491c6-8bb2-4bd0-a512-594eda61a9bc"};
 	sequence_list->push_back(scene2);
-	sequence_item scene3 = {"Scene::Play","a6b424a9-54ac-4b1d-b2ab-def8b58e50ec",3000};
+	sequence_item time2 = {"Time    ::Wait","4000"};
+	sequence_list->push_back(time2);
+	sequence_item scene3 = {"Scene   ::Play","a6b424a9-54ac-4b1d-b2ab-def8b58e50ec"};
 	sequence_list->push_back(scene3);
-
-	Start();
+	sequence_item time3 = {"Time    ::Wait","13000"};
+	sequence_list->push_back(time3);
 
 	std::stringstream ss;
 	ss << "/chase-" << this->getUuid();
@@ -78,22 +85,15 @@ ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string naam, std::string omsch
 	server->addHandler(url, mh);
 }
 
-ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving):cf(cf){
+ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, std::list<sequence_item>* sequence_list):cf(cf){
 	mh = new ChaseFactory::Chase::ChaseHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
+	this->running = false;
 
-	sequence_list = new std::list<sequence_item>();
-	sequence_item scene1 = {"Scene::Play","3fb4e958-48a6-4b8d-b556-f44944c4e156",5000};
-	sequence_list->push_back(scene1);
-	sequence_item scene2 = {"Scene::Play","936491c6-8bb2-4bd0-a512-594eda61a9bc",2000};
-	sequence_list->push_back(scene2);
-	sequence_item scene3 = {"Scene::Play","a6b424a9-54ac-4b1d-b2ab-def8b58e50ec",3000};
-	sequence_list->push_back(scene3);
-
-	Start();
+	this->sequence_list = sequence_list;
 
 	std::stringstream ss;
 	ss << "/chase-" << this->getUuid();
@@ -103,6 +103,7 @@ ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string uuidstr, std::string na
 
 ChaseFactory::Chase::~Chase(){
 	delete mh;
+	delete sequence_list;
 }
 
 /*
@@ -142,7 +143,12 @@ void ChaseFactory::load(){
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
-		ChaseFactory::Chase * chase = new ChaseFactory::Chase(*this, uuidstr, naam, omschrijving);
+		std::list<sequence_item>* sequence_list = new std::list<sequence_item>();
+		for (std::size_t k=0;k<node[i]["actions"].size();k += 2) {
+			sequence_item item = {node[i]["actions"][k].as<std::string>(), node[i]["actions"][k+1].as<std::string>()};
+			sequence_list->push_back(item);
+		}
+		ChaseFactory::Chase * chase = new ChaseFactory::Chase(*this, uuidstr, naam, omschrijving, sequence_list);
 		std::string uuid_str = chase->getUuid();
 		chasemap.insert(std::make_pair(uuid_str,chase));
 	}
@@ -152,6 +158,7 @@ void ChaseFactory::save(){
 	YAML::Emitter emitter;
 	std::ofstream fout(CONFIG_FILE);
 	std::map<std::string, ChaseFactory::Chase*>::iterator it = chasemap.begin();
+	std::list<sequence_item>::const_iterator it_list;
 
 	emitter << YAML::BeginSeq;
 	for (std::pair<std::string, ChaseFactory::Chase*> element  : chasemap)
@@ -163,6 +170,14 @@ void ChaseFactory::save(){
 		emitter << YAML::Value << element.second->naam;
 		emitter << YAML::Key << "omschrijving";
 		emitter << YAML::Value << element.second->omschrijving;
+		emitter << YAML::Key << "actions";
+		emitter << YAML::Flow;
+		emitter << YAML::BeginSeq;
+		for (it_list = element.second->sequence_list->begin(); it_list != element.second->sequence_list->end(); ++it_list)
+		{
+			emitter << (*it_list).action << (*it_list).uuid_or_milliseconds;
+		}
+		emitter << YAML::EndSeq;
 		emitter << YAML::EndMap;
 	}
 	emitter << YAML::EndSeq;
@@ -198,20 +213,32 @@ void ChaseFactory::deleteChase(std::string uuid){
 }
 
 void ChaseFactory::Chase::Stop(){
-	delay(1000);
+	this->running = false;
 }
 
 void ChaseFactory::Chase::Start(){
-
-	while (true)
+	if (!this->running)
 	{
-		std::list<sequence_item>::const_iterator it;
-		for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
-		{
-			cf.scene->scenemap.find((*it).uuid)->second->Play();
-			delay((*it).millisecond);
-		}
-	};
+		this->running = true;
+		std::thread( [this] { Action(); } ).detach();
+	}
+}
+
+void ChaseFactory::Chase::Action()
+{
+	std::list<sequence_item>::const_iterator it;
+	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
+	{
+		if (!this->running) break;
+		std::string action = (*it).action.substr(0,8);
+		if (action.compare("Scene   ") == 0)
+			cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Play();
+		if (action.compare("Music   ") == 0)
+			cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->Play();
+		if (action.compare("Time    ") == 0)
+			delay(atoi((*it).uuid_or_milliseconds.c_str()));
+	}
+	this->running = false;
 }
 
 std::string ChaseFactory::Chase::getNaam(){
