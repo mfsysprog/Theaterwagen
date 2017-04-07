@@ -205,13 +205,13 @@ void ChaseFactory::Chase::Stop(){
 void ChaseFactory::Chase::Start(){
 	if (!this->running)
 	{
-		this->running = true;
 		std::thread( [this] { Action(); } ).detach();
 	}
 }
 
 void ChaseFactory::Chase::Action()
 {
+	this->running = true;
 	std::cout << "Running chase!" << std::endl;
 	std::list<sequence_item>::iterator it;
 	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
@@ -231,6 +231,13 @@ void ChaseFactory::Chase::Action()
 		      cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Start();
 			if (method.compare("Uit") == 0)
 		      cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Stop();
+		}
+		if (action.compare("Chase") == 0)
+		{
+			if (method.compare("Play") == 0)
+			  cf.chasemap.find((*it).uuid_or_milliseconds)->second->Action();
+			if (method.compare("Stop") == 0)
+			  cf.chasemap.find((*it).uuid_or_milliseconds)->second->Stop();
 		}
 		if (action.compare("Geluid") == 0)
 		{
@@ -445,6 +452,16 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   }
 		   ss << "</select>";
 		}
+		if (action.compare("Chase") == 0)
+		{
+		   ss << "<select id=\"target\" name=\"target\">";
+		   ss << "<option value=\"\"></option>";
+	 	   for (std::pair<std::string, ChaseFactory::Chase*> element  : chase.cf.chasemap)
+		   {
+	 		   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+		   }
+		   ss << "</select>";
+		}
 		if (action.compare("Geluid") == 0)
 		{
 		   ss << "<select id=\"target\" name=\"target\">";
@@ -531,6 +548,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << " <select id=\"action\" name=\"action\">";
 	   ss << "  <option>Aan/Uit::Aan</option>";
 	   ss << "  <option>Aan/Uit::Uit</option>";
+	   ss << "  <option>Chase::Play</option>";
+	   ss << "  <option>Chase::Stop</option>";
 	   ss << "  <option>Geluid::Play</option>";
 	   ss << "  <option>Geluid::Stop</option>";
 	   ss << "  <option>Motor::Links</option>";
@@ -733,6 +752,26 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				   ss << (*it_list).action << "</td>";
 				   ss << "<td><a href=\"" << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 				   ss << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
+				}
+			}
+			if (action.compare("Chase") == 0)
+			{
+				if (chase.cf.chasemap.find((*it_list).uuid_or_milliseconds) == chase.cf.chasemap.end())
+				{
+				   (*it_list).invalid = true;
+				   ss << "<td bgcolor=\"red\">";
+				   ss << (*it_list).action << "</td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				}
+				else
+				{
+					if ((*it_list).active)
+						ss << "<td bgcolor=\"lime\">";
+					else
+						ss << "<td>";
+					ss << (*it_list).action << "</td>";
+					ss << "<td><a href=\"" << chase.cf.chasemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.chasemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
 				}
 			}
 			if (action.compare("Geluid") == 0)
