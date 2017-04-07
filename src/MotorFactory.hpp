@@ -57,6 +57,7 @@ class MotorFactory {
 		~Motor();
 		void Start(direction dir);
 		bool Full(direction dir);
+		void Wait();
 		std::string getUuid();
 		std::string getNaam();
 		std::string getOmschrijving();

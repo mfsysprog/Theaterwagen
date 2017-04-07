@@ -682,10 +682,10 @@ void MotorFactory::Motor::Initialize(){
 	 */
 	cbfunc_motor[getPosition(LEFT,this->left_sensor)] = std::bind(&Motor::Dummy,this);
 	cbfunc_motor[getPosition(RIGHT,this->right_sensor)] = std::bind(&Motor::Dummy,this);
-	if ( myWiringPiISR (left_sensor, INT_EDGE_RISING, LEFT) < 0 ) {
+	if ( myWiringPiISR (left_sensor, INT_EDGE_BOTH, LEFT) < 0 ) {
 		 std::cerr << "Error setting interrupt for left GPIO sensor " << std::endl;
 	 }
-	if ( myWiringPiISR (right_sensor, INT_EDGE_RISING, RIGHT) < 0 ) {
+	if ( myWiringPiISR (right_sensor, INT_EDGE_BOTH, RIGHT) < 0 ) {
 	     std::cerr << "Error setting interrupt for right GPIO sensor " << std::endl;
 	}
 }
@@ -732,6 +732,13 @@ int MotorFactory::Motor::myWiringPiISR(int val, int mask, direction dir)
   }
 }
 
+void MotorFactory::Motor::Wait(){
+	while (!(full_left||full_right))
+	{
+		delay(200);
+	}
+}
+
 bool MotorFactory::Motor::Full(direction dir){
 	switch (dir){
 		case LEFT:
@@ -747,7 +754,7 @@ bool MotorFactory::Motor::Full(direction dir){
 void MotorFactory::Motor::Stop(){
 	digitalWrite(left_relay, HIGH);
 	digitalWrite(right_relay, HIGH);
-	delay(1000);
+	delay(500);
 }
 
 void MotorFactory::Motor::Stop(direction dir){

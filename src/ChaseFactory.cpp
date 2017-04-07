@@ -401,22 +401,60 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "chosen", value))
 	{
 	   std::stringstream ss;
-	   if (value.compare("a") == 0)
-	   {
-	   ss << "<select id=\"actions\">";
-	   ss << "<option value=\"3\">aa</option>";
-	   ss << "<option value=\"4\">ab</option>";
-	   ss << "</select>";
-	   }
-	   else
-	   {
-		   ss << "<select id=\"actions\">";
-		   	   ss << "<option value=\"3\">ba</option>";
-		   	   ss << "<option value=\"4\">bb</option>";
-		   	   ss << "</select>";
+	   std::string::size_type pos = value.find('::');
+	   std::string action = value.substr(0,pos);
 
-	   }
-	   mg_printf(conn, ss.str().c_str());
+	   if (action.compare("Aan/Uit") == 0)
+	    {
+		   ss << "<select id=\"target\" name=\"target\">";
+		   ss << "<option value=\"\"></option>";
+ 		   for (std::pair<std::string, ToggleFactory::Toggle*> element  : chase.cf.toggle->togglemap)
+		   {
+ 			   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+		   }
+		   ss << "</select>";
+		}
+		if (action.compare("Geluid") == 0)
+		{
+		   ss << "<select id=\"target\" name=\"target\">";
+		   ss << "<option value=\"\"></option>";
+	 	   for (std::pair<std::string, SoundFactory::Sound*> element  : chase.cf.sound->soundmap)
+		   {
+	 		   ss << "<option value=\"" << element.first << "\">" << element.second->filename << "</option>";
+		   }
+		   ss << "</select>";
+		}
+		if (action.compare("Motor") == 0)
+		{
+		   ss << "<select id=\"target\" name=\"target\">";
+		   ss << "<option value=\"\"></option>";
+ 		   for (std::pair<std::string, MotorFactory::Motor*> element  : chase.cf.motor->motormap)
+		   {
+ 			   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+		   }
+		   ss << "</select>";
+		}
+		if (action.compare("Muziek") == 0)
+		{
+		   ss << "<select id=\"target\" name=\"target\">";
+		   ss << "<option value=\"\"></option>";
+     	   for (std::pair<std::string, MusicFactory::Music*> element  : chase.cf.music->musicmap)
+		   {
+	 		   ss << "<option value=\"" << element.first << "\">" << element.second->filename << "</option>";
+		   }
+		   ss << "</select>";
+		}
+		if (action.compare("Scene") == 0)
+		{
+		   ss << "<select id=\"target\" name=\"target\">";
+		   ss << "<option value=\"\"></option>";
+ 		   for (std::pair<std::string, SceneFactory::Scene*> element  : chase.cf.scene->scenemap)
+		   {
+ 			   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+		   }
+		   ss << "</select>";
+		}
+	    mg_printf(conn, ss.str().c_str());
 	}
 	else
 	if(CivetServer::getParam(conn, "add", value))
@@ -426,53 +464,62 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "<script type=\"text/javascript\" src=\"resources/jquery-3.2.0.min.js\"></script>";
 	   ss << "<script type=\"text/javascript\">";
 	   ss << " $(document).ready(function(){";
+	   ss << "  $(\"#tijd_div\").hide();";
 	   ss << "  $(\"#action\").change(function(){";
+	   ss << "  if ($(\"#action\").val() == 'Tijd::Wachten') { ";
+	   ss << "    $(\"#target\").hide();";
+	   ss << "    $(\"#tijd_div\").show();";
+	   ss << "   } else {";
+	   ss << "    $(\"#target\").show();";
+	   ss << "    $(\"#tijd_div\").hide();";
+	   ss << "  }";
 	   ss << "  action_val = $(\"#action\").val();";
 	   ss << "  $.get( \"" << chase.getUrl() << "?chosen=\"+action_val, function( data ) {";
 	   ss << "  $( \"#target\" ).html( data );";
+	   ss << "  if ($(\"#target\").val() != '') { ";
+	   ss << "    $(\"#submit\").prop('disabled',false);";
+	   ss << "   } else";
+	   ss << "   {$(\"#submit\").prop('disabled',true);}";
 	   ss << "  });";
 	   ss << " });";
 	   ss << "});";
 	   ss << "</script>";
-	   ss << "</head>";
-	   ss << "<body>";
-	   /*
-	   ss << "  action_val = $(\"#action\").val();";
-	   ss << "  $.ajax({";
-	   ss << "  type: \"GET\",";
-	   ss << "  url: \"" << chase.getUrl() << "\",";
-	   ss << "  data: \"action_val=\"+action_val,";
-	   ss << "  success: function(html){";
-	   ss << "    $(\"#targets\").html(html);";
-	   ss << "  }";
+	   ss << "<script type=\"text/javascript\">";
+	   ss << " $(document).ready(function(){";
+	   ss << "  $(\"#target\").change(function(){";
+	   ss << "  if ($(\"#target\").val() != '') { ";
+	   ss << "    $(\"#submit\").prop('disabled',false);";
+	   ss << "   } else {$(\"#submit\").prop('disabled',true);}";
+	   ss << "  });";
 	   ss << " });";
-	   ss << " });";
-	   ss << "});";
 	   ss << "</script>";
 	   ss << "</head>";
 	   ss << "<body>";
-	   ss << "<div id=\"actions\">";
-	   ss << " <select id=\"action\">";
-	   ss << "  <option>a</option>";
-	   ss << "  <option>b</option>";
+	   ss << "<form action=\"" << chase.getUrl() << "\" method=\"POST\">";
+	   ss << " <input type=\"hidden\" name=\"iter\" value=\"" << value << "\">";
+	   ss << " <select id=\"action\" name=\"action\">";
+	   ss << "  <option>Aan/Uit::Aan</option>";
+	   ss << "  <option>Aan/Uit::Uit</option>";
+	   ss << "  <option>Geluid::Stop</option>";
+	   ss << "  <option>Geluid::Play</option>";
+	   ss << "  <option>Geluid::Stop</option>";
+	   ss << "  <option>Motor::Links</option>";
+	   ss << "  <option>Motor::Rechts</option>";
+	   ss << "  <option>Motor::Stop</option>";
+	   ss << "  <option>Motor::Wachten</option>";
+	   ss << "  <option>Muziek::Play</option>";
+	   ss << "  <option>Muziek::Stop</option>";
+	   ss << "  <option>Scene::Play</option>";
+	   ss << "  <option>Tijd::Wachten</option>";
 	   ss << " </select>";
-	   ss << " </div>";
-	   ss << "<div id=\"targets\">";
-   	   ss << " <select id=\"target\">";
-   	   ss << "  <option value=\"1\">aa</option>";
-   	   ss << "  <option value=\"2\">aaa</option>";
-   	   ss << " </select>";
-   	   ss << " </div>";
-   	   */
-	   ss << " <select id=\"action\">";
+	   ss << " <select id=\"target\" name=\"target\">";
 	   ss << "  <option></option>";
-	   ss << "  <option>a</option>";
-	   ss << "  <option>b</option>";
 	   ss << " </select>";
-	   ss << " <select id=\"target\">";
-	   ss << "  <option></option>";
-	   ss << " </select>";
-       ss << "<h2>&nbsp;</h2>";
+	   ss << "<div id=\"tijd_div\"><label for=\"tijd\">Milliseconden (1000 = 1 seconde):</label>"
+	   		  "<input id=\"tijd\" type=\"text\" size=\"10\" name=\"target\"/>" << "</br></div>";
+	   ss << "<button type=\"submit\" name=\"submit_action\" value=\"submit_action\" id=\"submit\" disabled>Submit</button></br>";
+	   ss << "</br>";
+	   ss << "</form>";
        ss << "<a href=\"/chasefactory\">Chases</a>";
 	   ss << "<br>";
 	   ss << "<a href=\"/\">Home</a>";
@@ -482,6 +529,32 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	}
 	else
    {
+	/* if parameter submit_action is present we want to add an action */
+	if(CivetServer::getParam(conn, "submit_action", dummy))
+		{
+		   CivetServer::getParam(conn,"action", s[0]);
+		   CivetServer::getParam(conn,"target", s[1]);
+		   CivetServer::getParam(conn,"iter", s[2]);
+
+		   sequence_item sequence = {s[0],s[1]};
+		   std::list<sequence_item>::iterator first = chase.sequence_list->begin();
+		   if (!(s[2].compare("-1") == 0))
+		   {
+			   std::advance(first, atoi(s[2].c_str()) + 1);
+			   chase.sequence_list->insert(first, sequence);
+		   }
+		   else
+		   {
+			   chase.sequence_list->push_front(sequence);
+		   }
+
+		   std::stringstream ss;
+		   ss << "<html><head>";
+		   ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
+		   mg_printf(conn, ss.str().c_str());
+		   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
+	}
+	else
 	/* if parameter submit is present the submit button was pushed */
 	if(CivetServer::getParam(conn, "submit", dummy))
 	{
@@ -604,24 +677,40 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	    ss << "<th>Verwijder</th><th>Omhoog</th><th>Omlaag</th><th>Actie</th><th>Waarde</th></tr>";
 		for (it_list = chase.sequence_list->begin(); it_list != chase.sequence_list->end(); ++it_list)
 		{
-			std::string action = (*it_list).action.substr(0,8);
+			std::string::size_type pos = (*it_list).action.find('::');
+			std::string action = (*it_list).action.substr(0,pos);
 			ss << "<tr>";
 			ss << "<td>" << "<button type=\"submit\" name=\"add\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"add\">&#8627;</button>";
 			ss << "<td>" << "<button type=\"submit\" name=\"delete\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"delete\" style=\"font-weight:bold\">&#x1f5d1;</button>";
 			ss << "<td>" << "<button type=\"submit\" name=\"up\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"up\">&uarr;</button>";
 			ss << "<td>" << "<button type=\"submit\" name=\"down\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"down\">&darr;</button>";
 
-			if (action.compare("Scene   ") == 0)
+			if (action.compare("Aan/Uit") == 0)
 			{
 				ss << "<td>" << (*it_list).action << "</td>";
-				ss << "<td>" << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</td>";
+				ss << "<td>" << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</td>";
 			}
-			if (action.compare("Music   ") == 0)
+			if (action.compare("Geluid") == 0)
+			{
+				ss << "<td>" << (*it_list).action << "</td>";
+				ss << "<td>" << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</td>";
+			}
+			if (action.compare("Motor") == 0)
+			{
+				ss << "<td>" << (*it_list).action << "</td>";
+				ss << "<td>" << chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds)->second->naam << "</td>";
+			}
+			if (action.compare("Muziek") == 0)
 			{
 				ss << "<td>" << (*it_list).action << "</td>";
 				ss << "<td>" << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</td>";
 			}
-			if (action.compare("Time    ") == 0)
+			if (action.compare("Scene") == 0)
+			{
+				ss << "<td>" << (*it_list).action << "</td>";
+				ss << "<td>" << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</td>";
+			}
+			if (action.compare("Tijd") == 0)
 			{
 				ss << "<td>" << (*it_list).action << "</td>";
 				ss << "<td>" << (*it_list).uuid_or_milliseconds << "</td>";
