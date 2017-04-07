@@ -804,6 +804,7 @@ void MotorFactory::Motor::Start(direction dir){
 						 * after we set the interrupt handler for the sensor.
 						 */
 						Stop();
+						full_right=false;
 						full_left=false;
 						cbfunc_motor[getPosition(LEFT,this->left_sensor)] = std::bind(static_cast<void (Motor::*)(direction)>(&Motor::Stop),this,LEFT);
 						digitalWrite(left_relay, LOW);
@@ -818,6 +819,7 @@ void MotorFactory::Motor::Start(direction dir){
 						 * after we set the interrupt handler for the sensor.
 						 */
 						Stop();
+						full_left=false;
 						full_right=false;
 						cbfunc_motor[getPosition(RIGHT,this->right_sensor)] = std::bind(static_cast<void (Motor::*)(direction)>(&Motor::Stop),this,RIGHT);
 						digitalWrite(right_relay, LOW);
@@ -830,7 +832,6 @@ void MotorFactory::Motor::Start(direction dir){
 }
 
 void MotorFactory::Motor::Dummy(){
-	std::cout << "+";
 }
 
 std::string MotorFactory::Motor::getNaam(){

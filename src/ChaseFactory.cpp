@@ -64,20 +64,6 @@ ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string naam, std::string omsch
 	this->running = false;
 
 	sequence_list = new std::list<sequence_item>();
-	sequence_item music1 = {"Music   ::Play","c0f5d6cf-1cd6-4a22-b2c8-05b9b5e3e836"};
-	sequence_list->push_back(music1);
-	sequence_item scene1 = {"Scene   ::Play","3fb4e958-48a6-4b8d-b556-f44944c4e156"};
-	sequence_list->push_back(scene1);
-	sequence_item time1 = {"Time    ::Wait","12000"};
-	sequence_list->push_back(time1);
-	sequence_item scene2 = {"Scene   ::Play","936491c6-8bb2-4bd0-a512-594eda61a9bc"};
-	sequence_list->push_back(scene2);
-	sequence_item time2 = {"Time    ::Wait","4000"};
-	sequence_list->push_back(time2);
-	sequence_item scene3 = {"Scene   ::Play","a6b424a9-54ac-4b1d-b2ab-def8b58e50ec"};
-	sequence_list->push_back(scene3);
-	sequence_item time3 = {"Time    ::Wait","13000"};
-	sequence_list->push_back(time3);
 
 	std::stringstream ss;
 	ss << "/chase-" << this->getUuid();
@@ -226,7 +212,7 @@ void ChaseFactory::Chase::Start(){
 
 void ChaseFactory::Chase::Action()
 {
-	std::cout << "Running chase! " << std::endl;
+	std::cout << "Running chase!" << std::endl;
 	std::list<sequence_item>::const_iterator it;
 	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
 	{
@@ -277,6 +263,7 @@ void ChaseFactory::Chase::Action()
 			delay(atoi((*it).uuid_or_milliseconds.c_str()));
 		}
 	}
+	std::cout << "Ending chase!" << std::endl;
 	this->running = false;
 }
 
