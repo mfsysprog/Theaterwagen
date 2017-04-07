@@ -200,6 +200,11 @@ void ChaseFactory::deleteChase(std::string uuid){
 
 void ChaseFactory::Chase::Stop(){
 	this->running = false;
+	std::list<sequence_item>::iterator it;
+	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
+	{
+		(*it).active = false;
+	}
 }
 
 void ChaseFactory::Chase::Start(){
@@ -212,8 +217,12 @@ void ChaseFactory::Chase::Start(){
 void ChaseFactory::Chase::Action()
 {
 	this->running = true;
-	std::cout << "Running chase!" << std::endl;
 	std::list<sequence_item>::iterator it;
+	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
+	{
+		(*it).active = false;
+	}
+
 	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
 	{
 		if (!this->running) break;
@@ -275,7 +284,6 @@ void ChaseFactory::Chase::Action()
 		}
 		(*it).active = false;
 	}
-	std::cout << "Ending chase!" << std::endl;
 	this->running = false;
 }
 
