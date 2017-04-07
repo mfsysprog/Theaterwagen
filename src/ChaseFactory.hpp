@@ -37,6 +37,8 @@ extern CivetServer* server;
 struct sequence_item {
 	std::string action;
 	std::string uuid_or_milliseconds;
+	bool active = false;
+	bool invalid = false;
 };
 
 class ChaseFactory {

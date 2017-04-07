@@ -52,55 +52,14 @@ int main(int, char**){
 		return 1;
 	}
 
-	//Schip s1(27,22,17,18);
-	//server->addHandler("/schip", s1.getHandler());
-
-	ChaseFactory chase;
-
-	/*
-	FixtureFactory fixture1;
-	fixture1.load();
-
-	SceneFactory scene1(&fixture1);
-	scene1.load();
-
-	MusicFactory music1;
-	music1.load();
-
-	SoundFactory sound1;
-	sound1.load();
-
-	MotorFactory motor1;
-	motor1.load();
-
-	ToggleFactory toggle1;
-	toggle1.load();
-
-	music1.musicmap.find("c0f5d6cf-1cd6-4a22-b2c8-05b9b5e3e836")->second->Play();
-	*/
-	/*
-	 * http://paramitech.com/dynamically-udating-select-list-using-jquery-and-ajax/
-	 * idee voor chasefactory
-	 */
-	/*
-	while(!(s1.Full(LEFT)))
-	{
-		delay(100);
-	}
-	s1.Start(RIGHT);
-
-	while(!(s1.Full(RIGHT)))
-		{
-			delay(100);
-		}
-	s1.Start(LEFT);
-	*/
+	ChaseFactory* chase = new ChaseFactory();
 
 	double fps = 0;
 
     while (1==1){
-    	delay(100);
+    	delay(1000);
     }
 
+    delete chase;
 	return 0;
 }

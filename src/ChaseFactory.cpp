@@ -213,7 +213,7 @@ void ChaseFactory::Chase::Start(){
 void ChaseFactory::Chase::Action()
 {
 	std::cout << "Running chase!" << std::endl;
-	std::list<sequence_item>::const_iterator it;
+	std::list<sequence_item>::iterator it;
 	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
 	{
 		if (!this->running) break;
@@ -221,6 +221,10 @@ void ChaseFactory::Chase::Action()
 		std::string action = (*it).action.substr(0,pos);
 		std::string method = (*it).action.substr(pos+2,(*it).action.length()-pos-2);
 
+		/* skippen van ongeldige verwijzigingen */
+		if ((*it).invalid) continue;
+
+		(*it).active = true;
 		if (action.compare("Aan/Uit") == 0)
 		{
 			if (method.compare("Aan") == 0)
@@ -262,6 +266,7 @@ void ChaseFactory::Chase::Action()
 		{
 			delay(atoi((*it).uuid_or_milliseconds.c_str()));
 		}
+		(*it).active = false;
 	}
 	std::cout << "Ending chase!" << std::endl;
 	this->running = false;
@@ -687,13 +692,13 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
 					  "<input id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
 					  chase.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
+	    ss <<  "<br>";
+	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 		ss << "<br>";
 	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
 	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"start\" value=\"start\" id=\"start\">START</button>";
 	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">STOP</button>";
-	    ss <<  "</br>";
-	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss <<  "</br>";
 		std::list<sequence_item>::iterator it_list;
 	    ss << "<h2>Acties:</h2>";
@@ -712,32 +717,111 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 
 			if (action.compare("Aan/Uit") == 0)
 			{
-				ss << "<td>" << (*it_list).action << "</td>";
-				ss << "<td>" << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</td>";
+				if (chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds) == chase.cf.toggle->togglemap.end())
+				{
+				   (*it_list).invalid = true;
+				   ss << "<td bgcolor=\"red\">";
+				   ss << (*it_list).action << "</td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				}
+				else
+				{
+				   if ((*it_list).active)
+					   ss << "<td bgcolor=\"lime\">";
+				   else
+					   ss << "<td>";
+				   ss << (*it_list).action << "</td>";
+				   ss << "<td><a href=\"" << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+				   ss << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
+				}
 			}
 			if (action.compare("Geluid") == 0)
 			{
-				ss << "<td>" << (*it_list).action << "</td>";
-				ss << "<td>" << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</td>";
+				if (chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds) == chase.cf.sound->soundmap.end())
+				{
+				   (*it_list).invalid = true;
+				   ss << "<td bgcolor=\"red\">";
+				   ss << (*it_list).action << "</td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				}
+				else
+				{
+					if ((*it_list).active)
+						ss << "<td bgcolor=\"lime\">";
+					else
+						ss << "<td>";
+					ss << (*it_list).action << "</td>";
+					ss << "<td><a href=\"" << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></td>";
+				}
 			}
 			if (action.compare("Motor") == 0)
 			{
-				ss << "<td>" << (*it_list).action << "</td>";
-				ss << "<td>" << chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds)->second->naam << "</td>";
+				if (chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds) == chase.cf.motor->motormap.end())
+				{
+				   (*it_list).invalid = true;
+				   ss << "<td bgcolor=\"red\">";
+				   ss << (*it_list).action << "</td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				}
+				else
+				{
+					if ((*it_list).active)
+						ss << "<td bgcolor=\"lime\">";
+					else
+						ss << "<td>";
+					ss << (*it_list).action << "</td>";
+					ss << "<td><a href=\"" << chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
+			    }
 			}
 			if (action.compare("Muziek") == 0)
 			{
-				ss << "<td>" << (*it_list).action << "</td>";
-				ss << "<td>" << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</td>";
+				if (chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds) == chase.cf.music->musicmap.end())
+				{
+				   (*it_list).invalid = true;
+				   ss << "<td bgcolor=\"red\">";
+				   ss << (*it_list).action << "</td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				}
+				else
+				{
+					if ((*it_list).active)
+						ss << "<td bgcolor=\"lime\">";
+					else
+						ss << "<td>";
+		    		ss << (*it_list).action << "</td>";
+			    	ss << "<td><a href=\"" << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+				    ss << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></td>";
+				}
 			}
 			if (action.compare("Scene") == 0)
 			{
-				ss << "<td>" << (*it_list).action << "</td>";
-				ss << "<td>" << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</td>";
+				if (chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds) == chase.cf.scene->scenemap.end())
+				{
+				   (*it_list).invalid = true;
+				   ss << "<td bgcolor=\"red\">";
+				   ss << (*it_list).action << "</td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				}
+				else
+				{
+					if ((*it_list).active)
+						ss << "<td bgcolor=\"lime\">";
+					else
+						ss << "<td>";
+					ss << (*it_list).action << "</td>";
+					ss << "<td><a href=\"" << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
+				}
 			}
 			if (action.compare("Tijd") == 0)
 			{
-				ss << "<td>" << (*it_list).action << "</td>";
+				if ((*it_list).active)
+					ss << "<td bgcolor=\"lime\">";
+				else
+					ss << "<td>";
+				ss << (*it_list).action << "</td>";
 				ss << "<td>" << (*it_list).uuid_or_milliseconds << "</td>";
 			}
 			ss << "</tr>";
