@@ -226,17 +226,56 @@ void ChaseFactory::Chase::Start(){
 
 void ChaseFactory::Chase::Action()
 {
+	std::cout << "Running chase! " << std::endl;
 	std::list<sequence_item>::const_iterator it;
 	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
 	{
 		if (!this->running) break;
-		std::string action = (*it).action.substr(0,8);
-		if (action.compare("Scene   ") == 0)
-			cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Play();
-		if (action.compare("Music   ") == 0)
-			cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->Play();
-		if (action.compare("Time    ") == 0)
+		std::string::size_type pos = (*it).action.find('::');
+		std::string action = (*it).action.substr(0,pos);
+		std::string method = (*it).action.substr(pos+2,(*it).action.length()-pos-2);
+
+		if (action.compare("Aan/Uit") == 0)
+		{
+			if (method.compare("Aan") == 0)
+		      cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Start();
+			if (method.compare("Uit") == 0)
+		      cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Stop();
+		}
+		if (action.compare("Geluid") == 0)
+		{
+			if (method.compare("Play") == 0)
+			  cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->Play();
+			if (method.compare("Stop") == 0)
+			  cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->Stop();
+		}
+		if (action.compare("Motor") == 0)
+		{
+			if (method.compare("Links") == 0)
+			  cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Start(LEFT);
+			if (method.compare("Rechts") == 0)
+			  cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Start(RIGHT);
+			if (method.compare("Stop") == 0)
+			  cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Stop();
+			if (method.compare("Wachten") == 0)
+			  cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Wait();
+		}
+		if (action.compare("Muziek") == 0)
+		{
+			if (method.compare("Play") == 0)
+			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->Play();
+			if (method.compare("Stop") == 0)
+			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->Stop();
+		}
+		if (action.compare("Scene") == 0)
+		{
+			if (method.compare("Play") == 0)
+			  cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Play();
+		}
+		if (action.compare("Tijd") == 0)
+		{
 			delay(atoi((*it).uuid_or_milliseconds.c_str()));
+		}
 	}
 	this->running = false;
 }
@@ -500,7 +539,6 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << " <select id=\"action\" name=\"action\">";
 	   ss << "  <option>Aan/Uit::Aan</option>";
 	   ss << "  <option>Aan/Uit::Uit</option>";
-	   ss << "  <option>Geluid::Stop</option>";
 	   ss << "  <option>Geluid::Play</option>";
 	   ss << "  <option>Geluid::Stop</option>";
 	   ss << "  <option>Motor::Links</option>";

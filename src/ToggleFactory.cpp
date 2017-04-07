@@ -191,12 +191,12 @@ void ToggleFactory::deleteToggle(std::string uuid){
 
 void ToggleFactory::Toggle::Stop(){
 	digitalWrite(relay, HIGH);
-	delay(1000);
+	delay(500);
 }
 
 void ToggleFactory::Toggle::Start(){
 	digitalWrite(relay, LOW);
-	delay(1000);
+	delay(500);
 }
 
 std::string ToggleFactory::Toggle::getNaam(){
