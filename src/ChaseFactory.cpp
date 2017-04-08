@@ -444,6 +444,23 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	          "HTTP/1.1 200 OK\r\nContent-Type: "
 	          "text/html\r\nConnection: close\r\n\r\n");
 
+	if(CivetServer::getParam(conn, "running", dummy))
+	{
+		std::stringstream ss;
+		std::list<sequence_item>::iterator it_list;
+		for (it_list = chase.sequence_list->begin(); it_list != chase.sequence_list->end(); ++it_list)
+		{
+			ss << "<tr>";
+			if ((*it_list).active)
+				ss << "<td bgcolor=\"lime\">&#8618;</td>";
+    		else
+    			ss << "<td>&nbsp;</td>";
+			ss << "</tr>";
+		}
+		mg_printf(conn, ss.str().c_str());
+		return true;
+	}
+
 	if(CivetServer::getParam(conn, "chosen", value))
 	{
 	   std::stringstream ss;
@@ -704,13 +721,22 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	/* initial page display */
 	{
 		std::stringstream ss;
+		ss << "<script type=\"text/javascript\" src=\"resources/jquery-3.2.0.min.js\"></script>";
+		ss << "<script type=\"text/javascript\">";
+		   ss << " $(document).ready(function(){";
+		   ss << "  setInterval(function(){";
+		   ss << "  $.get( \"" << chase.getUrl() << "?running=true\", function( data ) {";
+		   ss << "  $( \"#chase_active\" ).html( data );";
+		   ss << " });},1000)";
+		   ss << "});";
+		ss << "</script>";
 		ss << "<style>";
-		ss << "table {width:100%;}";
-		ss << "tr:nth-child(even){background-color: #eee;}";
+		ss << "table {position:relative; float:left;}";
+		ss << ".chase_table tr:nth-child(even){background-color: #eee;}";
 		ss << "table, th, td{border: 1px solid black;border-collapse: collapse;}";
-		ss << "th, td {padding: 5px;text-align: left;}";
+		ss << "th, td {height: 42px; padding: 5px;text-align: left;}";
 		ss << "</style>";
-        ss << "</head><body>";
+		ss << "</head><body>";
 		ss << "<h2>Chases:</h2>";
 		ss << "<form action=\"" << chase.getUrl() << "\" method=\"POST\">";
 		ss << "<label for=\"naam\">Naam:</label>"
@@ -727,9 +753,23 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"start\" value=\"start\" id=\"start\">START</button>";
 	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">STOP</button>";
 	    ss <<  "</br>";
-		std::list<sequence_item>::iterator it_list;
 	    ss << "<h2>Acties:</h2>";
 	    ss << "<table>";
+	    ss << "<thead><tr><th>Actief</th></tr></thead>";
+	    ss << "<tbody id=\"chase_active\">";
+		std::list<sequence_item>::iterator it_list;
+	    for (it_list = chase.sequence_list->begin(); it_list != chase.sequence_list->end(); ++it_list)
+	    {
+	    	ss << "<tr>";
+	    	if ((*it_list).active)
+	    		ss << "<td bgcolor=\"lime\">&#8618;</td>";
+	    					   else
+	            ss << "<td>&nbsp;</td>";
+	    	ss << "</tr>";
+	    }
+	    ss << "</tbody>";
+	    ss << "</table>";
+	    ss << "<table class=\"chase_table\">";
 	    ss << "<tr><th><button type=\"submit\" name=\"add\" value=\"-1\" id=\"add\">&#8627;</button>&nbsp;Nieuw</th>";
 	    ss << "<th>Verwijder</th><th>Omhoog</th><th>Omlaag</th><th>Actie</th><th>Waarde</th></tr>";
 		for (it_list = chase.sequence_list->begin(); it_list != chase.sequence_list->end(); ++it_list)
@@ -753,10 +793,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				}
 				else
 				{
-				   if ((*it_list).active)
-					   ss << "<td bgcolor=\"lime\">";
-				   else
-					   ss << "<td>";
+				   ss << "<td>";
 				   ss << (*it_list).action << "</td>";
 				   ss << "<td><a href=\"" << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 				   ss << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
@@ -773,10 +810,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				}
 				else
 				{
-					if ((*it_list).active)
-						ss << "<td bgcolor=\"lime\">";
-					else
-						ss << "<td>";
+					ss << "<td>";
 					ss << (*it_list).action << "</td>";
 					ss << "<td><a href=\"" << chase.cf.chasemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 					ss << chase.cf.chasemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
@@ -793,10 +827,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				}
 				else
 				{
-					if ((*it_list).active)
-						ss << "<td bgcolor=\"lime\">";
-					else
-						ss << "<td>";
+					ss << "<td>";
 					ss << (*it_list).action << "</td>";
 					ss << "<td><a href=\"" << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 					ss << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></td>";
@@ -813,10 +844,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				}
 				else
 				{
-					if ((*it_list).active)
-						ss << "<td bgcolor=\"lime\">";
-					else
-						ss << "<td>";
+					ss << "<td>";
 					ss << (*it_list).action << "</td>";
 					ss << "<td><a href=\"" << chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 					ss << chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
@@ -833,10 +861,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				}
 				else
 				{
-					if ((*it_list).active)
-						ss << "<td bgcolor=\"lime\">";
-					else
-						ss << "<td>";
+					ss << "<td>";
 		    		ss << (*it_list).action << "</td>";
 			    	ss << "<td><a href=\"" << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 				    ss << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></td>";
@@ -853,10 +878,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				}
 				else
 				{
-					if ((*it_list).active)
-						ss << "<td bgcolor=\"lime\">";
-					else
-						ss << "<td>";
+					ss << "<td>";
 					ss << (*it_list).action << "</td>";
 					ss << "<td><a href=\"" << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 					ss << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
@@ -864,17 +886,14 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 			}
 			if (action.compare("Tijd") == 0)
 			{
-				if ((*it_list).active)
-					ss << "<td bgcolor=\"lime\">";
-				else
-					ss << "<td>";
+				ss << "<td>";
 				ss << (*it_list).action << "</td>";
 				ss << "<td>" << (*it_list).uuid_or_milliseconds << "</td>";
 			}
 			ss << "</tr>";
 		}
 		ss << "</table>";
-		ss << "<br>";
+		ss << "<br style=\"clear:both\">";
 		ss << "</form>";
 		ss << "<a href=\"/chasefactory\">Chases</a>";
 	    ss << "<br>";
