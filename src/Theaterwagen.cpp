@@ -8,8 +8,6 @@
 
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
-#include "FaceDetectorAndTracker.h"
-#include "FaceSwapper.h"
 #include "CivetServer.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>

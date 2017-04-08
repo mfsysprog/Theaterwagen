@@ -251,9 +251,9 @@ void ChaseFactory::Chase::Action()
 		if (action.compare("Geluid") == 0)
 		{
 			if (method.compare("Play") == 0)
-			  cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->Play();
+			  cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->play();
 			if (method.compare("Stop") == 0)
-			  cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->Stop();
+			  cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->stop();
 		}
 		if (action.compare("Motor") == 0)
 		{
@@ -269,9 +269,9 @@ void ChaseFactory::Chase::Action()
 		if (action.compare("Muziek") == 0)
 		{
 			if (method.compare("Play") == 0)
-			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->Play();
+			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->play();
 			if (method.compare("Stop") == 0)
-			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->Stop();
+			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->stop();
 		}
 		if (action.compare("Scene") == 0)
 		{

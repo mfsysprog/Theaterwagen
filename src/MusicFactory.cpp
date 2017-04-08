@@ -42,8 +42,7 @@ MusicFactory::MusicFactoryHandler::~MusicFactoryHandler(){
  */
 MusicFactory::Music::Music(std::string fn){
 	mh = new MusicFactory::Music::MusicHandler(*this);
-	sfm = new sf::Music();
-	sfm->openFromFile(fn);
+	this->openFromFile(fn);
 	uuid_generate( (unsigned char *)&uuid );
 	this->filename = fn;
 
@@ -55,8 +54,7 @@ MusicFactory::Music::Music(std::string fn){
 
 MusicFactory::Music::Music(std::string uuidstr, std::string fn, bool loop, float volume, float pitch){
 	mh = new MusicFactory::Music::MusicHandler(*this);
-	sfm = new sf::Music();
-	sfm->openFromFile(fn);
+	this->openFromFile(fn);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 	this->filename = fn;
 
@@ -72,7 +70,6 @@ MusicFactory::Music::Music(std::string uuidstr, std::string fn, bool loop, float
 
 MusicFactory::Music::~Music(){
 	delete mh;
-	delete sfm;
 }
 
 /*
@@ -157,42 +154,6 @@ std::string MusicFactory::Music::getFilename(){
 
 std::string MusicFactory::Music::getUrl(){
 	return url;
-}
-
-void MusicFactory::Music::Pause(){
-	sfm->pause();
-}
-
-void MusicFactory::Music::Play(){
-	sfm->play();
-}
-
-void MusicFactory::Music::Stop(){
-	sfm->stop();
-}
-
-void MusicFactory::Music::setVolume(float vol){
-	sfm->setVolume(vol);
-}
-
-float MusicFactory::Music::getVolume(){
-	return sfm->getVolume();
-}
-
-void MusicFactory::Music::setPitch(float vol){
-	sfm->setPitch(vol);
-}
-
-float MusicFactory::Music::getPitch(){
-	return sfm->getPitch();
-}
-
-void MusicFactory::Music::setLoop(bool loop){
-	sfm->setLoop(loop);
-}
-
-bool MusicFactory::Music::getLoop(){
-	return sfm->getLoop();
 }
 
 MusicFactory::Music* MusicFactory::addMusic(std::string fn){
@@ -395,7 +356,7 @@ bool MusicFactory::Music::MusicHandler::handleAll(const char *method,
 		  		music.setLoop(true);
 		   	else
 		   		music.setLoop(false);
-		music.Play();
+		music.play();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << music.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -407,7 +368,7 @@ bool MusicFactory::Music::MusicHandler::handleAll(const char *method,
 		  		music.setLoop(true);
 		   	else
 		   		music.setLoop(false);
-		music.Stop();
+		music.stop();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << music.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -419,7 +380,7 @@ bool MusicFactory::Music::MusicHandler::handleAll(const char *method,
 		  		music.setLoop(true);
 		   	else
 		   		music.setLoop(false);
-		music.Pause();
+		music.pause();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << music.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());

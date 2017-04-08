@@ -42,7 +42,7 @@ class SoundFactory {
 		bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
 		SoundFactory& soundfactory;
 	};
-	class Sound {
+	class Sound : public sf::Sound {
 		friend class SoundFactory;
 		friend class ChaseFactory;
 		public:
@@ -64,19 +64,9 @@ class SoundFactory {
 			bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
 			Sound& sound;
 		};
-		void Pause();
-		void Play();
-		void Stop();
-		bool getLoop();
-		void setLoop(bool loop);
-		void setVolume(float vol);
-		float getVolume();
-		void setPitch(float vol);
-		float getPitch();
 		std::string filename;
 		std::string url;
 		uuid_t uuid;
-		sf::Sound* sfm;
 		sf::SoundBuffer* sfmbuffer;
 	    SoundHandler* mh;
 	};

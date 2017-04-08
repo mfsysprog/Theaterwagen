@@ -42,10 +42,9 @@ SoundFactory::SoundFactoryHandler::~SoundFactoryHandler(){
  */
 SoundFactory::Sound::Sound(std::string fn){
 	mh = new SoundFactory::Sound::SoundHandler(*this);
-	sfm = new sf::Sound();
 	sfmbuffer = new sf::SoundBuffer();
 	sfmbuffer->loadFromFile(fn);
-	sfm->setBuffer(*sfmbuffer);
+	this->setBuffer(*sfmbuffer);
 	uuid_generate( (unsigned char *)&uuid );
 	this->filename = fn;
 
@@ -57,10 +56,9 @@ SoundFactory::Sound::Sound(std::string fn){
 
 SoundFactory::Sound::Sound(std::string uuidstr, std::string fn, bool loop, float volume, float pitch){
 	mh = new SoundFactory::Sound::SoundHandler(*this);
-	sfm = new sf::Sound();
 	sfmbuffer = new sf::SoundBuffer();
 	sfmbuffer->loadFromFile(fn);
-	sfm->setBuffer(*sfmbuffer);
+	this->setBuffer(*sfmbuffer);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 	this->filename = fn;
 
@@ -69,14 +67,14 @@ SoundFactory::Sound::Sound(std::string uuidstr, std::string fn, bool loop, float
 	url = ss.str().c_str();
 	server->addHandler(url, mh);
 
-	setLoop(loop);
-	setVolume(volume);
-	setPitch(pitch);
+	this->setLoop(loop);
+	this->setVolume(volume);
+	this->setPitch(pitch);
 }
 
 SoundFactory::Sound::~Sound(){
 	delete mh;
-	delete sfm;
+	delete sfmbuffer;
 }
 
 /*
@@ -162,42 +160,6 @@ std::string SoundFactory::Sound::getFilename(){
 
 std::string SoundFactory::Sound::getUrl(){
 	return url;
-}
-
-void SoundFactory::Sound::Pause(){
-	sfm->pause();
-}
-
-void SoundFactory::Sound::Play(){
-	sfm->play();
-}
-
-void SoundFactory::Sound::Stop(){
-	sfm->stop();
-}
-
-void SoundFactory::Sound::setVolume(float vol){
-	sfm->setVolume(vol);
-}
-
-float SoundFactory::Sound::getVolume(){
-	return sfm->getVolume();
-}
-
-void SoundFactory::Sound::setPitch(float vol){
-	sfm->setPitch(vol);
-}
-
-float SoundFactory::Sound::getPitch(){
-	return sfm->getPitch();
-}
-
-void SoundFactory::Sound::setLoop(bool loop){
-	sfm->setLoop(loop);
-}
-
-bool SoundFactory::Sound::getLoop(){
-	return sfm->getLoop();
 }
 
 SoundFactory::Sound* SoundFactory::addSound(std::string fn){
@@ -398,7 +360,7 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		  		sound.setLoop(true);
 		   	else
 		   		sound.setLoop(false);
-		sound.Play();
+		sound.play();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << sound.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -410,7 +372,7 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		  		sound.setLoop(true);
 		   	else
 		   		sound.setLoop(false);
-		sound.Stop();
+		sound.stop();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << sound.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -422,7 +384,7 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		  		sound.setLoop(true);
 		   	else
 		   		sound.setLoop(false);
-		sound.Pause();
+		sound.pause();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << sound.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
