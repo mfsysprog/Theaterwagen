@@ -452,9 +452,9 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		{
 			ss << "<tr>";
 			if ((*it_list).active)
-				ss << "<td bgcolor=\"lime\">&#8618;</td>";
+				ss << "<td bgcolor=\"lime\"><div class=\"waarde\">&#8618;</div></td>";
     		else
-    			ss << "<td>&nbsp;</td>";
+    			ss << "<td><div class=\"waarde\">&nbsp;</div></td>";
 			ss << "</tr>";
 		}
 		mg_printf(conn, ss.str().c_str());
@@ -731,10 +731,13 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   ss << "});";
 		ss << "</script>";
 		ss << "<style>";
-		ss << "table {position:relative; float:left;}";
-		ss << ".chase_table tr:nth-child(even){background-color: #eee;}";
-		ss << "table, th, td{border: 1px solid black;border-collapse: collapse;}";
-		ss << "th, td {height: 42px; padding: 5px;text-align: left;}";
+		ss << ".wrap {display: table; width: 100%; height: 100%;}";
+		ss << ".cell-wrap {display: table-cell; vertical-align: top; height: 100%;}";
+		ss << ".cell-wrap.links {width: 10%;}";
+		ss << ".rechts tr:nth-child(even){background-color: #eee;}";
+		ss << ".waarde {height: 40px; overflow: hidden;}";
+		ss << "table {border-collapse: collapse; border-spacing: 0; height: 100%; width: 100%; table-layout: fixed;}";
+		ss << "table td, table th {border: 1px solid black;text-align: left; width:25%}";
 		ss << "</style>";
 		ss << "</head><body>";
 		ss << "<h2>Chases:</h2>";
@@ -754,49 +757,53 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">STOP</button>";
 	    ss <<  "</br>";
 	    ss << "<h2>Acties:</h2>";
-	    ss << "<table>";
-	    ss << "<thead><tr><th>Actief</th></tr></thead>";
+	    ss << "<div class=\"wrap\">";
+	    ss << "<div class=\"cell-wrap links\">";
+	    ss << "<table class=\"links\">";
+	    ss << "<thead><tr><th><div class=\"waarde\">Actief</div></th></tr></thead>";
 	    ss << "<tbody id=\"chase_active\">";
 		std::list<sequence_item>::iterator it_list;
 	    for (it_list = chase.sequence_list->begin(); it_list != chase.sequence_list->end(); ++it_list)
 	    {
 	    	ss << "<tr>";
 	    	if ((*it_list).active)
-	    		ss << "<td bgcolor=\"lime\">&#8618;</td>";
+	    		ss << "<td bgcolor=\"lime\"><div class=\"waarde\">&#8618;</div></td>";
 	    					   else
-	            ss << "<td>&nbsp;</td>";
+	            ss << "<td><div class=\"waarde\">&nbsp;</div></td>";
 	    	ss << "</tr>";
 	    }
 	    ss << "</tbody>";
 	    ss << "</table>";
-	    ss << "<table class=\"chase_table\">";
-	    ss << "<tr><th><button type=\"submit\" name=\"add\" value=\"-1\" id=\"add\">&#8627;</button>&nbsp;Nieuw</th>";
-	    ss << "<th>Verwijder</th><th>Omhoog</th><th>Omlaag</th><th>Actie</th><th>Waarde</th></tr>";
+	    ss << "</div>";
+	    ss << "<div class=\"cell-wrap rechts\">";
+	    ss << "<table class=\"rechts\">";
+	    ss << "<thead><tr><th><div class=\"waarde\"><button type=\"submit\" name=\"add\" value=\"-1\" id=\"add\">&#8627;</button>&nbsp;Nieuw</div></th>";
+	    ss << "<th><div class=\"waarde\">Verwijder</div></th><th><div class=\"waarde\">Omhoog</div></th><th><div class=\"waarde\">Omlaag</div></th><th><div class=\"waarde\">Actie</div></th><th><div class=\"waarde\">Waarde</div></th></tr></thead>";
 		for (it_list = chase.sequence_list->begin(); it_list != chase.sequence_list->end(); ++it_list)
 		{
 			std::string::size_type pos = (*it_list).action.find('::');
 			std::string action = (*it_list).action.substr(0,pos);
 			ss << "<tr>";
-			ss << "<td>" << "<button type=\"submit\" name=\"add\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"add\">&#8627;</button>";
-			ss << "<td>" << "<button type=\"submit\" name=\"delete\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"delete\" style=\"font-weight:bold\">&#x1f5d1;</button>";
-			ss << "<td>" << "<button type=\"submit\" name=\"up\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"up\">&uarr;</button>";
-			ss << "<td>" << "<button type=\"submit\" name=\"down\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"down\">&darr;</button>";
+			ss << "<td><div class=\"waarde\">" << "<button type=\"submit\" name=\"add\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"add\">&#8627;</button>";
+			ss << "<td><div class=\"waarde\">" << "<button type=\"submit\" name=\"delete\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"delete\" style=\"font-weight:bold\">&#x1f5d1;</button>";
+			ss << "<td><div class=\"waarde\">" << "<button type=\"submit\" name=\"up\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"up\">&uarr;</button>";
+			ss << "<td><div class=\"waarde\">" << "<button type=\"submit\" name=\"down\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"down\">&darr;</button>";
 
 			if (action.compare("Aan/Uit") == 0)
 			{
 				if (chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds) == chase.cf.toggle->togglemap.end())
 				{
 				   (*it_list).invalid = true;
-				   ss << "<td bgcolor=\"red\">";
-				   ss << (*it_list).action << "</td>";
-				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				   ss << "<td bgcolor=\"red\"><div class=\"waarde\">";
+				   ss << (*it_list).action << "</div></td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</div></td>";
 				}
 				else
 				{
-				   ss << "<td>";
-				   ss << (*it_list).action << "</td>";
-				   ss << "<td><a href=\"" << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
-				   ss << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
+				   ss << "<td><div class=\"waarde\">";
+				   ss << (*it_list).action << "</div></td>";
+				   ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+				   ss << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 				}
 			}
 			if (action.compare("Chase") == 0)
@@ -804,16 +811,16 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				if (chase.cf.chasemap.find((*it_list).uuid_or_milliseconds) == chase.cf.chasemap.end())
 				{
 				   (*it_list).invalid = true;
-				   ss << "<td bgcolor=\"red\">";
-				   ss << (*it_list).action << "</td>";
-				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				   ss << "<td bgcolor=\"red\"><div class=\"waarde\">";
+				   ss << (*it_list).action << "</div></td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</div></td>";
 				}
 				else
 				{
-					ss << "<td>";
-					ss << (*it_list).action << "</td>";
-					ss << "<td><a href=\"" << chase.cf.chasemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
-					ss << chase.cf.chasemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
+					ss << "<td><div class=\"waarde\">";
+					ss << (*it_list).action << "</div></td>";
+					ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.chasemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.chasemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 				}
 			}
 			if (action.compare("Geluid") == 0)
@@ -821,16 +828,16 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				if (chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds) == chase.cf.sound->soundmap.end())
 				{
 				   (*it_list).invalid = true;
-				   ss << "<td bgcolor=\"red\">";
-				   ss << (*it_list).action << "</td>";
-				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				   ss << "<td bgcolor=\"red\"><div class=\"waarde\">";
+				   ss << (*it_list).action << "</div></td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</div></td>";
 				}
 				else
 				{
-					ss << "<td>";
-					ss << (*it_list).action << "</td>";
-					ss << "<td><a href=\"" << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
-					ss << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></td>";
+					ss << "<td><div class=\"waarde\">";
+					ss << (*it_list).action << "</div></td>";
+					ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></div></td>";
 				}
 			}
 			if (action.compare("Motor") == 0)
@@ -838,16 +845,16 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				if (chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds) == chase.cf.motor->motormap.end())
 				{
 				   (*it_list).invalid = true;
-				   ss << "<td bgcolor=\"red\">";
-				   ss << (*it_list).action << "</td>";
-				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				   ss << "<td bgcolor=\"red\"><div class=\"waarde\">";
+				   ss << (*it_list).action << "</div></td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</div></td>";
 				}
 				else
 				{
-					ss << "<td>";
-					ss << (*it_list).action << "</td>";
-					ss << "<td><a href=\"" << chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
-					ss << chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
+					ss << "<td><div class=\"waarde\">";
+					ss << (*it_list).action << "</div></td>";
+					ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.motor->motormap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 			    }
 			}
 			if (action.compare("Muziek") == 0)
@@ -855,16 +862,16 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				if (chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds) == chase.cf.music->musicmap.end())
 				{
 				   (*it_list).invalid = true;
-				   ss << "<td bgcolor=\"red\">";
-				   ss << (*it_list).action << "</td>";
-				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				   ss << "<td bgcolor=\"red\"><div class=\"waarde\">";
+				   ss << (*it_list).action << "</div></td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</div></td>";
 				}
 				else
 				{
-					ss << "<td>";
-		    		ss << (*it_list).action << "</td>";
-			    	ss << "<td><a href=\"" << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
-				    ss << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></td>";
+					ss << "<td><div class=\"waarde\">";
+		    		ss << (*it_list).action << "</div></td>";
+			    	ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+				    ss << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></div></td>";
 				}
 			}
 			if (action.compare("Scene") == 0)
@@ -872,27 +879,29 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				if (chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds) == chase.cf.scene->scenemap.end())
 				{
 				   (*it_list).invalid = true;
-				   ss << "<td bgcolor=\"red\">";
-				   ss << (*it_list).action << "</td>";
-				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</td>";
+				   ss << "<td bgcolor=\"red\"><div class=\"waarde\">";
+				   ss << (*it_list).action << "</div></td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</div></td>";
 				}
 				else
 				{
-					ss << "<td>";
-					ss << (*it_list).action << "</td>";
-					ss << "<td><a href=\"" << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
-					ss << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></td>";
+					ss << "<td><div class=\"waarde\">";
+					ss << (*it_list).action << "</div></td>";
+					ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.scene->scenemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 				}
 			}
 			if (action.compare("Tijd") == 0)
 			{
-				ss << "<td>";
-				ss << (*it_list).action << "</td>";
-				ss << "<td>" << (*it_list).uuid_or_milliseconds << "</td>";
+				ss << "<td><div class=\"waarde\">";
+				ss << (*it_list).action << "</div></td>";
+				ss << "<td><div class=\"waarde\">" << (*it_list).uuid_or_milliseconds << "</div></td>";
 			}
 			ss << "</tr>";
 		}
 		ss << "</table>";
+		ss << "</div>";
+		ss << "</div>";
 		ss << "<br style=\"clear:both\">";
 		ss << "</form>";
 		ss << "<a href=\"/chasefactory\">Chases</a>";
