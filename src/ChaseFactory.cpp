@@ -23,6 +23,7 @@ ChaseFactory::ChaseFactory(){
 	sound = new SoundFactory();
 	motor = new MotorFactory();
 	toggle = new ToggleFactory();
+	capture = new CaptureFactory();
 }
 
 ChaseFactory::~ChaseFactory(){
@@ -40,6 +41,7 @@ ChaseFactory::~ChaseFactory(){
 	delete sound;
 	delete motor;
 	delete toggle;
+	delete capture;
 }
 
 /*
@@ -452,9 +454,9 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		{
 			ss << "<tr>";
 			if ((*it_list).active)
-				ss << "<td bgcolor=\"lime\"><div class=\"waarde\">&#8618;</div></td>";
+				ss << "<td class=\"kort\" bgcolor=\"lime\"><div class=\"waarde\">&#8618;</div></td>";
     		else
-    			ss << "<td><div class=\"waarde\">&nbsp;</div></td>";
+    			ss << "<td class=\"kort\"><div class=\"waarde\">&nbsp;</div></td>";
 			ss << "</tr>";
 		}
 		mg_printf(conn, ss.str().c_str());
@@ -649,7 +651,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   chase.Start();
 	   std::stringstream ss;
 	   ss << "<html><head>";
-	   ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
+	   ss << "<meta http-equiv=\"refresh\" content=\"0;url=\"" << chase.getUrl() << "\"/>";
 	   mg_printf(conn, ss.str().c_str());
 	   mg_printf(conn, "<h2>Starten...!</h2>");
 	}
@@ -736,6 +738,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		ss << ".cell-wrap.links {width: 10%;}";
 		ss << ".rechts tr:nth-child(even){background-color: #eee;}";
 		ss << ".waarde {height: 40px; overflow: hidden;}";
+		ss << ".kort {width:5%; text-align: center;}";
 		ss << "table {border-collapse: collapse; border-spacing: 0; height: 100%; width: 100%; table-layout: fixed;}";
 		ss << "table td, table th {border: 1px solid black;text-align: left; width:25%}";
 		ss << "</style>";
@@ -760,16 +763,16 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	    ss << "<div class=\"wrap\">";
 	    ss << "<div class=\"cell-wrap links\">";
 	    ss << "<table class=\"links\">";
-	    ss << "<thead><tr><th><div class=\"waarde\">Actief</div></th></tr></thead>";
+	    ss << "<thead><tr><th class=\"kort\"><div class=\"waarde\">Actief</div></th></tr></thead>";
 	    ss << "<tbody id=\"chase_active\">";
 		std::list<sequence_item>::iterator it_list;
 	    for (it_list = chase.sequence_list->begin(); it_list != chase.sequence_list->end(); ++it_list)
 	    {
 	    	ss << "<tr>";
 	    	if ((*it_list).active)
-	    		ss << "<td bgcolor=\"lime\"><div class=\"waarde\">&#8618;</div></td>";
+	    		ss << "<td class=\"kort\" bgcolor=\"lime\"><div class=\"waarde\">&#8618;</div></td>";
 	    					   else
-	            ss << "<td><div class=\"waarde\">&nbsp;</div></td>";
+	            ss << "<td class=\"kort\"><div class=\"waarde\">&nbsp;</div></td>";
 	    	ss << "</tr>";
 	    }
 	    ss << "</tbody>";
@@ -777,17 +780,17 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	    ss << "</div>";
 	    ss << "<div class=\"cell-wrap rechts\">";
 	    ss << "<table class=\"rechts\">";
-	    ss << "<thead><tr><th><div class=\"waarde\"><button type=\"submit\" name=\"add\" value=\"-1\" id=\"add\">&#8627;</button>&nbsp;Nieuw</div></th>";
-	    ss << "<th><div class=\"waarde\">Verwijder</div></th><th><div class=\"waarde\">Omhoog</div></th><th><div class=\"waarde\">Omlaag</div></th><th><div class=\"waarde\">Actie</div></th><th><div class=\"waarde\">Waarde</div></th></tr></thead>";
+	    ss << "<thead><tr><th class=\"kort\"><div class=\"waarde\"><button type=\"submit\" name=\"add\" value=\"-1\" id=\"add\">&#8627;</button></div></th>";
+	    ss << "<th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th><div class=\"waarde\">Actie</div></th><th><div class=\"waarde\">Waarde</div></th></tr></thead>";
 		for (it_list = chase.sequence_list->begin(); it_list != chase.sequence_list->end(); ++it_list)
 		{
 			std::string::size_type pos = (*it_list).action.find('::');
 			std::string action = (*it_list).action.substr(0,pos);
 			ss << "<tr>";
-			ss << "<td><div class=\"waarde\">" << "<button type=\"submit\" name=\"add\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"add\">&#8627;</button>";
-			ss << "<td><div class=\"waarde\">" << "<button type=\"submit\" name=\"delete\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"delete\" style=\"font-weight:bold\">&#x1f5d1;</button>";
-			ss << "<td><div class=\"waarde\">" << "<button type=\"submit\" name=\"up\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"up\">&uarr;</button>";
-			ss << "<td><div class=\"waarde\">" << "<button type=\"submit\" name=\"down\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"down\">&darr;</button>";
+			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"add\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"add\">&#8627;</button>";
+			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"delete\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"delete\" style=\"font-weight:bold\">&#x1f5d1;</button>";
+			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"up\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"up\">&uarr;</button>";
+			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"down\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"down\">&darr;</button>";
 
 			if (action.compare("Aan/Uit") == 0)
 			{

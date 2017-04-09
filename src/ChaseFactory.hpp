@@ -28,6 +28,7 @@
 #include "SoundFactory.hpp"
 #include "MotorFactory.hpp"
 #include "ToggleFactory.hpp"
+#include "CaptureFactory.hpp"
 
 #define RESOURCES_DIR "/home/erik/resources/"
 #define CONFIG_FILE "/home/erik/config/chasefactory.yaml"
@@ -105,6 +106,7 @@ class ChaseFactory {
 	SoundFactory* sound;
 	MotorFactory* motor;
 	ToggleFactory* toggle;
+	CaptureFactory* capture;
 
 	std::map<std::string, ChaseFactory::Chase*> chasemap;
 	ChaseFactoryHandler* mfh;
