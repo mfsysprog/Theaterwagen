@@ -8,9 +8,65 @@
  */
 
 #include "CaptureFactory.hpp"
-#include <b64/encode.h>
 using namespace std;
 using namespace cv;
+using namespace dlib;
+
+// Calculate Delaunay triangles for set of points
+// Returns the vector of indices of 3 points for each triangle
+static void calculateDelaunayTriangles(Rect rect, std::vector<Point> &points, std::vector< std::vector<int> > &delaunayTri){
+
+	// Create an instance of Subdiv2D
+    Subdiv2D subdiv(rect);
+
+	// Insert points into subdiv
+    for( std::vector<Point>::iterator it = points.begin(); it != points.end(); it++)
+        subdiv.insert(*it);
+
+	std::vector<Vec6f> triangleList;
+	subdiv.getTriangleList(triangleList);
+	std::vector<Point> pt(3);
+	std::vector<int> ind(3);
+
+	for( size_t i = 0; i < triangleList.size(); i++ )
+	{
+		Vec6f t = triangleList[i];
+		pt[0] = Point(t[0], t[1]);
+		pt[1] = Point(t[2], t[3]);
+		pt[2] = Point(t[4], t[5 ]);
+
+		if ( rect.contains(pt[0]) && rect.contains(pt[1]) && rect.contains(pt[2])){
+			for(int j = 0; j < 3; j++)
+				for(size_t k = 0; k < points.size(); k++)
+					if(abs(pt[j].x - points[k].x) < 1.0 && abs(pt[j].y - points[k].y) < 1)
+						ind[j] = k;
+
+			delaunayTri.push_back(ind);
+		}
+	}
+
+}
+
+std::vector <cv::Point> get_points(const dlib::full_object_detection& d)
+{
+    std::vector <cv::Point> points;
+    for (int i = 0; i < 68; ++i)
+    {
+    	points.push_back(cv::Point(d.part(i).x(), d.part(i).y()));
+    }
+
+    return points;
+}
+
+void draw_polyline(cv::Mat &img, const dlib::full_object_detection& d, const int start, const int end, bool isClosed = false)
+{
+    std::vector <cv::Point> points;
+    for (int i = start; i <= end; ++i)
+    {
+        points.push_back(cv::Point(d.part(i).x(), d.part(i).y()));
+    }
+    cv::polylines(img, points, isClosed, cv::Scalar(255,0,0), 2, 16);
+}
 
 /*
  * CaptureFactory Constructor en Destructor
@@ -51,8 +107,11 @@ CaptureFactory::Capture::Capture(std::string naam, std::string omschrijving){
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
+	this->input = new cv::Mat();
+	this->cap = new cv::VideoCapture();
 
-	Initialize();
+	std::thread( [this] { loadModel(); } ).detach();
+	std::thread( [this] { Initialize(); } ).detach();
 
 	std::stringstream ss;
 	ss << "/capture-" << this->getUuid();
@@ -66,8 +125,11 @@ CaptureFactory::Capture::Capture(std::string uuidstr, std::string naam, std::str
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
+	this->input = new cv::Mat();
+	this->cap = new cv::VideoCapture();
 
-	Initialize();
+	std::thread( [this] { loadModel(); } ).detach();
+	std::thread( [this] { Initialize(); } ).detach();
 
 	std::stringstream ss;
 	ss << "/capture-" << this->getUuid();
@@ -78,6 +140,10 @@ CaptureFactory::Capture::Capture(std::string uuidstr, std::string naam, std::str
 CaptureFactory::Capture::~Capture(){
 	delete mh;
 	delete cap;
+	delete detector;
+	delete pose_model;
+	delete input;
+	delete output;
 }
 
 /*
@@ -144,12 +210,22 @@ void CaptureFactory::save(){
 	fout << emitter.c_str();
 }
 
+void CaptureFactory::Capture::loadModel(){
+	frontal_face_detector detector = get_frontal_face_detector();
+    this->detector = new frontal_face_detector(detector);
+    this->pose_model = new shape_predictor();
+    cout << "Reading in shape predictor..." << endl;
+    deserialize("shape_predictor_68_face_landmarks.dat") >> *pose_model;
+    cout << "Done reading in shape predictor ..." << endl;
+    model_loaded = true;
+}
+
 void CaptureFactory::Capture::Initialize(){
 	/*
 	 * set relay to output and full stop
 	 */
-	cv::VideoCapture* cap = new cv::VideoCapture();
-	cv::Mat input;
+	original.str(std::string());
+	original.clear();
     // Serialize the input image to a stringstream
 	cout << "Grabbing a frame..." << endl;
 	cap->set(CV_CAP_PROP_FRAME_WIDTH,1920);   // width pixels
@@ -160,17 +236,17 @@ void CaptureFactory::Capture::Initialize(){
 	         return;
     }
     // Grab a frame
-    *cap >> input;
+    *cap >> *input;
     cap->release();
 
+
     std::vector<uchar> buf;
-    cv::imencode(".jpg", input, buf, std::vector<int>() );
+    cv::imencode(".png", *input, buf, std::vector<int>() );
 
     // Base64 encode the stringstream
     base64::encoder E;
     stringstream encoded;
     stringstream incoming;
-    std::ofstream FILE("test.jpg", std::ios::out | std::ofstream::binary);
     copy(buf.begin(), buf.end(),
          ostream_iterator<uchar>(incoming));
 
@@ -181,10 +257,101 @@ void CaptureFactory::Capture::Initialize(){
 
     E.encode(incoming, encoded);
 
-    serializedStream << encoded.rdbuf();
+    original << encoded.rdbuf();
     /*
      * <img alt="Embedded Image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIA..." />
      */
+}
+
+void CaptureFactory::Capture::detect()
+{
+	std::vector<dlib::rectangle> faces;
+    cout << "Detecting faces..." << endl;
+    // Detect faces
+    cv_image<bgr_pixel> cimg(*input);
+    faces = (*detector)(cimg);
+    // Find the pose of each face.
+    std::vector<full_object_detection> shapes;
+    if (faces.size() == 0)
+    {
+    	cout << "No faces detected." << endl;
+        return;
+    }
+    full_object_detection shape;
+    cout << "There were " << faces.size() << " faces detected." << endl;
+    for (unsigned long i = 0; i < faces.size(); ++i)
+    {
+    	// Resize obtained rectangle for full resolution image.
+    	     dlib::rectangle r(
+    	                   (long)(faces[i].left() * FACE_DOWNSAMPLE_RATIO),
+    	                   (long)(faces[i].top() * FACE_DOWNSAMPLE_RATIO),
+    	                   (long)(faces[i].right() * FACE_DOWNSAMPLE_RATIO),
+    	                   (long)(faces[i].bottom() * FACE_DOWNSAMPLE_RATIO)
+    	                );
+
+    	// Landmark detection on full sized image
+    	shape = (*pose_model)(cimg, r);
+        //shapes.push_back(pose_model(cimg, faces[i]));
+        shapes.push_back(shape);
+
+    }
+
+    //Read points
+    std::vector<Point> points;
+    points = get_points(shape);
+
+    //find convex hull
+    std::vector<Point> hull;
+    std::vector<int> hullIndex;
+
+    cout << "Finding convex hull." << endl;
+
+    convexHull(points, hullIndex, false, false);
+
+    for(int i = 0; i < (int)hullIndex.size(); i++)
+    {
+        hull.push_back(points[hullIndex[i]]);
+    }
+
+    cv::Mat output = input->clone();
+    this->output = new cv::Mat(output);
+
+    //cv::polylines(output, hull, true, cv::Scalar(255,0,0), 2, 16);
+    //draw_polyline(output, shape, 0, shape.num_parts(),true);
+
+    draw_polyline(output, shape, 0, 16);           // Jaw line
+    draw_polyline(output, shape, 17, 21);          // Left eyebrow
+    draw_polyline(output, shape, 22, 26);          // Right eyebrow
+    draw_polyline(output, shape, 27, 30);          // Nose bridge
+    draw_polyline(output, shape, 30, 35, true);    // Lower nose
+    draw_polyline(output, shape, 36, 41, true);    // Left eye
+    draw_polyline(output, shape, 42, 47, true);    // Right Eye
+    draw_polyline(output, shape, 48, 59, true);    // Outer lip
+    draw_polyline(output, shape, 60, 67, true);    // Inner lip
+
+	manipulated.str(std::string());
+	manipulated.clear();
+
+    std::vector<uchar> buf;
+    cv::imencode(".png", output, buf, std::vector<int>() );
+
+    // Base64 encode the stringstream
+    base64::encoder E;
+    stringstream encoded;
+    stringstream incoming;
+    copy(buf.begin(), buf.end(),
+         ostream_iterator<uchar>(incoming));
+
+    E.encode(incoming, encoded);
+
+    manipulated << encoded.rdbuf();
+
+    cout << "Finding delaunay triangulation." << endl;
+
+    // Find delaunay triangulation for points on the convex hull
+    std::vector< std::vector<int> > dt;
+    Rect rect(0, 0, output.cols, output.rows);
+    calculateDelaunayTriangles(rect, hull, dt);
 
 }
 
@@ -377,10 +544,22 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 {
 	std::string s[8] = "";
 	std::string dummy;
-	std::string param = "chan";
 	mg_printf(conn,
 	          "HTTP/1.1 200 OK\r\nContent-Type: "
 	          "text/html\r\nConnection: close\r\n\r\n");
+
+	if(CivetServer::getParam(conn, "running", dummy))
+	{
+		std::stringstream ss;
+	    if (capture.model_loaded)
+	    	ss << "Model Loaded!<br>";
+	    else
+	    	ss << "Model Loading...<br>";
+	    ss << "<img alt=\"Original Image\" src=\"data:image/png;base64," << capture.original.str() << "\"/><br>";
+	    ss << "<img alt=\"Manipulated Image\" src=\"data:image/png;base64," << capture.manipulated.str() << "\"/><br>";
+		mg_printf(conn, ss.str().c_str());
+		return true;
+	}
 
 	/* if parameter submit is present the submit button was pushed */
 	if(CivetServer::getParam(conn, "submit", dummy))
@@ -398,18 +577,18 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	}
 	/* if parameter start is present start button was pushed */
-	else if(CivetServer::getParam(conn, "start", dummy))
+	else if(CivetServer::getParam(conn, "capture", dummy))
 	{
-		capture.Start();
+		capture.Initialize();
 		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
+	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
 	   	mg_printf(conn, "<h2>Starten...!</h2>");
 	}
 	/* if parameter stop is present stop button was pushed */
-	else if(CivetServer::getParam(conn, "stop", dummy))
+	else if(CivetServer::getParam(conn, "detect", dummy))
 	{
-		capture.Stop();
+		capture.detect();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -417,12 +596,24 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	}
 	else
 	{
+		std::stringstream ss;
+		ss << "<html><head>";
+	   	mg_printf(conn, ss.str().c_str());
 		mg_printf(conn, "<h2>&nbsp;</h2>");
-		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
 	}
 	/* initial page display */
 	{
 		std::stringstream ss;
+		ss << "<script type=\"text/javascript\" src=\"resources/jquery-3.2.0.min.js\"></script>";
+		ss << "<script type=\"text/javascript\">";
+		   ss << " $(document).ready(function(){";
+		   ss << "  setInterval(function(){";
+		   ss << "  $.get( \"" << capture.getUrl() << "?running=true\", function( data ) {";
+		   ss << "  $( \"#capture\" ).html( data );";
+		   ss << " });},1000)";
+		   ss << "});";
+		ss << "</script>";
+		ss << "</head><body>";
 		ss << "<h2>Capture:</h2>";
 		ss << "<form action=\"" << capture.getUrl() << "\" method=\"POST\">";
 		ss << "<label for=\"naam\">Naam:</label>"
@@ -434,11 +625,19 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		ss << "<br>";
 	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
 	    ss <<  "<br>";
-	    ss << "<button type=\"submit\" name=\"start\" value=\"start\" id=\"start\">START</button>";
-	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">STOP</button>";
+	    ss << "<button type=\"submit\" name=\"capture\" value=\"capture\" id=\"capture_button\">CAPTURE</button>";
+	    ss << "<button type=\"submit\" name=\"detect\" value=\"detect\" id=\"detect_button\">DETECT</button>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss <<  "</br>";
-	    ss << "<img alt=\"Embedded Image\" src=\"data:image/jpeg;base64," << capture.serializedStream.rdbuf() << "\"/><br>";
+	    ss << "<div id=\"capture\">";
+	    if (capture.model_loaded)
+	    	ss << "Model Loaded!<br>";
+	    else
+	    	ss << "Model Loading...<br>";
+	    ss << "<img alt=\"Original Image\" src=\"data:image/png;base64," << capture.original.str() << "\"/><br>";
+	    ss << "<img alt=\"Manipulated Image\" src=\"data:image/png;base64," << capture.manipulated.str() << "\"/><br>";
+	    ss << "</div>";
+	    ss << "<br>";
 	    ss << "<a href=\"/capturefactory\">Capture</a>";
 	    ss << "<br>";
 	    ss << "<a href=\"/\">Home</a>";

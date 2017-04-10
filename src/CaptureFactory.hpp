@@ -25,9 +25,17 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/photo.hpp>
 #include <b64/encode.h>
+#include <thread>
+#include <dlib/opencv.h>
+#include <dlib/image_processing/frontal_face_detector.h>
+#include <dlib/image_processing/render_face_detections.h>
+#include <dlib/image_processing.h>
+#include <dlib/image_io.h>
+#include <dlib/gui_widgets.h>
 
 #define RESOURCES_DIR "/home/erik/resources/"
 #define CONFIG_FILE "/home/erik/config/capturefactory.yaml"
+#define FACE_DOWNSAMPLE_RATIO 1
 
 extern CivetServer* server;
 
@@ -73,12 +81,20 @@ class CaptureFactory {
 		private:
 		CaptureHandler* mh;
 		void Initialize();
+		void loadModel();
+		void detect();
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
 		uuid_t uuid;
-		std::stringstream serializedStream;
+		std::stringstream original;
+		std::stringstream manipulated;
 		cv::VideoCapture* cap;
+		cv::Mat* input;
+		cv::Mat* output;
+		dlib::frontal_face_detector* detector;
+		dlib::shape_predictor* pose_model;
+		bool model_loaded = false;
 	};
 	public:
 	CaptureFactory();
