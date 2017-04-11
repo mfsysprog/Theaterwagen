@@ -80,18 +80,22 @@ class CaptureFactory {
 		};
 		private:
 		CaptureHandler* mh;
-		void Initialize();
+		void captureCam();
+		void detectCam();
 		void loadModel();
-		void detect();
+		//void detectFilmpje();
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
+		std::string filmpje = "";
 		uuid_t uuid;
 		std::stringstream original;
 		std::stringstream manipulated;
 		cv::VideoCapture* cap;
 		cv::Mat* input;
 		cv::Mat* output;
+		cv::Mat* filmpje_input;
+		cv::Mat* filmpje_output;
 		dlib::frontal_face_detector* detector;
 		dlib::shape_predictor* pose_model;
 		bool model_loaded = false;

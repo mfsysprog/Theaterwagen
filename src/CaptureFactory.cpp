@@ -12,28 +12,62 @@ using namespace std;
 using namespace cv;
 using namespace dlib;
 
+static cv::Rect dlibRectangleToOpenCV(dlib::rectangle r)
+{
+  return cv::Rect(cv::Point2i(r.left(), r.top()), cv::Point2i(r.right() + 1, r.bottom() + 1));
+}
+
+static dlib::rectangle openCVRectToDlib(cv::Rect r)
+{
+  return dlib::rectangle((long)r.tl().x, (long)r.tl().y, (long)r.br().x - 1, (long)r.br().y - 1);
+}
+
+static std::stringstream matToBase64PNG(cv::Mat* input)
+{
+    std::vector<uchar> buf;
+    cv::imencode(".png", *input, buf, std::vector<int>() );
+
+    // Base64 encode the stringstream
+    base64::encoder E;
+    stringstream encoded;
+    stringstream incoming;
+    copy(buf.begin(), buf.end(),
+         ostream_iterator<uchar>(incoming));
+
+    //incoming << FILE.rdbuf();
+    //std::ofstream fout("test.jpg");
+
+    //fout << incoming.rdbuf();
+
+    E.encode(incoming, encoded);
+
+    std::stringstream png;
+    png << encoded.str();
+    return png;
+}
+
 // Calculate Delaunay triangles for set of points
 // Returns the vector of indices of 3 points for each triangle
-static void calculateDelaunayTriangles(Rect rect, std::vector<Point> &points, std::vector< std::vector<int> > &delaunayTri){
+static void calculateDelaunayTriangles(Rect rect, std::vector<cv::Point2f> &points, std::vector< std::vector<int> > &delaunayTri){
 
 	// Create an instance of Subdiv2D
     Subdiv2D subdiv(rect);
 
 	// Insert points into subdiv
-    for( std::vector<Point>::iterator it = points.begin(); it != points.end(); it++)
+    for( std::vector<cv::Point2f>::iterator it = points.begin(); it != points.end(); it++)
         subdiv.insert(*it);
 
 	std::vector<Vec6f> triangleList;
 	subdiv.getTriangleList(triangleList);
-	std::vector<Point> pt(3);
+	std::vector<cv::Point2f> pt(3);
 	std::vector<int> ind(3);
 
 	for( size_t i = 0; i < triangleList.size(); i++ )
 	{
 		Vec6f t = triangleList[i];
-		pt[0] = Point(t[0], t[1]);
-		pt[1] = Point(t[2], t[3]);
-		pt[2] = Point(t[4], t[5 ]);
+		pt[0] = cv::Point2f(t[0], t[1]);
+		pt[1] = cv::Point2f(t[2], t[3]);
+		pt[2] = cv::Point2f(t[4], t[5 ]);
 
 		if ( rect.contains(pt[0]) && rect.contains(pt[1]) && rect.contains(pt[2])){
 			for(int j = 0; j < 3; j++)
@@ -47,12 +81,12 @@ static void calculateDelaunayTriangles(Rect rect, std::vector<Point> &points, st
 
 }
 
-std::vector <cv::Point> get_points(const dlib::full_object_detection& d)
+std::vector <cv::Point2f> get_points(const dlib::full_object_detection& d)
 {
-    std::vector <cv::Point> points;
+    std::vector <cv::Point2f> points;
     for (int i = 0; i < 68; ++i)
     {
-    	points.push_back(cv::Point(d.part(i).x(), d.part(i).y()));
+    	points.push_back(cv::Point2f(d.part(i).x(), d.part(i).y()));
     }
 
     return points;
@@ -66,6 +100,16 @@ void draw_polyline(cv::Mat &img, const dlib::full_object_detection& d, const int
         points.push_back(cv::Point(d.part(i).x(), d.part(i).y()));
     }
     cv::polylines(img, points, isClosed, cv::Scalar(255,0,0), 2, 16);
+}
+
+void draw_polyline(cv::Mat &img, std::vector<cv::Point2f> points, const int start, const int end, bool isClosed = false)
+{
+    std::vector <cv::Point> points_part;
+    for (int i = start; i <= end; ++i)
+    {
+        points_part.push_back(points[i]);
+    }
+    cv::polylines(img, points_part, isClosed, cv::Scalar(255,0,0), 2, 16);
 }
 
 /*
@@ -108,10 +152,10 @@ CaptureFactory::Capture::Capture(std::string naam, std::string omschrijving){
 	this->naam = naam;
 	this->omschrijving = omschrijving;
 	this->input = new cv::Mat();
+	this->output = new cv::Mat();
 	this->cap = new cv::VideoCapture();
 
 	std::thread( [this] { loadModel(); } ).detach();
-	std::thread( [this] { Initialize(); } ).detach();
 
 	std::stringstream ss;
 	ss << "/capture-" << this->getUuid();
@@ -126,10 +170,10 @@ CaptureFactory::Capture::Capture(std::string uuidstr, std::string naam, std::str
 	this->naam = naam;
 	this->omschrijving = omschrijving;
 	this->input = new cv::Mat();
+	this->output = new cv::Mat();
 	this->cap = new cv::VideoCapture();
 
 	std::thread( [this] { loadModel(); } ).detach();
-	std::thread( [this] { Initialize(); } ).detach();
 
 	std::stringstream ss;
 	ss << "/capture-" << this->getUuid();
@@ -220,12 +264,7 @@ void CaptureFactory::Capture::loadModel(){
     model_loaded = true;
 }
 
-void CaptureFactory::Capture::Initialize(){
-	/*
-	 * set relay to output and full stop
-	 */
-	original.str(std::string());
-	original.clear();
+void CaptureFactory::Capture::captureCam(){
     // Serialize the input image to a stringstream
 	cout << "Grabbing a frame..." << endl;
 	cap->set(CV_CAP_PROP_FRAME_WIDTH,1920);   // width pixels
@@ -239,31 +278,15 @@ void CaptureFactory::Capture::Initialize(){
     *cap >> *input;
     cap->release();
 
-
-    std::vector<uchar> buf;
-    cv::imencode(".png", *input, buf, std::vector<int>() );
-
-    // Base64 encode the stringstream
-    base64::encoder E;
-    stringstream encoded;
-    stringstream incoming;
-    copy(buf.begin(), buf.end(),
-         ostream_iterator<uchar>(incoming));
-
-    //incoming << FILE.rdbuf();
-    //std::ofstream fout("test.jpg");
-
-    //fout << incoming.rdbuf();
-
-    E.encode(incoming, encoded);
-
-    original << encoded.rdbuf();
+	original.str(std::string());
+	original.clear();
+    original = matToBase64PNG(input);
     /*
      * <img alt="Embedded Image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIA..." />
      */
 }
 
-void CaptureFactory::Capture::detect()
+void CaptureFactory::Capture::detectCam()
 {
 	std::vector<dlib::rectangle> faces;
     cout << "Detecting faces..." << endl;
@@ -297,62 +320,38 @@ void CaptureFactory::Capture::detect()
     }
 
     //Read points
-    std::vector<Point> points;
+    std::vector<cv::Point2f> points;
     points = get_points(shape);
 
-    //find convex hull
-    std::vector<Point> hull;
-    std::vector<int> hullIndex;
+    //calculate forehead left (point index 68)
+    points.push_back(cv::Point2f(points[17].x+(points[17].x-points[2].x),points[17].y - (points[2].y-points[17].y)));
 
-    cout << "Finding convex hull." << endl;
+    //calculate forehead middle (point index 69)
+    points.push_back(cv::Point2f(points[27].x+(points[29].x-points[8].x), points[29].y - (points[8].y - points[29].y)));
 
-    convexHull(points, hullIndex, false, false);
+    //calculate forehead right ((point index 70)
+    points.push_back(cv::Point2f(points[26].x+(points[26].x-points[14].x),points[26].y - (points[14].y-points[26].y)));
 
-    for(int i = 0; i < (int)hullIndex.size(); i++)
-    {
-        hull.push_back(points[hullIndex[i]]);
-    }
+    *this->output = input->clone();
 
-    cv::Mat output = input->clone();
-    this->output = new cv::Mat(output);
+    draw_polyline(*output, points, 0, 16);           // Jaw line
+    draw_polyline(*output, points, 17, 21);          // Left eyebrow
+    draw_polyline(*output, points, 22, 26);          // Right eyebrow
+    draw_polyline(*output, points, 27, 30);          // Nose bridge
+    draw_polyline(*output, points, 30, 35, true);    // Lower nose
+    draw_polyline(*output, points, 36, 41, true);    // Left eye
+    draw_polyline(*output, points, 42, 47, true);    // Right Eye
+    draw_polyline(*output, points, 48, 59, true);    // Outer lip
+    draw_polyline(*output, points, 60, 67, true);    // Inner lip
+    draw_polyline(*output, points, 68, 70);          // Forehead
 
-    //cv::polylines(output, hull, true, cv::Scalar(255,0,0), 2, 16);
-    //draw_polyline(output, shape, 0, shape.num_parts(),true);
-
-    draw_polyline(output, shape, 0, 16);           // Jaw line
-    draw_polyline(output, shape, 17, 21);          // Left eyebrow
-    draw_polyline(output, shape, 22, 26);          // Right eyebrow
-    draw_polyline(output, shape, 27, 30);          // Nose bridge
-    draw_polyline(output, shape, 30, 35, true);    // Lower nose
-    draw_polyline(output, shape, 36, 41, true);    // Left eye
-    draw_polyline(output, shape, 42, 47, true);    // Right Eye
-    draw_polyline(output, shape, 48, 59, true);    // Outer lip
-    draw_polyline(output, shape, 60, 67, true);    // Inner lip
+    cv::circle(*output, points[8], 3, cv::Scalar(0,255,255), -1, 16);
+    cv::circle(*output, points[27], 3, cv::Scalar(0,255,255), -1, 16);
+    cv::circle(*output, points[69], 3, cv::Scalar(0,255,255), -1, 16);
 
 	manipulated.str(std::string());
 	manipulated.clear();
-
-    std::vector<uchar> buf;
-    cv::imencode(".png", output, buf, std::vector<int>() );
-
-    // Base64 encode the stringstream
-    base64::encoder E;
-    stringstream encoded;
-    stringstream incoming;
-    copy(buf.begin(), buf.end(),
-         ostream_iterator<uchar>(incoming));
-
-    E.encode(incoming, encoded);
-
-    manipulated << encoded.rdbuf();
-
-    cout << "Finding delaunay triangulation." << endl;
-
-    // Find delaunay triangulation for points on the convex hull
-    std::vector< std::vector<int> > dt;
-    Rect rect(0, 0, output.cols, output.rows);
-    calculateDelaunayTriangles(rect, hull, dt);
-
+    manipulated = matToBase64PNG(output);
 }
 
 std::string CaptureFactory::Capture::getUuid(){
@@ -492,7 +491,7 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
-       ss << "<a href=\"/capturefactory\">Aan/Uit</a>";
+       ss << "<a href=\"/capturefactory\">Captures</a>";
        ss <<  "</br>";
        ss << "<a href=\"/\">Home</a>";
        mg_printf(conn, ss.str().c_str());
@@ -507,7 +506,7 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
 		std::stringstream ss;
 		std::map<std::string, CaptureFactory::Capture*>::iterator it = capturefactory.capturemap.begin();
-		ss << "<h2>Beschikbare Aan/Uit:</h2>";
+		ss << "<h2>Beschikbare Captures:</h2>";
 	    for (std::pair<std::string, CaptureFactory::Capture*> element : capturefactory.capturemap) {
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
@@ -544,6 +543,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 {
 	std::string s[8] = "";
 	std::string dummy;
+	std::string value;
 	mg_printf(conn,
 	          "HTTP/1.1 200 OK\r\nContent-Type: "
 	          "text/html\r\nConnection: close\r\n\r\n");
@@ -569,17 +569,59 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	   CivetServer::getParam(conn,"omschrijving", s[1]);
 	   capture.omschrijving = s[1].c_str();
 
-	   capture.Initialize();
+	   capture.detectCam();
 
 	   std::stringstream ss;
 	   ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   mg_printf(conn, ss.str().c_str());
 	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	}
+	else if(CivetServer::getParam(conn, "newselect", value))
+	{
+		capture.filmpje = value;
+		std::stringstream ss;
+		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << capture.getUrl() << "\"/></head><body>";
+		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn, "</body></html>");
+	}
+	else if(CivetServer::getParam(conn, "new", dummy))
+	{
+       mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
+	   DIR *dirp;
+	   struct dirent *dp;
+	   std::stringstream ss;
+	   ss << "<h2>Selecteer een filmpje:</h2>";
+	   ss << "<form action=\"" << capture.getUrl() << "\" method=\"POST\">";
+	   if ((dirp = opendir(RESOURCES_DIR)) == NULL) {
+	          fprintf(stderr,"couldn't open %s.\n",RESOURCES_DIR);
+	   }
+       do {
+	      errno = 0;
+	      if ((dp = readdir(dirp)) != NULL) {
+	    	 /*
+	    	  * ignore . and ..
+	    	  */
+	    	if (std::strcmp(dp->d_name, ".") == 0) continue;
+	    	if (std::strcmp(dp->d_name, "..") == 0) continue;
+	    	ss << "<button type=\"submit\" name=\"newselect\" value=\"" << RESOURCES_DIR << dp->d_name << "\" ";
+	    	ss << "id=\"newselect\">Selecteren</button>&nbsp;";
+	    	ss << "&nbsp;" << dp->d_name << "<br>";
+	        }
+	   } while (dp != NULL);
+       ss << "<button type=\"submit\" name=\"annuleren\" value=\"annuleren\" id=\"annuleren\">Annuleren</button>&nbsp;";
+       ss << "</form>";
+       (void) closedir(dirp);
+       ss <<  "<br>";
+       ss << "<a href=\"/capturefactory\">Captures</a>";
+       ss <<  "<br>";
+       ss << "<a href=\"/\">Home</a>";
+       mg_printf(conn, ss.str().c_str());
+       mg_printf(conn, "</body></html>");
+	}
 	/* if parameter start is present start button was pushed */
 	else if(CivetServer::getParam(conn, "capture", dummy))
 	{
-		capture.Initialize();
+		capture.captureCam();
 		std::stringstream ss;
 	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -588,7 +630,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	/* if parameter stop is present stop button was pushed */
 	else if(CivetServer::getParam(conn, "detect", dummy))
 	{
-		capture.detect();
+		capture.detectCam();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -625,8 +667,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		ss << "<br>";
 	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
 	    ss <<  "<br>";
-	    ss << "<button type=\"submit\" name=\"capture\" value=\"capture\" id=\"capture_button\">CAPTURE</button>";
-	    ss << "<button type=\"submit\" name=\"detect\" value=\"detect\" id=\"detect_button\">DETECT</button>";
+	    ss << "<button type=\"submit\" name=\"capture\" value=\"capture\" id=\"capture_button\">Capture</button>";
+	    ss << "<button type=\"submit\" name=\"detect\" value=\"detect\" id=\"detect_button\">Detect</button>";
+	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Filmpje</button>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss <<  "</br>";
 	    ss << "<div id=\"capture\">";
