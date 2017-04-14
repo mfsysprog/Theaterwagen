@@ -12,6 +12,21 @@ using namespace std;
 using namespace cv;
 using namespace dlib;
 
+class mythread : public std::thread
+{
+  public:
+    mythread() {}
+    static void setScheduling(std::thread &th, int policy, int priority) {
+        sched_param sch_params;
+        sch_params.sched_priority = priority;
+        if(pthread_setschedparam(th.native_handle(), policy, &sch_params)) {
+            std::cerr << "Failed to set Thread scheduling : " << std::strerror(errno) << std::endl;
+        }
+    }
+  private:
+    sched_param sch_params;
+};
+
 static cv::Rect dlibRectangleToOpenCV(dlib::rectangle r)
 {
   return cv::Rect(cv::Point2i(r.left(), r.top()), cv::Point2i(r.right() + 1, r.bottom() + 1));
@@ -44,6 +59,43 @@ static std::stringstream matToBase64PNG(cv::Mat* input)
     std::stringstream png;
     png << encoded.str();
     return png;
+}
+
+static std::stringstream matToJPG(cv::Mat* input)
+{
+    std::vector<uchar> buf;
+    try
+    {
+    	cv::imencode(".jpeg", *input, buf, std::vector<int>() );
+    }
+    catch( cv::Exception& e )
+    {
+        const char* err_msg = e.what();
+        std::cout << "exception caught: " << err_msg << std::endl;
+    }
+
+    stringstream incoming;
+    copy(buf.begin(), buf.end(),
+         ostream_iterator<uchar>(incoming));
+
+    //incoming << FILE.rdbuf();
+    //std::ofstream fout("test.jpg");
+
+    //fout << incoming.rdbuf();
+
+    std::stringstream jpg;
+    jpg << incoming.str();
+    return jpg;
+}
+
+// Apply affine transform calculated using srcTri and dstTri to src
+void applyAffineTransform(Mat &warpImage, Mat &src, std::vector<Point2f> &srcTri, std::vector<Point2f> &dstTri)
+{
+    // Given a pair of triangles, find the affine transform.
+    Mat warpMat = getAffineTransform( srcTri, dstTri );
+
+    // Apply the Affine Transform just found to the src image
+    warpAffine( src, warpImage, warpMat, warpImage.size(), INTER_LINEAR, BORDER_REFLECT_101);
 }
 
 // Calculate Delaunay triangles for set of points
@@ -112,6 +164,72 @@ void draw_polyline(cv::Mat &img, std::vector<cv::Point2f> points, const int star
     cv::polylines(img, points_part, isClosed, cv::Scalar(255,0,0), 2, 16);
 }
 
+// Warps and alpha blends triangular regions from img1 and img2 to img
+void warpTriangle(Mat &img1, Mat &img2, std::vector<Point2f> &t1, std::vector<Point2f> &t2)
+{
+
+    Rect r1 = boundingRect(t1);
+    Rect r2 = boundingRect(t2);
+
+    // Offset points by left top corner of the respective rectangles
+    std::vector<Point2f> t1Rect, t2Rect;
+    std::vector<Point> t2RectInt;
+    for(int i = 0; i < 3; i++)
+    {
+
+        t1Rect.push_back( Point2f( t1[i].x - r1.x, t1[i].y -  r1.y) );
+        t2Rect.push_back( Point2f( t2[i].x - r2.x, t2[i].y - r2.y) );
+        t2RectInt.push_back( Point(t2[i].x - r2.x, t2[i].y - r2.y) ); // for fillConvexPoly
+
+    }
+
+    // Get mask by filling triangle
+    Mat mask = Mat::zeros(r2.height, r2.width, CV_32FC3);
+    fillConvexPoly(mask, t2RectInt, Scalar(1.0, 1.0, 1.0), 16, 0);
+
+    // Apply warpImage to small rectangular patches
+    Mat img1Rect;
+    img1(r1).copyTo(img1Rect);
+
+    Mat img2Rect = Mat::zeros(r2.height, r2.width, img1Rect.type());
+
+    applyAffineTransform(img2Rect, img1Rect, t1Rect, t2Rect);
+
+    multiply(img2Rect,mask, img2Rect);
+    multiply(img2(r2), Scalar(1.0,1.0,1.0) - mask, img2(r2));
+    img2(r2) = img2(r2) + img2Rect;
+
+
+}
+
+
+static std::stringstream drawToJPG(cv::Mat* input, std::vector<std::vector<cv::Point2f>>* points)
+{
+	cv::Mat output = (*input).clone();
+
+	//Read points
+    for (unsigned long i = 0; i < (*points).size(); ++i)
+    {
+        draw_polyline(output, (*points)[i], 0, 16);           // Jaw line
+        draw_polyline(output, (*points)[i], 17, 21);          // Left eyebrow
+        draw_polyline(output, (*points)[i], 22, 26);          // Right eyebrow
+        draw_polyline(output, (*points)[i], 27, 30);          // Nose bridge
+        draw_polyline(output, (*points)[i], 30, 35, true);    // Lower nose
+        draw_polyline(output, (*points)[i], 36, 41, true);    // Left eye
+        draw_polyline(output, (*points)[i], 42, 47, true);    // Right Eye
+        draw_polyline(output, (*points)[i], 48, 59, true);    // Outer lip
+        draw_polyline(output, (*points)[i], 60, 67, true);    // Inner lip
+        draw_polyline(output, (*points)[i], 68, 70);          // Forehead
+
+        cv::circle(output, (*points)[i][8], 3, cv::Scalar(0,255,255), -1, 16);
+        cv::circle(output, (*points)[i][29], 3, cv::Scalar(0,255,255), -1, 16);
+        cv::circle(output, (*points)[i][69], 3, cv::Scalar(0,255,255), -1, 16);
+
+    }
+
+    return matToJPG(&output);
+}
+
 /*
  * CaptureFactory Constructor en Destructor
  */
@@ -151,11 +269,20 @@ CaptureFactory::Capture::Capture(std::string naam, std::string omschrijving){
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
-	this->input = new cv::Mat();
-	this->output = new cv::Mat();
 	this->cap = new cv::VideoCapture();
 
-	std::thread( [this] { loadModel(); } ).detach();
+	camMat = new std::vector<cv::Mat>();
+	fileMat = new std::vector<cv::Mat>();
+	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
+	filePoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
+
+	pose_model = new dlib::shape_predictor();
+	detector = new dlib::frontal_face_detector();
+
+	std::thread t1( [this] { loadModel(); } );
+	mythread::setScheduling(t1, SCHED_IDLE, 0);
+
+	t1.detach();
 
 	std::stringstream ss;
 	ss << "/capture-" << this->getUuid();
@@ -169,11 +296,20 @@ CaptureFactory::Capture::Capture(std::string uuidstr, std::string naam, std::str
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
-	this->input = new cv::Mat();
-	this->output = new cv::Mat();
 	this->cap = new cv::VideoCapture();
 
-	std::thread( [this] { loadModel(); } ).detach();
+	camMat = new std::vector<cv::Mat>();
+	fileMat = new std::vector<cv::Mat>();
+	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
+	filePoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
+
+	pose_model = new dlib::shape_predictor();
+	detector = new dlib::frontal_face_detector();
+
+	std::thread t1( [this] { loadModel(); } );
+	mythread::setScheduling(t1, SCHED_IDLE, 0);
+
+	t1.detach();
 
 	std::stringstream ss;
 	ss << "/capture-" << this->getUuid();
@@ -184,10 +320,12 @@ CaptureFactory::Capture::Capture(std::string uuidstr, std::string naam, std::str
 CaptureFactory::Capture::~Capture(){
 	delete mh;
 	delete cap;
-	delete detector;
+	delete camMat;
+	delete fileMat;
+	delete camPoints;
+	delete filePoints;
 	delete pose_model;
-	delete input;
-	delete output;
+	delete detector;
 }
 
 /*
@@ -203,6 +341,7 @@ CaptureFactory::Capture::CaptureHandler::~CaptureHandler(){
 /* overige functies
  *
  */
+
 
 void CaptureFactory::load(){
 	for (std::pair<std::string, CaptureFactory::Capture*> element  : capturemap)
@@ -254,105 +393,119 @@ void CaptureFactory::save(){
 	fout << emitter.c_str();
 }
 
+void CaptureFactory::Capture::openCap(captureType type)
+{
+	if (type == CAP_CAM)
+	{
+		cap->set(CAP_PROP_FRAME_WIDTH,1280);   // width pixels
+		cap->set(CAP_PROP_FRAME_HEIGHT,720);   // height pixels
+		if(!cap->isOpened()){   // connect to the camera
+			cap->open(0);
+		}
+	}
+	else
+	{
+		if(!cap->isOpened()){   // connect to the camera
+			cap->open(filmpje);
+		}
+	}
+}
+
+void CaptureFactory::Capture::closeCap(){
+	if(cap->isOpened()){   // connect to the camera
+		cap->release();
+    }
+
+}
+
 void CaptureFactory::Capture::loadModel(){
-	frontal_face_detector detector = get_frontal_face_detector();
-    this->detector = new frontal_face_detector(detector);
-    this->pose_model = new shape_predictor();
+	delete detector;
+	this->detector = new dlib::frontal_face_detector(get_frontal_face_detector());
     cout << "Reading in shape predictor..." << endl;
     deserialize("shape_predictor_68_face_landmarks.dat") >> *pose_model;
     cout << "Done reading in shape predictor ..." << endl;
     model_loaded = true;
 }
 
-void CaptureFactory::Capture::captureCam(){
+cv::Mat CaptureFactory::Capture::captureFrame(){
     // Serialize the input image to a stringstream
 	cout << "Grabbing a frame..." << endl;
-	cap->set(CV_CAP_PROP_FRAME_WIDTH,1920);   // width pixels
-	cap->set(CV_CAP_PROP_FRAME_HEIGHT,1080);   // height pixels
-	cap->open(0);
-	if(!cap->isOpened()){   // connect to the camera
-	         cout << "Failed to connect to the camera." << endl;
-	         return;
-    }
     // Grab a frame
-    *cap >> *input;
-    cap->release();
+	cv::Mat input;
+	try
+	{
+		*cap >> input;
+	}
+	catch( cv::Exception& e )
+	{
+	    const char* err_msg = e.what();
+	    std::cout << "exception caught: " << err_msg << std::endl;
+	}
 
-	original.str(std::string());
-	original.clear();
-    original = matToBase64PNG(input);
+    //cap->release();
+	return input;
     /*
      * <img alt="Embedded Image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIA..." />
      */
 }
 
-void CaptureFactory::Capture::detectCam()
+std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::Mat* input)
 {
-	std::vector<dlib::rectangle> faces;
-    cout << "Detecting faces..." << endl;
-    // Detect faces
-    cv_image<bgr_pixel> cimg(*input);
-    faces = (*detector)(cimg);
-    // Find the pose of each face.
-    std::vector<full_object_detection> shapes;
-    if (faces.size() == 0)
-    {
-    	cout << "No faces detected." << endl;
-        return;
-    }
-    full_object_detection shape;
-    cout << "There were " << faces.size() << " faces detected." << endl;
-    for (unsigned long i = 0; i < faces.size(); ++i)
-    {
-    	// Resize obtained rectangle for full resolution image.
-    	     dlib::rectangle r(
-    	                   (long)(faces[i].left() * FACE_DOWNSAMPLE_RATIO),
-    	                   (long)(faces[i].top() * FACE_DOWNSAMPLE_RATIO),
+       std::vector<std::vector<cv::Point2f>> points;
+       cout << "Image size: " << (*input).cols << " x " << (*input).rows << std::endl;
+       cv::Mat im_small;
+       // Resize image for face detection
+       cv::resize(*input, im_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO, 1.0/FACE_DOWNSAMPLE_RATIO);
+	   std::vector<dlib::rectangle> faces;
+       cout << "Detecting faces..." << endl;
+       // Detect faces
+       cv_image<bgr_pixel> img(*input);
+       cv_image<bgr_pixel> cimg(im_small);
+       faces = (*detector)(cimg);
+       if (faces.size() == 0)
+       {
+    	 cout << "No faces detected." << endl;
+         return points;
+       }
+       // Find the pose of each face.
+       std::vector<full_object_detection> shapes;
+       full_object_detection shape;
+       cout << "There were " << faces.size() << " faces detected." << endl;
+       for (unsigned long i = 0; i < faces.size(); ++i)
+       {
+     	// Resize obtained rectangle for full resolution image.
+     	     dlib::rectangle r(
+     	                   (long)(faces[i].left() * FACE_DOWNSAMPLE_RATIO),
+     	                   (long)(faces[i].top() * FACE_DOWNSAMPLE_RATIO),
     	                   (long)(faces[i].right() * FACE_DOWNSAMPLE_RATIO),
     	                   (long)(faces[i].bottom() * FACE_DOWNSAMPLE_RATIO)
-    	                );
+     	                );
 
     	// Landmark detection on full sized image
-    	shape = (*pose_model)(cimg, r);
+    	shape = (*pose_model)(img, r);
         //shapes.push_back(pose_model(cimg, faces[i]));
         shapes.push_back(shape);
 
-    }
+       }
 
-    //Read points
-    std::vector<cv::Point2f> points;
-    points = get_points(shape);
+       //Read points
+       for (unsigned long i = 0; i < faces.size(); ++i)
+       {
+    	   points.push_back(get_points(shapes[i]));
+           //calculate forehead left (point index 68)
+           points[i].push_back(cv::Point2f(points[i][17].x+(points[i][17].x-points[i][2].x),points[i][17].y - (points[i][2].y-points[i][17].y)));
 
-    //calculate forehead left (point index 68)
-    points.push_back(cv::Point2f(points[17].x+(points[17].x-points[2].x),points[17].y - (points[2].y-points[17].y)));
+           //calculate forehead middle (point index 69)
+           points[i].push_back(cv::Point2f(points[i][27].x+(points[i][29].x-points[i][8].x), points[i][29].y - (points[i][8].y - points[i][29].y)));
 
-    //calculate forehead middle (point index 69)
-    points.push_back(cv::Point2f(points[27].x+(points[29].x-points[8].x), points[29].y - (points[8].y - points[29].y)));
+           //calculate forehead right ((point index 70)
+           points[i].push_back(cv::Point2f(points[i][26].x+(points[i][26].x-points[i][14].x),points[i][26].y - (points[i][14].y-points[i][26].y)));
+       }
 
-    //calculate forehead right ((point index 70)
-    points.push_back(cv::Point2f(points[26].x+(points[26].x-points[14].x),points[26].y - (points[14].y-points[26].y)));
-
-    *this->output = input->clone();
-
-    draw_polyline(*output, points, 0, 16);           // Jaw line
-    draw_polyline(*output, points, 17, 21);          // Left eyebrow
-    draw_polyline(*output, points, 22, 26);          // Right eyebrow
-    draw_polyline(*output, points, 27, 30);          // Nose bridge
-    draw_polyline(*output, points, 30, 35, true);    // Lower nose
-    draw_polyline(*output, points, 36, 41, true);    // Left eye
-    draw_polyline(*output, points, 42, 47, true);    // Right Eye
-    draw_polyline(*output, points, 48, 59, true);    // Outer lip
-    draw_polyline(*output, points, 60, 67, true);    // Inner lip
-    draw_polyline(*output, points, 68, 70);          // Forehead
-
-    cv::circle(*output, points[8], 3, cv::Scalar(0,255,255), -1, 16);
-    cv::circle(*output, points[27], 3, cv::Scalar(0,255,255), -1, 16);
-    cv::circle(*output, points[69], 3, cv::Scalar(0,255,255), -1, 16);
-
-	manipulated.str(std::string());
-	manipulated.clear();
-    manipulated = matToBase64PNG(output);
+       return points;
 }
+
+
 
 std::string CaptureFactory::Capture::getUuid(){
 	char uuid_str[37];
@@ -537,6 +690,99 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	return true;
 }
 
+std::vector<cv::Mat> CaptureFactory::Capture::mergeFrames()
+{
+	std::vector<cv::Mat> totaal;
+	Mat img_cam;
+    Mat img_file;
+    Mat resultaat;
+
+	for (int frame = 0; frame < (*filePoints).size(); frame++)
+	{
+		img_file = (*fileMat)[frame].clone();
+		img_cam = (*camMat)[frame % ((*camMat).size())].clone();
+		resultaat = img_file.clone();
+		for (int gezicht = 0; gezicht < (*filePoints)[frame].size(); gezicht++)
+		{
+	        //convert Mat to float data type
+	        img_cam.convertTo(img_cam, CV_32F);
+	        resultaat.convertTo(resultaat, CV_32F);
+
+	        // Find convex hull
+	        std::vector<Point2f> hull1;
+	        std::vector<Point2f> hull2;
+	        std::vector<int> hullIndex;
+
+	        cout << "Finding convex hull." << endl;
+
+	        convexHull((*filePoints)[frame][gezicht], hullIndex, false, false);
+
+	        for(int i = 0; i < (int)hullIndex.size(); i++)
+	        {
+	            hull1.push_back((*camPoints)[frame % ((*camPoints).size())][gezicht][hullIndex[i]]);
+	            hull2.push_back((*filePoints)[frame][gezicht][hullIndex[i]]);
+	        }
+
+	        cout << "Finding delaunay triangulation." << endl;
+
+	        // Find delaunay triangulation for points on the convex hull
+	        std::vector< std::vector<int> > dt;
+	        Rect rect(0, 0, resultaat.cols, resultaat.rows);
+	        calculateDelaunayTriangles(rect, hull2, dt);
+
+	        cout << "Applying affine transformation." << endl;
+
+	        // Apply affine transformation to Delaunay triangles
+	        for(size_t i = 0; i < dt.size(); i++)
+	        {
+	           std::vector<Point2f> t1, t2;
+	           // Get points for img1, img2 corresponding to the triangles
+	           for(size_t j = 0; j < 3; j++)
+	           {
+	        	  t1.push_back(hull1[dt[i][j]]);
+	        	  t2.push_back(hull2[dt[i][j]]);
+	        	}
+	                warpTriangle(img_cam, resultaat, t1, t2);
+	       	}
+
+	        resultaat.convertTo(resultaat, CV_8UC3);
+
+	        cout << "Calculating mask." << endl;
+
+	        // Calculate mask
+	        std::vector<Point> hull8U;
+	        for(int i = 0; i < (int)hull2.size(); i++)
+	        {
+	            Point pt(hull2[i].x, hull2[i].y);
+	            hull8U.push_back(pt);
+	        }
+
+	        cout << "Fill Convex Poly." << endl;
+	        Mat mask = Mat::zeros(img_file.rows, img_file.cols, img_file.depth());
+	        fillConvexPoly(mask,&hull8U[0], hull8U.size(), Scalar(255,255,255));
+
+	        // Clone seamlessly.
+	        Rect r = boundingRect(hull2);
+	        //Point center = (r.tl() + r.br()) / 2;
+	        Point centertest = Point(img_file(r).cols / 2,img_file(r).rows / 2);
+
+	        cout << "Seamlessclone." << endl;
+
+	        cv::Mat imgtest1, imgtest2, masktest, output;
+            imgtest1 = img_file(r);
+	        imgtest2 = resultaat(r);
+	        masktest = mask(r);
+	        cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
+
+	        cout << "Copy to output." << endl;
+			output.copyTo(resultaat(r));
+		}
+		 cout << "Push back." << endl;
+		totaal.push_back(resultaat);
+	}
+	return totaal;
+}
+
 bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
           CivetServer *server,
           struct mg_connection *conn)
@@ -544,6 +790,28 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	std::string s[8] = "";
 	std::string dummy;
 	std::string value;
+	if(CivetServer::getParam(conn, "streaming", dummy))
+	{
+		mg_printf(conn,
+			          "HTTP/1.1 200 OK\r\nContent-Type: "
+			          "multipart/x-mixed-replace; boundary=frame\r\n\r\n");
+		std::stringstream ss;
+		do {
+			if (!capture.model_loaded)
+			{
+				ss << "Content-type: text/plain\r\n\r\nInladen capturemodel...";
+				ss << "--frame\r\n";
+			}
+			else
+				ss << capture.manipulated.str();
+			ss.seekp(0, ios::end);
+			stringstream::pos_type offset = ss.tellp();
+			ss.seekp(0, ios::beg);
+			mg_write(conn, ss.str().c_str(), offset);
+			delay(500);
+		} while (true);
+	}
+	else
 	mg_printf(conn,
 	          "HTTP/1.1 200 OK\r\nContent-Type: "
 	          "text/html\r\nConnection: close\r\n\r\n");
@@ -555,8 +823,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    	ss << "Model Loaded!<br>";
 	    else
 	    	ss << "Model Loading...<br>";
-	    ss << "<img alt=\"Original Image\" src=\"data:image/png;base64," << capture.original.str() << "\"/><br>";
-	    ss << "<img alt=\"Manipulated Image\" src=\"data:image/png;base64," << capture.manipulated.str() << "\"/><br>";
+	    //ss << "<img alt=\"Manipulated Image\" src=\"data:image/png;base64," << capture.manipulated->str() << "\"/><br>";
 		mg_printf(conn, ss.str().c_str());
 		return true;
 	}
@@ -569,17 +836,42 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	   CivetServer::getParam(conn,"omschrijving", s[1]);
 	   capture.omschrijving = s[1].c_str();
 
-	   capture.detectCam();
-
 	   std::stringstream ss;
 	   ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   mg_printf(conn, ss.str().c_str());
 	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	}
+	else if(CivetServer::getParam(conn, "merge", dummy))
+	{
+		std::vector<cv::Mat> merged;
+		capture.manipulated.str("");
+		capture.manipulated.clear();
+		merged = capture.mergeFrames();
+		for (int i = 0; i < merged.size(); ++i)
+		{
+			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&merged[i]).str() << "\r\n--frame\r\n";
+		}
+
+		std::stringstream ss;
+		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
+	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, "<h2>Merged!...!</h2>");
+	}
 	else if(CivetServer::getParam(conn, "newselect", value))
 	{
+		capture.fileMat->clear();
 		capture.filmpje = value;
 		std::stringstream ss;
+		capture.openCap(CAP_FILE);
+		cv::Mat frame;
+		for (;;)
+		{
+			frame = capture.captureFrame();
+			if (frame.empty()) break;
+			capture.fileMat->push_back(capture.captureFrame());
+		}
+		capture.closeCap();
+
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << capture.getUrl() << "\"/></head><body>";
 		mg_printf(conn, ss.str().c_str());
 		mg_printf(conn, "</body></html>");
@@ -619,18 +911,94 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
        mg_printf(conn, "</body></html>");
 	}
 	/* if parameter start is present start button was pushed */
+	else if(CivetServer::getParam(conn, "save_video", dummy))
+	{
+		Size S = Size(640,480);
+		int codec = CV_FOURCC('M', 'J', 'P', 'G');
+		VideoWriter outputVideo("resources/capture.avi", codec, 5.0, S, true);
+
+		if (outputVideo.open("resources/capture.avi", codec, 5.0, S, true))
+			cout << "Video open success!" << endl;
+		else
+			cout << "Video open failure!" << endl;
+		for (int i = 0; i < (*capture.camMat).size(); ++i)
+		{
+			outputVideo << (*capture.camMat)[i];
+		}
+		outputVideo.release();
+		std::stringstream ss;
+		//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
+	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, "<h2>Video opgeslagen...!</h2>");
+	}
+	/* if parameter start is present start button was pushed */
 	else if(CivetServer::getParam(conn, "capture", dummy))
 	{
-		capture.captureCam();
+		capture.openCap(CAP_CAM);
+		capture.camMat->clear();
+		capture.camMat->push_back(capture.captureFrame());
+		capture.closeCap();
 		std::stringstream ss;
 	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
-	   	mg_printf(conn, "<h2>Starten...!</h2>");
+	   	mg_printf(conn, "<h2>Nieuwe Capture...!</h2>");
+	}
+	else if(CivetServer::getParam(conn, "capture_multi", value))
+	{
+		capture.openCap(CAP_CAM);
+		capture.camMat->clear();
+		for (int i = 0; i < atoi(value.c_str()); ++i)
+		{
+			capture.camMat->push_back(capture.captureFrame());
+		}
+		capture.closeCap();
+		std::stringstream ss;
+	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
+	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, "<h2>Frames Captured...!</h2>");
+	}
+	else if(CivetServer::getParam(conn, "capture_next", dummy))
+	{
+		capture.openCap(CAP_CAM);
+		capture.camMat->push_back(capture.captureFrame());
+		capture.closeCap();
+		std::stringstream ss;
+	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
+	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, "<h2>Frame Toegevoegd...!</h2>");
 	}
 	/* if parameter stop is present stop button was pushed */
 	else if(CivetServer::getParam(conn, "detect", dummy))
 	{
-		capture.detectCam();
+		std::vector<std::vector<cv::Point2f>> points;
+		capture.manipulated.str("");
+		capture.manipulated.clear();
+		for (int i = 0; i < capture.camMat->size(); ++i)
+		{
+			cv::Mat mat  = (*capture.camMat)[i];
+			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&mat);
+			capture.camPoints->push_back(points);
+			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << drawToJPG(&mat, &points).str() << "\r\n--frame\r\n";
+		}
+
+		std::stringstream ss;
+		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
+	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, "<h2>Stoppen...!</h2>");
+	}
+	else if(CivetServer::getParam(conn, "detect_file", dummy))
+	{
+		std::vector<std::vector<cv::Point2f>> points;
+		capture.manipulated.str("");
+		capture.manipulated.clear();
+		for (int i = 0; i < capture.fileMat->size(); ++i)
+		{
+			cv::Mat mat  = (*capture.fileMat)[i];
+			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&mat);
+			capture.filePoints->push_back(points);
+			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << drawToJPG(&mat, &points).str() << "\r\n--frame\r\n";
+		}
+
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -647,6 +1015,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	{
 		std::stringstream ss;
 		ss << "<script type=\"text/javascript\" src=\"resources/jquery-3.2.0.min.js\"></script>";
+		/*
 		ss << "<script type=\"text/javascript\">";
 		   ss << " $(document).ready(function(){";
 		   ss << "  setInterval(function(){";
@@ -655,6 +1024,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		   ss << " });},1000)";
 		   ss << "});";
 		ss << "</script>";
+		*/
 		ss << "</head><body>";
 		ss << "<h2>Capture:</h2>";
 		ss << "<form action=\"" << capture.getUrl() << "\" method=\"POST\">";
@@ -668,17 +1038,19 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
 	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"capture\" value=\"capture\" id=\"capture_button\">Capture</button>";
+	    ss << "<button type=\"submit\" name=\"capture_next\" value=\"capture_next\" id=\"capture_button_next\">Volgende Frame</button><br>";
+	    ss << "<button type=\"submit\" name=\"capture_multi\" value=\"30\" id=\"capture_button_30\">Capture 30</button>";
+	    ss << "<button type=\"submit\" name=\"capture_multi\" value=\"60\" id=\"capture_button_60\">Capture 60</button>";
+	    ss << "<button type=\"submit\" name=\"capture_multi\" value=\"120\" id=\"capture_button_120\">Capture 120</button></br>";
+	    ss << "<button type=\"submit\" name=\"save_video\" value=\"save_video\" id=\"save_video\">Save as Video</button></br>";
 	    ss << "<button type=\"submit\" name=\"detect\" value=\"detect\" id=\"detect_button\">Detect</button>";
+	    ss << "<button type=\"submit\" name=\"detect_file\" value=\"detect_file\" id=\"detect__file_button\">Detect File</button>";
 	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Filmpje</button>";
+	    ss << "<button type=\"submit\" name=\"merge\" id=\"merge\">Merge</button>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss <<  "</br>";
 	    ss << "<div id=\"capture\">";
-	    if (capture.model_loaded)
-	    	ss << "Model Loaded!<br>";
-	    else
-	    	ss << "Model Loading...<br>";
-	    ss << "<img alt=\"Original Image\" src=\"data:image/png;base64," << capture.original.str() << "\"/><br>";
-	    ss << "<img alt=\"Manipulated Image\" src=\"data:image/png;base64," << capture.manipulated.str() << "\"/><br>";
+	    ss << "<img src=\"" << capture.url << "/?streaming=true\">";
 	    ss << "</div>";
 	    ss << "<br>";
 	    ss << "<a href=\"/capturefactory\">Capture</a>";

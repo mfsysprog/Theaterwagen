@@ -35,9 +35,14 @@
 
 #define RESOURCES_DIR "/home/erik/resources/"
 #define CONFIG_FILE "/home/erik/config/capturefactory.yaml"
-#define FACE_DOWNSAMPLE_RATIO 1
+#define FACE_DOWNSAMPLE_RATIO 2
 
 extern CivetServer* server;
+
+enum captureType{
+	CAP_CAM,
+	CAP_FILE
+};
 
 class CaptureFactory {
 	friend class ChaseFactory;
@@ -80,22 +85,25 @@ class CaptureFactory {
 		};
 		private:
 		CaptureHandler* mh;
-		void captureCam();
-		void detectCam();
+		void openCap(captureType capturetype);
+		void closeCap();
+		cv::Mat captureFrame();
+		std::vector<std::vector<cv::Point2f>> detectFrame(cv::Mat* input);
+		std::vector<cv::Mat> mergeFrames();
 		void loadModel();
+		void captureLoop();
 		//void detectFilmpje();
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
 		std::string filmpje = "";
-		uuid_t uuid;
-		std::stringstream original;
 		std::stringstream manipulated;
+		std::vector<cv::Mat>* camMat;
+		std::vector<cv::Mat>* fileMat;
+		std::vector<std::vector<std::vector<cv::Point2f>>>* camPoints;
+		std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints;
+		uuid_t uuid;
 		cv::VideoCapture* cap;
-		cv::Mat* input;
-		cv::Mat* output;
-		cv::Mat* filmpje_input;
-		cv::Mat* filmpje_output;
 		dlib::frontal_face_detector* detector;
 		dlib::shape_predictor* pose_model;
 		bool model_loaded = false;
