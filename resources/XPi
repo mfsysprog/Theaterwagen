@@ -1,0 +1,16 @@
+1. Plug in your raspberry pi
+2. Start a second X-Server on your pc:
+2.1 As normal user: sudo xinit -- :1 &
+2.2. Switch back to your primary desktop with "Ctrl + Alt + F7"
+3.3. Leave this console window open!
+3. Start LXDE-Session over network and redirect X
+3.1 As normal User: DISPLAY=:1 ssh -X pi@<ip of your pi> lxsession
+3.2 Enter your password and leave this console window open!
+
+ssh -XC pi@192.168.0.57 x2x -east -to $DISPLAY
+
+
+
+sudo xinit -- :1 &
+DISPLAY=:1 ssh -X pi@192.168.3.2 lxsession
+

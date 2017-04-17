@@ -1,0 +1,9 @@
+sudo dpkg --add-architecture armhf
+aanpassen /etc/apt/sources.list, overal [arch=amd64] opgenomen en regel gecopieerd, dan [arch=armhf] en ports.ubuntu.com
+sudo apt install libsfml-dev:armhf
+sudo apt install qemu-user-static
+sudo apt install lxsession
+
+https://ubuntu-mate.community/t/tutorial-activate-opengl-driver-for-ubuntu-mate-16-04/7094
+
+

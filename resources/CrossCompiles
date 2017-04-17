@@ -1,0 +1,82 @@
+libjpeg-turbo-1.4.90:
+
+ ./configure --host=arm-linux-gnueabihf CC=arm-linux-gnueabihf-gcc AR=arm-linux-gnueabihf-ar STRIP=arm-linux=gnueabihf-strip RANLIB=arm-linux-gnueabihf-ranlib CPPFLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" --prefix=/home/erik/pilibjpegturbo/
+
+make 
+make install
+
+LOCAL INSTALL----:
+(sudo apt-get install yasm)
+./configure --prefix=/home/erik/libjpegturbo
+make
+make install
+LOCAL INSTALL----:
+
+opencv-3.1.0:
+
+export CC=/usr/bin/arm-linux-gnueabihf-gcc
+export CXX=/usr/bin/arm-linux-gnueabihf-g++
+
+cmake -DCMAKE_C_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_CXX_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_BUILD_TYPE=RELEASE -DWITH_JPEG=ON -DBUILD_JPEG=OFF -DJPEG_INCLUDE_DIR=/home/erik/pilibjpegturbo/include/ -DJPEG_LIBRARY=/home/erik/pilibjpegturbo/lib/libjpeg.a -DENABLE_VFPV3=ON -DENABLE_NEON=ON /home/erik/opencv-3.1.0
+
+diff --git a/pngpriv.h b/pngpriv.h
+index aa63cfa..a5f72b1 100644
+--- a/pngpriv.h
++++ b/pngpriv.h
+@@ -123,7 +123,7 @@
+     * Note that gcc-4.9 defines __ARM_NEON instead of __ARM_NEON__, so we
+     * check both variants.
+     */
+-#  if (defined(__ARM_NEON__) || defined(__ARM_NEON)) && \
++#  if defined(PNG_ARM_NEON) && (defined(__ARM_NEON__) || defined(__ARM_NEON)) && \
+    defined(PNG_ALIGNED_MEMORY_SUPPORTED)
+ #     define PNG_ARM_NEON_OPT 2
+ #  else
+
+make
+
+LOCAL INSTALL----:
+opnieuw gedownload
+mkdir build
+cd build
+cmake ../
+make
+cd ..
+mv build ~/libopencv
+LOCAL INSTALL----:
+
+
+
+cLandMark:
+
+export CC=/usr/bin/arm-linux-gnueabihf-gcc
+export CXX=/usr/bin/arm-linux-gnueabihf-g++
+
+cmake -DCMAKE_C_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_CXX_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DBUILD_CPP_EXAMPLES=ON -DDOUBLE_PRECISION=ON -DOpenCV_DIR=/home/erik/pilibopencv3 -DOpenCV_FOUND=ON -DCMAKE_BUILD_TYPE=RELEASE /home/erik/cLandMark
+
+
+SFML (x86):
+sudo apt-get install libsfml-system2
+sudo apt-get install libsfml-dev
+
+
+SFML (armhf):
+sudo apt-get install libsfml-system2:armhf
+sudo apt-get install libsfml-dev:armhf
+
+
+
+<voor later onderzoek:>
+git clone https://github.com/SFML/SFML.git SFML
+cd SFML
+mkdir build && cd build
+mkdir armeabi && cd armeabi
+sudo apt-get install libudev-dev:armhf
+sudo apt-get install libopenal-dev:armhf
+cmake -DCMAKE_C_FLAGS="-O3 -pipe -fPIC -funsafe-math-optimizations" -DCMAKE_CXX_FLAGS="-O3 -pipe -fPIC -funsafe-math-optimizations" -DDOUBLE_PRECISION=ON -DCMAKE_BUILD_TYPE=RELEASE -DUDEV_PATH_LIB=/usr/lib/arm-linux-gnueabihf -DOPENAL_LIBRARY=/usr/arm-linux-gnueabih ../..
+
+
+
+
+
+
