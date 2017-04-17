@@ -397,10 +397,11 @@ void CaptureFactory::Capture::openCap(captureType type)
 {
 	if (type == CAP_CAM)
 	{
-		cap->set(CAP_PROP_FRAME_WIDTH,1280);   // width pixels
-		cap->set(CAP_PROP_FRAME_HEIGHT,720);   // height pixels
 		if(!cap->isOpened()){   // connect to the camera
 			cap->open(0);
+			cap->set(CAP_PROP_FOURCC ,CV_FOURCC('M', 'J', 'P', 'G') );
+			cap->set(CAP_PROP_FRAME_WIDTH,1280);   // width pixels
+			cap->set(CAP_PROP_FRAME_HEIGHT,960);   // height pixels
 		}
 	}
 	else
@@ -505,6 +506,100 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        return points;
 }
 
+
+std::vector<cv::Mat> CaptureFactory::Capture::mergeFrames()
+{
+	std::vector<cv::Mat> totaal;
+	Mat img_cam;
+    Mat img_file;
+    Mat resultaat;
+
+	for (int frame = 0; frame < (*filePoints).size(); frame++)
+	{
+		img_file = (*fileMat)[frame].clone();
+		img_cam = (*camMat)[frame % ((*camMat).size())].clone();
+		resultaat = img_file.clone();
+		for (int gezicht = 0; gezicht < (*filePoints)[frame].size(); gezicht++)
+		{
+	        //convert Mat to float data type
+	        img_cam.convertTo(img_cam, CV_32F);
+	        resultaat.convertTo(resultaat, CV_32F);
+
+	        // Find convex hull
+	        std::vector<Point2f> hull1;
+	        std::vector<Point2f> hull2;
+	        std::vector<int> hullIndex;
+
+	        cout << "Finding convex hull." << endl;
+
+	        convexHull((*filePoints)[frame][gezicht], hullIndex, false, false);
+
+	        for(int i = 0; i < (int)hullIndex.size(); i++)
+	        {
+	            hull1.push_back((*camPoints)[frame % ((*camPoints).size())][gezicht][hullIndex[i]]);
+	            hull2.push_back((*filePoints)[frame][gezicht][hullIndex[i]]);
+	        }
+
+	        cout << "Finding delaunay triangulation." << endl;
+
+	        // Find delaunay triangulation for points on the convex hull
+	        std::vector< std::vector<int> > dt;
+	        Rect rect(0, 0, resultaat.cols, resultaat.rows);
+	        calculateDelaunayTriangles(rect, hull2, dt);
+
+	        cout << "Applying affine transformation." << endl;
+
+	        // Apply affine transformation to Delaunay triangles
+	        for(size_t i = 0; i < dt.size(); i++)
+	        {
+	           std::vector<Point2f> t1, t2;
+	           // Get points for img1, img2 corresponding to the triangles
+	           for(size_t j = 0; j < 3; j++)
+	           {
+	        	  t1.push_back(hull1[dt[i][j]]);
+	        	  t2.push_back(hull2[dt[i][j]]);
+	        	}
+	           cout << "Warping." << endl;
+	                warpTriangle(img_cam, resultaat, t1, t2);
+	       	}
+
+	        resultaat.convertTo(resultaat, CV_8UC3);
+
+	        cout << "Calculating mask." << endl;
+
+	        // Calculate mask
+	        std::vector<Point> hull8U;
+	        for(int i = 0; i < (int)hull2.size(); i++)
+	        {
+	            Point pt(hull2[i].x, hull2[i].y);
+	            hull8U.push_back(pt);
+	        }
+
+	        cout << "Fill Convex Poly." << endl;
+	        Mat mask = Mat::zeros(img_file.rows, img_file.cols, img_file.depth());
+	        fillConvexPoly(mask,&hull8U[0], hull8U.size(), Scalar(255,255,255));
+
+	        // Clone seamlessly.
+	        Rect r = boundingRect(hull2);
+	        //Point center = (r.tl() + r.br()) / 2;
+	        Point centertest = Point(img_file(r).cols / 2,img_file(r).rows / 2);
+
+	        cout << "Seamlessclone." << endl;
+
+	        cv::Mat imgtest1, imgtest2, masktest, output;
+            imgtest1 = img_file(r);
+	        imgtest2 = resultaat(r);
+	        masktest = mask(r);
+	        cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
+
+	        cout << "Copy to output." << endl;
+			output.copyTo(resultaat(r));
+		}
+		 cout << "Push back." << endl;
+		totaal.push_back(resultaat);
+	}
+	return totaal;
+}
 
 
 std::string CaptureFactory::Capture::getUuid(){
@@ -690,99 +785,6 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	return true;
 }
 
-std::vector<cv::Mat> CaptureFactory::Capture::mergeFrames()
-{
-	std::vector<cv::Mat> totaal;
-	Mat img_cam;
-    Mat img_file;
-    Mat resultaat;
-
-	for (int frame = 0; frame < (*filePoints).size(); frame++)
-	{
-		img_file = (*fileMat)[frame].clone();
-		img_cam = (*camMat)[frame % ((*camMat).size())].clone();
-		resultaat = img_file.clone();
-		for (int gezicht = 0; gezicht < (*filePoints)[frame].size(); gezicht++)
-		{
-	        //convert Mat to float data type
-	        img_cam.convertTo(img_cam, CV_32F);
-	        resultaat.convertTo(resultaat, CV_32F);
-
-	        // Find convex hull
-	        std::vector<Point2f> hull1;
-	        std::vector<Point2f> hull2;
-	        std::vector<int> hullIndex;
-
-	        cout << "Finding convex hull." << endl;
-
-	        convexHull((*filePoints)[frame][gezicht], hullIndex, false, false);
-
-	        for(int i = 0; i < (int)hullIndex.size(); i++)
-	        {
-	            hull1.push_back((*camPoints)[frame % ((*camPoints).size())][gezicht][hullIndex[i]]);
-	            hull2.push_back((*filePoints)[frame][gezicht][hullIndex[i]]);
-	        }
-
-	        cout << "Finding delaunay triangulation." << endl;
-
-	        // Find delaunay triangulation for points on the convex hull
-	        std::vector< std::vector<int> > dt;
-	        Rect rect(0, 0, resultaat.cols, resultaat.rows);
-	        calculateDelaunayTriangles(rect, hull2, dt);
-
-	        cout << "Applying affine transformation." << endl;
-
-	        // Apply affine transformation to Delaunay triangles
-	        for(size_t i = 0; i < dt.size(); i++)
-	        {
-	           std::vector<Point2f> t1, t2;
-	           // Get points for img1, img2 corresponding to the triangles
-	           for(size_t j = 0; j < 3; j++)
-	           {
-	        	  t1.push_back(hull1[dt[i][j]]);
-	        	  t2.push_back(hull2[dt[i][j]]);
-	        	}
-	                warpTriangle(img_cam, resultaat, t1, t2);
-	       	}
-
-	        resultaat.convertTo(resultaat, CV_8UC3);
-
-	        cout << "Calculating mask." << endl;
-
-	        // Calculate mask
-	        std::vector<Point> hull8U;
-	        for(int i = 0; i < (int)hull2.size(); i++)
-	        {
-	            Point pt(hull2[i].x, hull2[i].y);
-	            hull8U.push_back(pt);
-	        }
-
-	        cout << "Fill Convex Poly." << endl;
-	        Mat mask = Mat::zeros(img_file.rows, img_file.cols, img_file.depth());
-	        fillConvexPoly(mask,&hull8U[0], hull8U.size(), Scalar(255,255,255));
-
-	        // Clone seamlessly.
-	        Rect r = boundingRect(hull2);
-	        //Point center = (r.tl() + r.br()) / 2;
-	        Point centertest = Point(img_file(r).cols / 2,img_file(r).rows / 2);
-
-	        cout << "Seamlessclone." << endl;
-
-	        cv::Mat imgtest1, imgtest2, masktest, output;
-            imgtest1 = img_file(r);
-	        imgtest2 = resultaat(r);
-	        masktest = mask(r);
-	        cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
-
-	        cout << "Copy to output." << endl;
-			output.copyTo(resultaat(r));
-		}
-		 cout << "Push back." << endl;
-		totaal.push_back(resultaat);
-	}
-	return totaal;
-}
-
 bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
           CivetServer *server,
           struct mg_connection *conn)
@@ -860,6 +862,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	else if(CivetServer::getParam(conn, "newselect", value))
 	{
 		capture.fileMat->clear();
+		capture.filePoints->clear();
 		capture.filmpje = value;
 		std::stringstream ss;
 		capture.openCap(CAP_FILE);
@@ -913,7 +916,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	/* if parameter start is present start button was pushed */
 	else if(CivetServer::getParam(conn, "save_video", dummy))
 	{
-		Size S = Size(640,480);
+		Size S = Size((*capture.camMat)[0].cols,(*capture.camMat)[0].rows);
 		int codec = CV_FOURCC('M', 'J', 'P', 'G');
 		VideoWriter outputVideo("resources/capture.avi", codec, 5.0, S, true);
 
@@ -935,6 +938,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	else if(CivetServer::getParam(conn, "capture", dummy))
 	{
 		capture.openCap(CAP_CAM);
+		capture.camPoints->clear();
 		capture.camMat->clear();
 		capture.camMat->push_back(capture.captureFrame());
 		capture.closeCap();
@@ -946,6 +950,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	else if(CivetServer::getParam(conn, "capture_multi", value))
 	{
 		capture.openCap(CAP_CAM);
+		capture.camPoints->clear();
 		capture.camMat->clear();
 		for (int i = 0; i < atoi(value.c_str()); ++i)
 		{
@@ -977,8 +982,17 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		{
 			cv::Mat mat  = (*capture.camMat)[i];
 			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&mat);
-			capture.camPoints->push_back(points);
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << drawToJPG(&mat, &points).str() << "\r\n--frame\r\n";
+			if (points.size() == 0)
+			{
+				/* remove frame with no detected faces */
+				(*capture.camMat).erase((*capture.camMat).begin() + i);
+			}
+			else
+			{
+				/* add points of found faces */
+				capture.camPoints->push_back(points);
+				capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << drawToJPG(&mat, &points).str() << "\r\n--frame\r\n";
+			}
 		}
 
 		std::stringstream ss;
@@ -995,8 +1009,16 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		{
 			cv::Mat mat  = (*capture.fileMat)[i];
 			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&mat);
-			capture.filePoints->push_back(points);
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << drawToJPG(&mat, &points).str() << "\r\n--frame\r\n";
+			if (points.size() == 0)
+			{
+				/* remove frame with no detected faces */
+				(*capture.fileMat).erase((*capture.fileMat).begin() + i);
+			}
+			else
+			{
+				capture.filePoints->push_back(points);
+				capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << drawToJPG(&mat, &points).str() << "\r\n--frame\r\n";
+			}
 		}
 
 		std::stringstream ss;
