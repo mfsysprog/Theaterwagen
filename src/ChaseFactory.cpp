@@ -24,6 +24,17 @@ ChaseFactory::ChaseFactory(){
 	motor = new MotorFactory();
 	toggle = new ToggleFactory();
 	capture = new CaptureFactory();
+
+	std::map<std::string, ChaseFactory::Chase*>::iterator it = chasemap.begin();
+
+	for (std::pair<std::string, ChaseFactory::Chase*> element  : chasemap)
+	{
+		if (element.second->autostart == true)
+		{
+			element.second->Start();
+		}
+	}
+
 }
 
 ChaseFactory::~ChaseFactory(){
@@ -57,12 +68,13 @@ ChaseFactory::ChaseFactoryHandler::~ChaseFactoryHandler(){
 /*
  * Chase Constructor en Destructor
  */
-ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string naam, std::string omschrijving):cf(cf){
+ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string naam, std::string omschrijving, bool autostart):cf(cf){
 	mh = new ChaseFactory::Chase::ChaseHandler(*this);
 	uuid_generate( (unsigned char *)&uuid );
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
+	this->autostart = autostart;
 	this->running = false;
 
 	sequence_list = new std::list<sequence_item>();
@@ -73,12 +85,13 @@ ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string naam, std::string omsch
 	server->addHandler(url, mh);
 }
 
-ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, std::list<sequence_item>* sequence_list):cf(cf){
+ChaseFactory::Chase::Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, bool autostart, std::list<sequence_item>* sequence_list):cf(cf){
 	mh = new ChaseFactory::Chase::ChaseHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
+	this->autostart = autostart;
 	this->running = false;
 
 	this->sequence_list = sequence_list;
@@ -131,12 +144,13 @@ void ChaseFactory::load(){
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
+		bool autostart = node[i]["autostart"].as<bool>();
 		std::list<sequence_item>* sequence_list = new std::list<sequence_item>();
 		for (std::size_t k=0;k<node[i]["actions"].size();k += 2) {
 			sequence_item item = {node[i]["actions"][k].as<std::string>(), node[i]["actions"][k+1].as<std::string>()};
 			sequence_list->push_back(item);
 		}
-		ChaseFactory::Chase * chase = new ChaseFactory::Chase(*this, uuidstr, naam, omschrijving, sequence_list);
+		ChaseFactory::Chase * chase = new ChaseFactory::Chase(*this, uuidstr, naam, omschrijving, autostart, sequence_list);
 		std::string uuid_str = chase->getUuid();
 		chasemap.insert(std::make_pair(uuid_str,chase));
 	}
@@ -158,6 +172,8 @@ void ChaseFactory::save(){
 		emitter << YAML::Value << element.second->naam;
 		emitter << YAML::Key << "omschrijving";
 		emitter << YAML::Value << element.second->omschrijving;
+		emitter << YAML::Key << "autostart";
+		emitter << YAML::Value << element.second->autostart;
 		emitter << YAML::Key << "actions";
 		emitter << YAML::Flow;
 		emitter << YAML::BeginSeq;
@@ -182,8 +198,8 @@ std::string ChaseFactory::Chase::getUrl(){
 	return url;
 }
 
-ChaseFactory::Chase* ChaseFactory::addChase(std::string naam, std::string omschrijving){
-	ChaseFactory::Chase * chase = new ChaseFactory::Chase(*this, naam, omschrijving);
+ChaseFactory::Chase* ChaseFactory::addChase(std::string naam, std::string omschrijving, bool autostart){
+	ChaseFactory::Chase * chase = new ChaseFactory::Chase(*this, naam, omschrijving, autostart);
 	std::string uuid_str = chase->getUuid();
 	chasemap.insert(std::make_pair(uuid_str,chase));
 	return chase;
@@ -297,6 +313,10 @@ std::string ChaseFactory::Chase::getOmschrijving(){
 	return omschrijving;
 }
 
+bool ChaseFactory::Chase::getAutostart(){
+	return autostart;
+}
+
 bool ChaseFactory::ChaseFactoryHandler::handleGet(CivetServer *server, struct mg_connection *conn)
 	{
 		return ChaseFactory::ChaseFactoryHandler::handleAll("GET", server, conn);
@@ -363,8 +383,14 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 		std::string naam = value;
 		CivetServer::getParam(conn, "omschrijving", value);
 		std::string omschrijving = value;
+		CivetServer::getParam(conn, "autostart", value);
+		bool autostart;
+		if (value.compare("ja") == 0)
+			autostart = true;
+		else
+			autostart = false;
 
-		ChaseFactory::Chase* chase = chasefactory.addChase(naam, omschrijving);
+		ChaseFactory::Chase* chase = chasefactory.addChase(naam, omschrijving, autostart);
 
 		mg_printf(conn,
 				          "HTTP/1.1 200 OK\r\nContent-Type: "
@@ -386,6 +412,8 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
   			 "<input id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
 	         "<input id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	   ss << "<label for=\"autostart\">Automatisch starten:</label>"
+	         "<input id=\"autostart\" type=\"checkbox\" name=\"autostart\" value=\"ja\"/>" << "</br>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
@@ -638,6 +666,11 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   chase.naam = s[0].c_str();
 	   CivetServer::getParam(conn,"omschrijving", s[1]);
 	   chase.omschrijving = s[1].c_str();
+	   CivetServer::getParam(conn,"autostart", s[2]);
+	   if (s[2].compare("ja") == 0)
+		   chase.autostart = true;
+	   else
+		   chase.autostart = false;
 
 	   std::stringstream ss;
 	   ss << "<html><head>";
@@ -751,6 +784,16 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
 					  "<input id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
 					  chase.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
+		if (chase.autostart)
+		{
+			ss << "<label for=\"autostart\">Automatisch starten:</label>"
+			   	   	  "<input id=\"autostart\" type=\"checkbox\" name=\"autostart\" value=\"ja\" checked/>" << "</br>";
+		}
+		else
+		{
+			ss << "<label for=\"autostart\">Automatisch starten:</label>"
+			   	   	  "<input id=\"autostart\" type=\"checkbox\" name=\"autostart\" value=\"ja\"/>" << "</br>";
+		}
 	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 		ss << "<br>";

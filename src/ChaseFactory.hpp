@@ -58,12 +58,13 @@ class ChaseFactory {
 	class Chase {
 	public:
 		friend class ChaseFactory;
-		Chase(ChaseFactory& cf, std::string naam, std::string omschrijving);
-		Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, std::list<sequence_item>* sequence_list);
+		Chase(ChaseFactory& cf, std::string naam, std::string omschrijving, bool autostart);
+		Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, bool autostart, std::list<sequence_item>* sequence_list);
 		~Chase();
 		std::string getUuid();
 		std::string getNaam();
 		std::string getOmschrijving();
+		bool getAutostart();
 		std::string getUrl();
 		void Stop();
 		void Start();
@@ -71,7 +72,7 @@ class ChaseFactory {
 		class ChaseHandler : public CivetHandler
 		{
 			public:
-			ChaseHandler(Chase& schip);
+			ChaseHandler(Chase& chase);
 			~ChaseHandler();
 			private:
 			bool handleGet(CivetServer *server, struct mg_connection *conn);
@@ -84,6 +85,7 @@ class ChaseFactory {
 		ChaseFactory& cf;
 		ChaseHandler* mh;
 		volatile bool running;
+		bool autostart;
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
@@ -93,10 +95,9 @@ class ChaseFactory {
 	public:
 	ChaseFactory();
 	~ChaseFactory();
-	ChaseFactory::Chase* addChase(std::string naam, std::string omschrijving);
+	ChaseFactory::Chase* addChase(std::string naam, std::string omschrijving, bool autostart);
 	void deleteChase(std::string uuid);
 	void load();
-
 	private:
 	void save();
 

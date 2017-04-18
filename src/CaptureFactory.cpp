@@ -276,6 +276,9 @@ CaptureFactory::Capture::Capture(std::string naam, std::string omschrijving){
 	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 	filePoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 
+	cv::Mat boodschap(1280,960,CV_8UC3,cv::Scalar(255,255,255));
+	cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
+	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
 	pose_model = new dlib::shape_predictor();
 	detector = new dlib::frontal_face_detector();
 
@@ -425,6 +428,11 @@ void CaptureFactory::Capture::loadModel(){
     cout << "Reading in shape predictor..." << endl;
     deserialize("shape_predictor_68_face_landmarks.dat") >> *pose_model;
     cout << "Done reading in shape predictor ..." << endl;
+	cv::Mat boodschap(1280,960,CV_8UC3,cv::Scalar(255,255,255));
+	cv::putText(boodschap, "Gezichtsherkenningsmodel geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
+	this->manipulated.str("");
+	this->manipulated.clear();
+	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
     model_loaded = true;
 }
 
@@ -456,8 +464,18 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        cout << "Image size: " << (*input).cols << " x " << (*input).rows << std::endl;
        cv::Mat im_small;
        // Resize image for face detection
-       cv::resize(*input, im_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO, 1.0/FACE_DOWNSAMPLE_RATIO);
-	   std::vector<dlib::rectangle> faces;
+       try
+       {
+        cv::resize(*input, im_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO, 1.0/FACE_DOWNSAMPLE_RATIO);
+       }
+       catch( cv::Exception& e )
+       {
+  	    const char* err_msg = e.what();
+        std::cout << "exception caught in resize: " << err_msg << std::endl;
+        return points;
+       }
+
+       std::vector<dlib::rectangle> faces;
        cout << "Detecting faces..." << endl;
        // Detect faces
        cv_image<bgr_pixel> img(*input);
@@ -532,7 +550,15 @@ std::vector<cv::Mat> CaptureFactory::Capture::mergeFrames()
 
 	        cout << "Finding convex hull." << endl;
 
-	        convexHull((*filePoints)[frame][gezicht], hullIndex, false, false);
+	        try
+	        {
+	         convexHull((*filePoints)[frame][gezicht], hullIndex, false, false);
+	        }
+            catch( cv::Exception& e )
+	      	{
+	   	     const char* err_msg = e.what();
+	         std::cout << "exception caught in convexHull: " << err_msg << std::endl;
+	      	}
 
 	        for(int i = 0; i < (int)hullIndex.size(); i++)
 	        {
@@ -545,7 +571,16 @@ std::vector<cv::Mat> CaptureFactory::Capture::mergeFrames()
 	        // Find delaunay triangulation for points on the convex hull
 	        std::vector< std::vector<int> > dt;
 	        Rect rect(0, 0, resultaat.cols, resultaat.rows);
-	        calculateDelaunayTriangles(rect, hull2, dt);
+	        try
+	        {
+	         calculateDelaunayTriangles(rect, hull2, dt);
+	        }
+            catch( cv::Exception& e )
+	      	{
+	   	     const char* err_msg = e.what();
+	         std::cout << "exception caught in calculateDelauneyTriangles: " << err_msg << std::endl;
+	      	}
+
 
 	        cout << "Applying affine transformation." << endl;
 
@@ -559,8 +594,15 @@ std::vector<cv::Mat> CaptureFactory::Capture::mergeFrames()
 	        	  t1.push_back(hull1[dt[i][j]]);
 	        	  t2.push_back(hull2[dt[i][j]]);
 	        	}
-	           cout << "Warping." << endl;
-	                warpTriangle(img_cam, resultaat, t1, t2);
+	           try
+	           {
+                warpTriangle(img_cam, resultaat, t1, t2);
+	           }
+	           catch( cv::Exception& e )
+		       {
+		   	    const char* err_msg = e.what();
+		        std::cout << "exception caught in warpTriangle: " << err_msg << std::endl;
+		       }
 	       	}
 
 	        resultaat.convertTo(resultaat, CV_8UC3);
@@ -577,7 +619,15 @@ std::vector<cv::Mat> CaptureFactory::Capture::mergeFrames()
 
 	        cout << "Fill Convex Poly." << endl;
 	        Mat mask = Mat::zeros(img_file.rows, img_file.cols, img_file.depth());
-	        fillConvexPoly(mask,&hull8U[0], hull8U.size(), Scalar(255,255,255));
+	        try
+	        {
+	         fillConvexPoly(mask,&hull8U[0], hull8U.size(), Scalar(255,255,255));
+	        }
+            catch( cv::Exception& e )
+	      	{
+	   	     const char* err_msg = e.what();
+	         std::cout << "exception caught in fillConvexPoly: " << err_msg << std::endl;
+	      	}
 
 	        // Clone seamlessly.
 	        Rect r = boundingRect(hull2);
@@ -590,7 +640,15 @@ std::vector<cv::Mat> CaptureFactory::Capture::mergeFrames()
             imgtest1 = img_file(r);
 	        imgtest2 = resultaat(r);
 	        masktest = mask(r);
-	        cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
+	        try
+	        {
+	         cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
+	        }
+            catch( cv::Exception& e )
+	      	{
+	   	     const char* err_msg = e.what();
+	         std::cout << "exception caught in seamlessClone: " << err_msg << std::endl;
+	      	}
 
 	        cout << "Copy to output." << endl;
 			output.copyTo(resultaat(r));
@@ -799,18 +857,12 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			          "multipart/x-mixed-replace; boundary=frame\r\n\r\n");
 		std::stringstream ss;
 		do {
-			if (!capture.model_loaded)
-			{
-				ss << "Content-type: text/plain\r\n\r\nInladen capturemodel...";
-				ss << "--frame\r\n";
-			}
-			else
-				ss << capture.manipulated.str();
+			ss << capture.manipulated.str();
 			ss.seekp(0, ios::end);
 			stringstream::pos_type offset = ss.tellp();
 			ss.seekp(0, ios::beg);
 			mg_write(conn, ss.str().c_str(), offset);
-			delay(500);
+			delay(200);
 		} while (true);
 	}
 	else
@@ -942,6 +994,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.camMat->clear();
 		capture.camMat->push_back(capture.captureFrame());
 		capture.closeCap();
+		capture.manipulated.str("");
+		capture.manipulated.clear();
+		for (int i = 0; i < capture.camMat->size(); ++i)
+		{
+			cv::Mat mat  = (*capture.camMat)[i];
+			/* add points of found faces */
+			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&mat).str() << "\r\n--frame\r\n";
+		}
 		std::stringstream ss;
 	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -957,6 +1017,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			capture.camMat->push_back(capture.captureFrame());
 		}
 		capture.closeCap();
+		capture.manipulated.str("");
+		capture.manipulated.clear();
+		for (int i = 0; i < capture.camMat->size(); ++i)
+		{
+			cv::Mat mat  = (*capture.camMat)[i];
+			/* add points of found faces */
+			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&mat).str() << "\r\n--frame\r\n";
+		}
 		std::stringstream ss;
 	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -967,6 +1035,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.openCap(CAP_CAM);
 		capture.camMat->push_back(capture.captureFrame());
 		capture.closeCap();
+		capture.manipulated.str("");
+		capture.manipulated.clear();
+		for (int i = 0; i < capture.camMat->size(); ++i)
+		{
+			cv::Mat mat  = (*capture.camMat)[i];
+			/* add points of found faces */
+			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&mat).str() << "\r\n--frame\r\n";
+		}
 		std::stringstream ss;
 	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
@@ -975,6 +1051,8 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	/* if parameter stop is present stop button was pushed */
 	else if(CivetServer::getParam(conn, "detect", dummy))
 	{
+		std::thread t1( [this] {
+
 		std::vector<std::vector<cv::Point2f>> points;
 		capture.manipulated.str("");
 		capture.manipulated.clear();
@@ -995,13 +1073,21 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			}
 		}
 
+		} );
+
+		mythread::setScheduling(t1, SCHED_IDLE, 0);
+
+		t1.detach();
+
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
-	   	mg_printf(conn, "<h2>Stoppen...!</h2>");
+	   	mg_printf(conn, "<h2>Gezichtsdetectie op achtergrond...!</h2>");
 	}
 	else if(CivetServer::getParam(conn, "detect_file", dummy))
 	{
+		std::thread t1( [this] {
+
 		std::vector<std::vector<cv::Point2f>> points;
 		capture.manipulated.str("");
 		capture.manipulated.clear();
@@ -1021,10 +1107,16 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			}
 		}
 
+		} );
+
+		mythread::setScheduling(t1, SCHED_IDLE, 0);
+
+		t1.detach();
+
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn, ss.str().c_str());
-	   	mg_printf(conn, "<h2>Stoppen...!</h2>");
+	   	mg_printf(conn, "<h2>Gezichtsdetectie op achtergrond...!</h2>");
 	}
 	else
 	{
