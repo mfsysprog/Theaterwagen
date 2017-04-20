@@ -24,6 +24,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/photo.hpp>
+#include <opencv2/objdetect/objdetect.hpp>
 #include <b64/encode.h>
 #include <thread>
 #include <dlib/opencv.h>
@@ -89,7 +90,7 @@ class CaptureFactory {
 		void closeCap();
 		cv::Mat captureFrame();
 		std::vector<std::vector<cv::Point2f>> detectFrame(cv::Mat* input);
-		std::vector<cv::Mat> mergeFrames();
+		std::vector<std::stringstream> mergeFrames();
 		void loadModel();
 		void captureLoop();
 		//void detectFilmpje();
@@ -99,11 +100,11 @@ class CaptureFactory {
 		std::string filmpje = "";
 		std::stringstream manipulated;
 		std::vector<cv::Mat>* camMat;
-		std::vector<cv::Mat>* fileMat;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* camPoints;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints;
 		uuid_t uuid;
 		cv::VideoCapture* cap;
+		cv::CascadeClassifier* face_cascade;
 		dlib::frontal_face_detector* detector;
 		dlib::shape_predictor* pose_model;
 		bool model_loaded = false;
