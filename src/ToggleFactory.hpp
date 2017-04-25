@@ -22,8 +22,8 @@
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
 
-#define RESOURCES_DIR "/home/erik/resources/"
-#define CONFIG_FILE "/home/erik/config/togglefactory.yaml"
+#define RESOURCES_DIR "/home/theaterwagen/resources/"
+#define CONFIG_FILE "/home/theaterwagen/config/togglefactory.yaml"
 
 extern CivetServer* server;
 

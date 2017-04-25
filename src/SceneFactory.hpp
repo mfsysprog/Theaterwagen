@@ -25,8 +25,8 @@
 #include "yaml-cpp/yaml.h"
 #include "FixtureFactory.hpp"
 
-#define RESOURCES_DIR "/home/erik/resources/"
-#define CONFIG_FILE "/home/erik/config/scenefactory.yaml"
+#define RESOURCES_DIR "/home/theaterwagen/resources/"
+#define CONFIG_FILE "/home/theaterwagen/config/scenefactory.yaml"
 
 extern CivetServer* server;
 

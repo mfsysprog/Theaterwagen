@@ -25,6 +25,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/photo.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
+#include <SFML/Graphics.hpp>
 #include <b64/encode.h>
 #include <thread>
 #include <dlib/opencv.h>
@@ -34,8 +35,8 @@
 #include <dlib/image_io.h>
 #include <dlib/gui_widgets.h>
 
-#define RESOURCES_DIR "/home/erik/resources/"
-#define CONFIG_FILE "/home/erik/config/capturefactory.yaml"
+#define RESOURCES_DIR "/home/theaterwagen/resources/"
+#define CONFIG_FILE "/home/theaterwagen/config/capturefactory.yaml"
 #define FACE_DOWNSAMPLE_RATIO 2
 
 extern CivetServer* server;
@@ -85,6 +86,7 @@ class CaptureFactory {
 			Capture& capture;
 		};
 		private:
+		void renderingThread(sf::RenderWindow *window);
 		CaptureHandler* mh;
 		void openCap(captureType capturetype);
 		void closeCap();
@@ -102,6 +104,7 @@ class CaptureFactory {
 		std::vector<cv::Mat>* camMat;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* camPoints;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints;
+		std::vector<std::stringstream>* merged;
 		uuid_t uuid;
 		cv::VideoCapture* cap;
 		cv::CascadeClassifier* face_cascade;

@@ -11,6 +11,9 @@
 using namespace std;
 using namespace cv;
 using namespace dlib;
+using namespace sf;
+
+std::mutex m;
 
 class mythread : public std::thread
 {
@@ -67,8 +70,8 @@ static std::stringstream matToJPG(cv::Mat* input)
     cv::Mat resized;
     try
     {
-        cv::resize((*input), resized, cv::Size(640,480), 0, 0);
-    	cv::imencode(".jpeg", resized, buf, std::vector<int>() );
+        cv::resize((*input), resized, cv::Size(1024,768), 0, 0);
+    	cv::imencode(".jpg", resized, buf, std::vector<int>() );
     }
     catch( cv::Exception& e )
     {
@@ -102,7 +105,7 @@ void applyAffineTransform(Mat &warpImage, Mat &src, std::vector<Point2f> &srcTri
 
 // Calculate Delaunay triangles for set of points
 // Returns the vector of indices of 3 points for each triangle
-static void calculateDelaunayTriangles(Rect rect, std::vector<cv::Point2f> &points, std::vector< std::vector<int> > &delaunayTri){
+static void calculateDelaunayTriangles(cv::Rect rect, std::vector<cv::Point2f> &points, std::vector< std::vector<int> > &delaunayTri){
 
 	// Create an instance of Subdiv2D
     Subdiv2D subdiv(rect);
@@ -170,8 +173,8 @@ void draw_polyline(cv::Mat &img, std::vector<cv::Point2f> points, const int star
 void warpTriangle(Mat &img1, Mat &img2, std::vector<Point2f> &t1, std::vector<Point2f> &t2)
 {
 
-    Rect r1 = boundingRect(t1);
-    Rect r2 = boundingRect(t2);
+    cv::Rect r1 = boundingRect(t1);
+    cv::Rect r2 = boundingRect(t2);
 
     // Offset points by left top corner of the respective rectangles
     std::vector<Point2f> t1Rect, t2Rect;
@@ -279,14 +282,28 @@ CaptureFactory::Capture::Capture(std::string naam, std::string omschrijving){
 
 	cv::Mat boodschap(1280,960,CV_8UC3,cv::Scalar(255,255,255));
 	cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
+	std::unique_lock<std::mutex> l(m);
 	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
 	pose_model = new dlib::shape_predictor();
 	detector = new dlib::frontal_face_detector();
+
+	merged = new std::vector<std::stringstream>();
 
 	std::thread t1( [this] { loadModel(); } );
 	mythread::setScheduling(t1, SCHED_IDLE, 0);
 
 	t1.detach();
+
+	std::thread t2( [this] {
+		setenv("DISPLAY",":0.0",0);
+		sf::RenderWindow window(sf::VideoMode(1024, 768), "RenderWindow",sf::Style::Fullscreen);
+		//sf::RenderWindow window(sf::VideoMode(640, 480), "RenderWindow");
+	    window.setMouseCursorVisible(false);
+		window.setActive(false);
+		renderingThread(&window); } );
+	mythread::setScheduling(t2, SCHED_IDLE, 0);
+
+	t2.detach();
 
 	std::stringstream ss;
 	ss << "/capture-" << this->getUuid();
@@ -308,6 +325,8 @@ CaptureFactory::Capture::Capture(std::string uuidstr, std::string naam, std::str
 
 	pose_model = new dlib::shape_predictor();
 	detector = new dlib::frontal_face_detector();
+
+	merged = new std::vector<std::stringstream>();
 
 	std::thread t1( [this] { loadModel(); } );
 	mythread::setScheduling(t1, SCHED_IDLE, 0);
@@ -343,6 +362,82 @@ CaptureFactory::Capture::CaptureHandler::~CaptureHandler(){
 /* overige functies
  *
  */
+
+void CaptureFactory::Capture::renderingThread(sf::RenderWindow *window)
+{
+	sf::Image image;
+	sf::Texture texture;
+	sf::Sprite sprite;
+
+    // the rendering loop
+    while (window->isOpen())
+    {
+       delay(200);
+       if (merged->size() > 0)
+    	for (int i = 0; i < merged->size(); ++i)
+    	{
+    		std::unique_lock<std::mutex> l(m);
+    		/*
+    		const std::string tmp = manipulated.str();
+    		std::ostringstream result;
+    		result << std::setw(2) << std::setfill('0') << std::hex << std::uppercase;
+    		std::copy(tmp.begin(), tmp.begin()+8, std::ostream_iterator<unsigned int>(result, " "));
+    		std::cout << ":" << result.str() << std::endl;
+    		const char* p = tmp.c_str();
+    		int size = tmp.size();
+    		cout << "size: " << size << endl;
+    		image.create(1024,768,sf::Color(0,0,0));
+    		*/
+       		image.loadFromMemory((*merged)[i].str().c_str(),(*merged)[i].str().length());
+       		/*
+    		image.loadFromMemory(manipulated.str().c_str() + std::string("Content-Type: image/jpeg\r\n\r\n").length(),
+    				             manipulated.str().length() - std::string("Content-Type: image/jpeg\r\n\r\n\r\n--frame\r\n").length());
+    		*/
+
+       		if (!texture.loadFromImage(image))
+       		{
+       			break;
+       		}
+
+       		sprite.setTexture(texture);
+
+       		window->draw(sprite);
+       		window->display();
+    	}
+       else
+       {
+          std::unique_lock<std::mutex> l(m);
+          image.loadFromMemory(manipulated.str().c_str() + std::string("Content-Type: image/jpeg\r\n\r\n").length(),
+  				               manipulated.str().length() - std::string("Content-Type: image/jpeg\r\n\r\n\r\n--frame\r\n").length());
+          if (!texture.loadFromImage(image))
+                   {
+                       break;
+                   }
+
+          sprite.setTexture(texture);
+
+          window->draw(sprite);
+          window->display();
+       }
+
+		sf::Event event;
+		/* Some workload may be here */
+        while (window->pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+                window->close();
+            if (event.type == sf::Event::KeyPressed)
+            {
+                if (event.key.code == sf::Keyboard::Escape)
+                {
+                    std::cout << "the escape key was pressed" << std::endl;
+                    window->close();
+                }
+            }
+        }
+
+    }
+}
 
 
 void CaptureFactory::load(){
@@ -402,8 +497,8 @@ void CaptureFactory::Capture::openCap(captureType type)
 		if(!cap->isOpened()){   // connect to the camera
 			cap->open(0);
 			cap->set(CAP_PROP_FOURCC ,CV_FOURCC('M', 'J', 'P', 'G') );
-			cap->set(CAP_PROP_FRAME_WIDTH,1280);   // width pixels
-			cap->set(CAP_PROP_FRAME_HEIGHT,960);   // height pixels
+			cap->set(CAP_PROP_FRAME_WIDTH,1024);   // width pixels
+			cap->set(CAP_PROP_FRAME_HEIGHT,768);   // height pixels
 		}
 	}
 	else
@@ -431,6 +526,7 @@ void CaptureFactory::Capture::loadModel(){
     cout << "Done reading in shape predictor ..." << endl;
 	cv::Mat boodschap(1280,960,CV_8UC3,cv::Scalar(255,255,255));
 	cv::putText(boodschap, "Gezichtsherkenningsmodel geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
+	std::unique_lock<std::mutex> l(m);
 	this->manipulated.str("");
 	this->manipulated.clear();
 	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
@@ -477,7 +573,7 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        }
 
        //std::vector<dlib::rectangle> faces;
-       std::vector<Rect> faces;
+       std::vector<cv::Rect> faces;
        cout << "Detecting faces..." << endl;
        // Detect faces
        cv_image<bgr_pixel> img(*input);
@@ -587,7 +683,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 
 	        // Find delaunay triangulation for points on the convex hull
 	        std::vector< std::vector<int> > dt;
-	        Rect rect(0, 0, resultaat.cols, resultaat.rows);
+	        cv::Rect rect(0, 0, resultaat.cols, resultaat.rows);
 	        try
 	        {
 	         calculateDelaunayTriangles(rect, hull2, dt);
@@ -651,7 +747,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	      	}
 
 	        // Clone seamlessly.
-	        Rect r = boundingRect(hull2);
+	        cv::Rect r = boundingRect(hull2);
 	        //Point center = (r.tl() + r.br()) / 2;
 	        Point centertest = Point(img_file(r).cols / 2,img_file(r).rows / 2);
 
@@ -879,6 +975,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			          "HTTP/1.1 200 OK\r\nContent-Type: "
 			          "multipart/x-mixed-replace; boundary=frame\r\n\r\n");
 		std::stringstream ss;
+		std::unique_lock<std::mutex> l(m);
 		ss << capture.manipulated.str();
 		ss.seekp(0, ios::end);
 		stringstream::pos_type offset = ss.tellp();
@@ -917,13 +1014,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	}
 	else if(CivetServer::getParam(conn, "merge", dummy))
 	{
-		std::vector<std::stringstream> merged;
+		delete capture.merged;
+		capture.merged = new std::vector<std::stringstream>(capture.mergeFrames());
+		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
-		merged = capture.mergeFrames();
-		for (int i = 0; i < merged.size(); ++i)
+		for (int i = 0; i < capture.merged->size(); ++i)
 		{
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << merged[i].str() << "\r\n--frame\r\n";
+			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << (*capture.merged)[i].str() << "\r\n--frame\r\n";
 		}
 
 		std::stringstream ss;
@@ -935,6 +1033,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	{
 		//capture.fileMat->clear();
 		//capture.filePoints->clear();
+		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
 		capture.filmpje = value;
@@ -1017,6 +1116,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.camMat->clear();
 		capture.camMat->push_back(capture.captureFrame());
 		capture.closeCap();
+		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
 		for (int i = 0; i < capture.camMat->size(); ++i)
@@ -1040,6 +1140,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			capture.camMat->push_back(capture.captureFrame());
 		}
 		capture.closeCap();
+		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
 		for (int i = 0; i < capture.camMat->size(); ++i)
@@ -1058,6 +1159,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.openCap(CAP_CAM);
 		capture.camMat->push_back(capture.captureFrame());
 		capture.closeCap();
+		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
 		for (int i = 0; i < capture.camMat->size(); ++i)
@@ -1077,6 +1179,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		std::thread t1( [this] {
 
 		std::vector<std::vector<cv::Point2f>> points;
+		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
 		for (int i = 0; i < capture.camMat->size(); ++i)
@@ -1112,6 +1215,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		std::thread t1( [this] {
 
 		std::vector<std::vector<cv::Point2f>> points;
+		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
 		capture.openCap(CAP_FILE);

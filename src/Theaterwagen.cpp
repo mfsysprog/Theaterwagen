@@ -45,6 +45,7 @@ int main(int, char**){
 	//FaceDetectorAndTracker detector("haarcascade_frontalface_default.xml", 0, num_faces);
 	//FaceSwapper face_swapper("shape_predictor_68_face_landmarks.dat");
 
+    setenv("WIRINGPI_GPIOMEM", "1", 1);
 	if (wiringPiSetupGpio() != 0){
 		std::cerr << "Unable to start wiringPi interface!" << std::endl;
 		return 1;
@@ -52,12 +53,10 @@ int main(int, char**){
 
 	ChaseFactory* chase = new ChaseFactory();
 
-	double fps = 0;
-
-    while (1==1){
-    	delay(1000);
-    }
-
+	do
+	{
+		delay(100);
+	} while(true);
     delete chase;
 	return 0;
 }

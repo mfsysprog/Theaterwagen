@@ -30,8 +30,8 @@
 #include "ToggleFactory.hpp"
 #include "CaptureFactory.hpp"
 
-#define RESOURCES_DIR "/home/erik/resources/"
-#define CONFIG_FILE "/home/erik/config/chasefactory.yaml"
+#define RESOURCES_DIR "/home/theaterwagen/resources/"
+#define CONFIG_FILE "/home/theaterwagen/config/chasefactory.yaml"
 
 extern CivetServer* server;
 
