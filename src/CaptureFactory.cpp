@@ -295,6 +295,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 	cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
 	std::unique_lock<std::mutex> l(m);
 	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
+	l.unlock();
 	pose_model = new dlib::shape_predictor();
 	detector = new dlib::frontal_face_detector();
 
@@ -369,10 +370,10 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
     while (window->isOpen())
     {
        delay(200);
+       std::unique_lock<std::mutex> l(m);
        if (on_screen->size() > 0)
     	for (int i = 0; i < on_screen->size(); ++i)
     	{
-    		std::unique_lock<std::mutex> l(m);
     		/*
     		const std::string tmp = manipulated.str();
     		std::ostringstream result;
@@ -402,7 +403,6 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
     	}
        else
        {
-          std::unique_lock<std::mutex> l(m);
           image.create(1024,768,sf::Color(0,0,0));
           if (!texture.loadFromImage(image))
                    {
@@ -414,6 +414,7 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
           window->draw(sprite);
           window->display();
        }
+       l.unlock();
 
 		sf::Event event;
 		/* Some workload may be here */
@@ -536,7 +537,8 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
 	try
 	{
 		*cap >> input;
-		cv::resize(input,input,cv::Size(1024,768));
+		if (!input.empty())
+			cv::resize(input,input,cv::Size(1024,768));
 	}
 	catch( cv::Exception& e )
 	{
@@ -629,29 +631,24 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
 std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 {
 	std::vector<std::stringstream> totaal;
-	Mat* img_cam = new Mat();
-    Mat* img_file = new Mat();
-    Mat* resultaat = new Mat();
-    Mat* mask = new Mat();
-    Mat* output = new Mat();
 
 	openCap(CAP_FILE);
 
 	for (int frame = 0; frame < (*filePoints).size(); frame++)
 	{
 		//delete img_file;
-		*img_file = captureFrame();
-		if (img_file->empty()) break;
-		cv::resize(*img_file,*img_file,cv::Size(1024,768));
+		cv::Mat img_file = captureFrame();
+		if (img_file.empty()) break;
+		//cv::resize(img_file,img_file,cv::Size(1024,768));
 		//remove frame to keep memory available
 		//(*fileMat).erase((*fileMat).begin() + frame);
-		*img_cam = (*camMat)[frame % ((*camMat).size())].clone();
-		*resultaat = img_file->clone();
+		cv::Mat img_cam = (*camMat)[frame % ((*camMat).size())].clone();
+		cv::Mat resultaat = img_file.clone();
 		for (int gezicht = 0; gezicht < (*filePoints)[frame].size(); gezicht++)
 		{
 	        //convert Mat to float data type
-	        (*img_cam).convertTo(*img_cam, CV_32F);
-	        (*resultaat).convertTo(*resultaat, CV_32F);
+	        img_cam.convertTo(img_cam, CV_32F);
+	        resultaat.convertTo(resultaat, CV_32F);
 
 	        // Find convex hull
 	        std::vector<Point2f> hull1;
@@ -681,7 +678,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 
 	        // Find delaunay triangulation for points on the convex hull
 	        std::vector< std::vector<int> > dt;
-	        cv::Rect rect(0, 0, resultaat->cols, resultaat->rows);
+	        cv::Rect rect(0, 0, resultaat.cols, resultaat.rows);
 	        try
 	        {
 	         calculateDelaunayTriangles(rect, hull2, dt);
@@ -708,7 +705,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	        	}
 	           try
 	           {
-                warpTriangle(*img_cam, *resultaat, t1, t2);
+                warpTriangle(img_cam, resultaat, t1, t2);
 	           }
 	           catch( cv::Exception& e )
 		       {
@@ -718,7 +715,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		       }
 	       	}
 
-	        (*resultaat).convertTo(*resultaat, CV_8UC3);
+	        resultaat.convertTo(resultaat, CV_8UC3);
 
 	        cout << "Calculating mask." << endl;
 
@@ -732,10 +729,11 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 
 	        cout << "Fill Convex Poly." << endl;
 
+	        cv::Mat mask = Mat::zeros(img_file.rows, img_file.cols, img_file.depth());
+
 	        try
 	        {
-             *mask = Mat::zeros(img_file->rows, img_file->cols, img_file->depth());
-	         fillConvexPoly(*mask,&hull8U[0], hull8U.size(), Scalar(255,255,255));
+	         fillConvexPoly(mask,&hull8U[0], hull8U.size(), Scalar(255,255,255));
 	        }
             catch( cv::Exception& e )
 	      	{
@@ -747,37 +745,32 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	        // Clone seamlessly.
 	        cv::Rect r = boundingRect(hull2);
 	        //Point center = (r.tl() + r.br()) / 2;
-	        Point centertest = Point((*img_file)(r).cols / 2,(*img_file)(r).rows / 2);
+	        Point centertest = Point(img_file(r).cols / 2,img_file(r).rows / 2);
 
 	        cout << "Seamlessclone." << endl;
 
 	        try
 	        {
-	         cv::Mat imgtest1, imgtest2, masktest;
-	         imgtest1 = (*img_file)(r);
-	         imgtest2 = (*resultaat)(r);
-	         masktest = (*mask)(r);
-	         cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, *output, NORMAL_CLONE);
+	         cv::Mat imgtest1 = img_file(r);
+	         cv::Mat imgtest2 = resultaat(r);
+	         cv::Mat masktest = mask(r);
+	         cv::Mat output;
+	         cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
              cout << "Copy to output." << endl;
-		     (*output).copyTo((*resultaat)(r));
+		     output.copyTo(resultaat(r));
 	        }
             catch( cv::Exception& e )
 	      	{
              std::cout << "exception!" << endl;
 	   	     const char* err_msg = e.what();
 	         std::cout << "exception caught in seamlessClone: " << err_msg << std::endl;
-	     	 //return totaal;
+	     	 return totaal;
 	      	}
+    	    cout << "Push back." << endl;
+    		totaal.push_back(matToJPG(&resultaat));
 		}
-	    cout << "Push back." << endl;
-		totaal.push_back(matToJPG(resultaat));
 	}
 	closeCap();
-	delete img_cam;
-	delete img_file;
-	delete resultaat;
-	delete mask;
-	delete output;
 	return totaal;
 }
 
@@ -1017,9 +1010,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	}
 	else if(CivetServer::getParam(conn, "merge", dummy))
 	{
+		std::unique_lock<std::mutex> l(m);
 		delete capture.cf.on_screen;
 		capture.cf.on_screen = new std::vector<std::stringstream>(capture.mergeFrames());
-		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
 		for (int i = 0; i < capture.cf.on_screen->size(); ++i)
