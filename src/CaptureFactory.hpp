@@ -65,7 +65,7 @@ class CaptureFactory {
 		friend class CaptureFactory;
 		friend class ChaseFactory;
 		Capture(CaptureFactory& cf, std::string naam, std::string omschrijving);
-		Capture(CaptureFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving);
+		Capture(CaptureFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, std::string filmpje, std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints);
 		~Capture();
 		std::string getUuid();
 		std::string getNaam();

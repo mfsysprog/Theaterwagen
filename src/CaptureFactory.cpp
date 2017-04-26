@@ -310,18 +310,24 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 	server->addHandler(url, mh);
 }
 
-CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving):cf(cf){
+CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, std::string filmpje, std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints):cf(cf){
 	mh = new CaptureFactory::Capture::CaptureHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
 	this->cap = new cv::VideoCapture();
+	this->filmpje = filmpje;
+	this->filePoints = filepoints;
 
 	camMat = new std::vector<cv::Mat>();
 	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
-	filePoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 
+	cv::Mat boodschap(1280,960,CV_8UC3,cv::Scalar(255,255,255));
+	cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
+	std::unique_lock<std::mutex> l(m);
+	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
+	l.unlock();
 	pose_model = new dlib::shape_predictor();
 	detector = new dlib::frontal_face_detector();
 
@@ -459,7 +465,26 @@ void CaptureFactory::load(){
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
-		CaptureFactory::Capture * capture = new CaptureFactory::Capture(*this, uuidstr, naam, omschrijving);
+		std::string filmpje = node[i]["filmpje"].as<std::string>();
+		std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
+		for (std::size_t frame=0;frame < node[i]["filepoints"].size();frame++)
+		{
+		  std::vector<std::vector<cv::Point2f>> faces;
+		  for(std::size_t face=0;face < node[i]["filepoints"][frame].size();face++)
+		  {
+			 std::vector<cv::Point2f> points;
+			 for(std::size_t point=0;point < node[i]["filepoints"][frame][face].size();point++)
+			 {
+				 float x = node[i]["filepoints"][frame][face][point]["x"].as<float>();
+				 float y = node[i]["filepoints"][frame][face][point]["y"].as<float>();
+				 Point2f point2f(x,y);
+				 points.push_back(point2f);
+			 }
+			 faces.push_back(points);
+		  }
+		  filepoints->push_back(faces);
+		}
+		CaptureFactory::Capture * capture = new CaptureFactory::Capture(*this, uuidstr, naam, omschrijving, filmpje, filepoints);
 		std::string uuid_str = capture->getUuid();
 		capturemap.insert(std::make_pair(uuid_str,capture));
 	}
@@ -480,6 +505,34 @@ void CaptureFactory::save(){
 		emitter << YAML::Value << element.second->naam;
 		emitter << YAML::Key << "omschrijving";
 		emitter << YAML::Value << element.second->omschrijving;
+		emitter << YAML::Key << "filmpje";
+		emitter << YAML::Value << element.second->filmpje;
+		emitter << YAML::Key << "filepoints";
+		emitter << YAML::BeginSeq;
+		/* frames */
+		for (unsigned int frame = 0; frame < (*element.second->filePoints).size() ; frame++)
+		{
+		  /* faces */
+	      emitter << YAML::BeginSeq;
+		  for (unsigned int face = 0; face < (*element.second->filePoints)[frame].size() ; face++)
+		  {
+		     /* points */
+             emitter << YAML::Flow;
+			 emitter << YAML::BeginSeq;
+			 for (unsigned int point = 0; point < (*element.second->filePoints)[frame][face].size(); point++)
+			 {
+				 emitter << YAML::BeginMap;
+				 emitter << YAML::Key << "x";
+				 emitter << YAML::Value << (*element.second->filePoints)[frame][face][point].x;
+				 emitter << YAML::Key << "y";
+				 emitter << YAML::Value << (*element.second->filePoints)[frame][face][point].y;
+				 emitter << YAML::EndMap;
+			 }
+			 emitter << YAML::EndSeq;
+		  }
+		  emitter << YAML::EndSeq;
+		}
+		emitter << YAML::EndSeq;
 		emitter << YAML::EndMap;
 	}
 	emitter << YAML::EndSeq;
