@@ -242,6 +242,17 @@ CaptureFactory::CaptureFactory(){
     mfh = new CaptureFactory::CaptureFactoryHandler(*this);
 	server->addHandler("/capturefactory", mfh);
 	load();
+	on_screen = new std::vector<std::stringstream>();
+	std::thread t1( [this] {
+		setenv("DISPLAY",":0.0",0);
+		sf::RenderWindow window(sf::VideoMode(1024, 768), "RenderWindow",sf::Style::Fullscreen);
+		//sf::RenderWindow window(sf::VideoMode(640, 480), "RenderWindow");
+	    window.setMouseCursorVisible(false);
+		window.setActive(false);
+		renderingThread(&window); } );
+	mythread::setScheduling(t1, SCHED_IDLE, 0);
+
+	t1.detach();
 }
 
 CaptureFactory::~CaptureFactory(){
@@ -268,7 +279,7 @@ CaptureFactory::CaptureFactoryHandler::~CaptureFactoryHandler(){
 /*
  * Capture Constructor en Destructor
  */
-CaptureFactory::Capture::Capture(std::string naam, std::string omschrijving){
+CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::string omschrijving):cf(cf){
 	mh = new CaptureFactory::Capture::CaptureHandler(*this);
 	uuid_generate( (unsigned char *)&uuid );
 
@@ -287,23 +298,10 @@ CaptureFactory::Capture::Capture(std::string naam, std::string omschrijving){
 	pose_model = new dlib::shape_predictor();
 	detector = new dlib::frontal_face_detector();
 
-	merged = new std::vector<std::stringstream>();
-
 	std::thread t1( [this] { loadModel(); } );
 	mythread::setScheduling(t1, SCHED_IDLE, 0);
 
 	t1.detach();
-
-	std::thread t2( [this] {
-		setenv("DISPLAY",":0.0",0);
-		sf::RenderWindow window(sf::VideoMode(1024, 768), "RenderWindow",sf::Style::Fullscreen);
-		//sf::RenderWindow window(sf::VideoMode(640, 480), "RenderWindow");
-	    window.setMouseCursorVisible(false);
-		window.setActive(false);
-		renderingThread(&window); } );
-	mythread::setScheduling(t2, SCHED_IDLE, 0);
-
-	t2.detach();
 
 	std::stringstream ss;
 	ss << "/capture-" << this->getUuid();
@@ -311,7 +309,7 @@ CaptureFactory::Capture::Capture(std::string naam, std::string omschrijving){
 	server->addHandler(url, mh);
 }
 
-CaptureFactory::Capture::Capture(std::string uuidstr, std::string naam, std::string omschrijving){
+CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving):cf(cf){
 	mh = new CaptureFactory::Capture::CaptureHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 
@@ -325,8 +323,6 @@ CaptureFactory::Capture::Capture(std::string uuidstr, std::string naam, std::str
 
 	pose_model = new dlib::shape_predictor();
 	detector = new dlib::frontal_face_detector();
-
-	merged = new std::vector<std::stringstream>();
 
 	std::thread t1( [this] { loadModel(); } );
 	mythread::setScheduling(t1, SCHED_IDLE, 0);
@@ -363,7 +359,7 @@ CaptureFactory::Capture::CaptureHandler::~CaptureHandler(){
  *
  */
 
-void CaptureFactory::Capture::renderingThread(sf::RenderWindow *window)
+void CaptureFactory::renderingThread(sf::RenderWindow *window)
 {
 	sf::Image image;
 	sf::Texture texture;
@@ -373,8 +369,8 @@ void CaptureFactory::Capture::renderingThread(sf::RenderWindow *window)
     while (window->isOpen())
     {
        delay(200);
-       if (merged->size() > 0)
-    	for (int i = 0; i < merged->size(); ++i)
+       if (on_screen->size() > 0)
+    	for (int i = 0; i < on_screen->size(); ++i)
     	{
     		std::unique_lock<std::mutex> l(m);
     		/*
@@ -388,7 +384,7 @@ void CaptureFactory::Capture::renderingThread(sf::RenderWindow *window)
     		cout << "size: " << size << endl;
     		image.create(1024,768,sf::Color(0,0,0));
     		*/
-       		image.loadFromMemory((*merged)[i].str().c_str(),(*merged)[i].str().length());
+       		image.loadFromMemory((*on_screen)[i].str().c_str(),(*on_screen)[i].str().length());
        		/*
     		image.loadFromMemory(manipulated.str().c_str() + std::string("Content-Type: image/jpeg\r\n\r\n").length(),
     				             manipulated.str().length() - std::string("Content-Type: image/jpeg\r\n\r\n\r\n--frame\r\n").length());
@@ -407,8 +403,7 @@ void CaptureFactory::Capture::renderingThread(sf::RenderWindow *window)
        else
        {
           std::unique_lock<std::mutex> l(m);
-          image.loadFromMemory(manipulated.str().c_str() + std::string("Content-Type: image/jpeg\r\n\r\n").length(),
-  				               manipulated.str().length() - std::string("Content-Type: image/jpeg\r\n\r\n\r\n--frame\r\n").length());
+          image.create(1024,768,sf::Color(0,0,0));
           if (!texture.loadFromImage(image))
                    {
                        break;
@@ -463,7 +458,7 @@ void CaptureFactory::load(){
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
-		CaptureFactory::Capture * capture = new CaptureFactory::Capture(uuidstr, naam, omschrijving);
+		CaptureFactory::Capture * capture = new CaptureFactory::Capture(*this, uuidstr, naam, omschrijving);
 		std::string uuid_str = capture->getUuid();
 		capturemap.insert(std::make_pair(uuid_str,capture));
 	}
@@ -497,8 +492,8 @@ void CaptureFactory::Capture::openCap(captureType type)
 		if(!cap->isOpened()){   // connect to the camera
 			cap->open(0);
 			cap->set(CAP_PROP_FOURCC ,CV_FOURCC('M', 'J', 'P', 'G') );
-			cap->set(CAP_PROP_FRAME_WIDTH,1024);   // width pixels
-			cap->set(CAP_PROP_FRAME_HEIGHT,768);   // height pixels
+			cap->set(CAP_PROP_FRAME_WIDTH,1920);   // width pixels
+			cap->set(CAP_PROP_FRAME_HEIGHT,1080);   // height pixels
 		}
 	}
 	else
@@ -541,14 +536,13 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
 	try
 	{
 		*cap >> input;
+		cv::resize(input,input,cv::Size(1024,768));
 	}
 	catch( cv::Exception& e )
 	{
 	    const char* err_msg = e.what();
 	    std::cout << "exception caught: " << err_msg << std::endl;
 	}
-
-    //cap->release();
 	return input;
     /*
      * <img alt="Embedded Image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIA..." />
@@ -635,25 +629,29 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
 std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 {
 	std::vector<std::stringstream> totaal;
-	Mat img_cam;
-    Mat img_file;
-    Mat resultaat;
+	Mat* img_cam = new Mat();
+    Mat* img_file = new Mat();
+    Mat* resultaat = new Mat();
+    Mat* mask = new Mat();
+    Mat* output = new Mat();
 
 	openCap(CAP_FILE);
 
 	for (int frame = 0; frame < (*filePoints).size(); frame++)
 	{
-		img_file = captureFrame();
-		if (img_file.empty()) break;
+		//delete img_file;
+		*img_file = captureFrame();
+		if (img_file->empty()) break;
+		cv::resize(*img_file,*img_file,cv::Size(1024,768));
 		//remove frame to keep memory available
 		//(*fileMat).erase((*fileMat).begin() + frame);
-		img_cam = (*camMat)[frame % ((*camMat).size())].clone();
-		resultaat = img_file.clone();
+		*img_cam = (*camMat)[frame % ((*camMat).size())].clone();
+		*resultaat = img_file->clone();
 		for (int gezicht = 0; gezicht < (*filePoints)[frame].size(); gezicht++)
 		{
 	        //convert Mat to float data type
-	        img_cam.convertTo(img_cam, CV_32F);
-	        resultaat.convertTo(resultaat, CV_32F);
+	        (*img_cam).convertTo(*img_cam, CV_32F);
+	        (*resultaat).convertTo(*resultaat, CV_32F);
 
 	        // Find convex hull
 	        std::vector<Point2f> hull1;
@@ -683,7 +681,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 
 	        // Find delaunay triangulation for points on the convex hull
 	        std::vector< std::vector<int> > dt;
-	        cv::Rect rect(0, 0, resultaat.cols, resultaat.rows);
+	        cv::Rect rect(0, 0, resultaat->cols, resultaat->rows);
 	        try
 	        {
 	         calculateDelaunayTriangles(rect, hull2, dt);
@@ -710,7 +708,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	        	}
 	           try
 	           {
-                warpTriangle(img_cam, resultaat, t1, t2);
+                warpTriangle(*img_cam, *resultaat, t1, t2);
 	           }
 	           catch( cv::Exception& e )
 		       {
@@ -720,7 +718,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		       }
 	       	}
 
-	        resultaat.convertTo(resultaat, CV_8UC3);
+	        (*resultaat).convertTo(*resultaat, CV_8UC3);
 
 	        cout << "Calculating mask." << endl;
 
@@ -733,11 +731,11 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	        }
 
 	        cout << "Fill Convex Poly." << endl;
-	        Mat mask;
+
 	        try
 	        {
-             mask = Mat::zeros(img_file.rows, img_file.cols, img_file.depth());
-	         fillConvexPoly(mask,&hull8U[0], hull8U.size(), Scalar(255,255,255));
+             *mask = Mat::zeros(img_file->rows, img_file->cols, img_file->depth());
+	         fillConvexPoly(*mask,&hull8U[0], hull8U.size(), Scalar(255,255,255));
 	        }
             catch( cv::Exception& e )
 	      	{
@@ -749,32 +747,37 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	        // Clone seamlessly.
 	        cv::Rect r = boundingRect(hull2);
 	        //Point center = (r.tl() + r.br()) / 2;
-	        Point centertest = Point(img_file(r).cols / 2,img_file(r).rows / 2);
+	        Point centertest = Point((*img_file)(r).cols / 2,(*img_file)(r).rows / 2);
 
 	        cout << "Seamlessclone." << endl;
 
-	        cv::Mat imgtest1, imgtest2, masktest, output;
-            imgtest1 = img_file(r);
-	        imgtest2 = resultaat(r);
-	        masktest = mask(r);
 	        try
 	        {
-	         cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
+	         cv::Mat imgtest1, imgtest2, masktest;
+	         imgtest1 = (*img_file)(r);
+	         imgtest2 = (*resultaat)(r);
+	         masktest = (*mask)(r);
+	         cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, *output, NORMAL_CLONE);
+             cout << "Copy to output." << endl;
+		     (*output).copyTo((*resultaat)(r));
 	        }
             catch( cv::Exception& e )
 	      	{
+             std::cout << "exception!" << endl;
 	   	     const char* err_msg = e.what();
 	         std::cout << "exception caught in seamlessClone: " << err_msg << std::endl;
-	     	 return totaal;
+	     	 //return totaal;
 	      	}
-
-	        cout << "Copy to output." << endl;
-			output.copyTo(resultaat(r));
 		}
 	    cout << "Push back." << endl;
-		totaal.push_back(matToJPG(&resultaat));
+		totaal.push_back(matToJPG(resultaat));
 	}
 	closeCap();
+	delete img_cam;
+	delete img_file;
+	delete resultaat;
+	delete mask;
+	delete output;
 	return totaal;
 }
 
@@ -790,7 +793,7 @@ std::string CaptureFactory::Capture::getUrl(){
 }
 
 CaptureFactory::Capture* CaptureFactory::addCapture(std::string naam, std::string omschrijving){
-	CaptureFactory::Capture * capture = new CaptureFactory::Capture(naam, omschrijving);
+	CaptureFactory::Capture * capture = new CaptureFactory::Capture(*this, naam, omschrijving);
 	std::string uuid_str = capture->getUuid();
 	capturemap.insert(std::make_pair(uuid_str,capture));
 	return capture;
@@ -1014,14 +1017,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	}
 	else if(CivetServer::getParam(conn, "merge", dummy))
 	{
-		delete capture.merged;
-		capture.merged = new std::vector<std::stringstream>(capture.mergeFrames());
+		delete capture.cf.on_screen;
+		capture.cf.on_screen = new std::vector<std::stringstream>(capture.mergeFrames());
 		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
-		for (int i = 0; i < capture.merged->size(); ++i)
+		for (int i = 0; i < capture.cf.on_screen->size(); ++i)
 		{
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << (*capture.merged)[i].str() << "\r\n--frame\r\n";
+			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << (*capture.cf.on_screen)[i].str() << "\r\n--frame\r\n";
 		}
 
 		std::stringstream ss;

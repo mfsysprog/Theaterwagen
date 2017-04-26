@@ -677,6 +677,9 @@ void MotorFactory::Motor::Initialize(){
 	digitalWrite(right_relay, HIGH);
 	pinMode(left_sensor, INPUT);
 	pinMode(right_sensor, INPUT);
+	pullUpDnControl(left_sensor, PUD_UP);
+	pullUpDnControl(right_sensor, PUD_UP);
+
 	/*
 	 * Initialize callback functions to Dummy
 	 */

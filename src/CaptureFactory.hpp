@@ -64,8 +64,8 @@ class CaptureFactory {
 	public:
 		friend class CaptureFactory;
 		friend class ChaseFactory;
-		Capture(std::string naam, std::string omschrijving);
-		Capture(std::string uuidstr, std::string naam, std::string omschrijving);
+		Capture(CaptureFactory& cf, std::string naam, std::string omschrijving);
+		Capture(CaptureFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving);
 		~Capture();
 		std::string getUuid();
 		std::string getNaam();
@@ -86,7 +86,7 @@ class CaptureFactory {
 			Capture& capture;
 		};
 		private:
-		void renderingThread(sf::RenderWindow *window);
+		CaptureFactory& cf;
 		CaptureHandler* mh;
 		void openCap(captureType capturetype);
 		void closeCap();
@@ -104,7 +104,6 @@ class CaptureFactory {
 		std::vector<cv::Mat>* camMat;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* camPoints;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints;
-		std::vector<std::stringstream>* merged;
 		uuid_t uuid;
 		cv::VideoCapture* cap;
 		cv::CascadeClassifier* face_cascade;
@@ -120,6 +119,8 @@ class CaptureFactory {
 	void load();
 
 	private:
+	std::vector<std::stringstream>* on_screen;
+	void renderingThread(sf::RenderWindow *window);
 	void save();
 	std::map<std::string, CaptureFactory::Capture*> capturemap;
 	CaptureFactoryHandler* mfh;
