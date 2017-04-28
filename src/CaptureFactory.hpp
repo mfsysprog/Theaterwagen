@@ -67,6 +67,8 @@ class CaptureFactory {
 		Capture(CaptureFactory& cf, std::string naam, std::string omschrijving);
 		Capture(CaptureFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, std::string filmpje, std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints);
 		~Capture();
+		void captureDetectAndMerge();
+		void onScreen();
 		std::string getUuid();
 		std::string getNaam();
 		std::string getOmschrijving();
@@ -95,12 +97,14 @@ class CaptureFactory {
 		std::vector<std::stringstream> mergeFrames();
 		void loadModel();
 		void captureLoop();
+		std::vector<std::stringstream> loadFilmpje();
 		//void detectFilmpje();
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
 		std::string filmpje = "";
 		std::stringstream manipulated;
+		std::vector<std::stringstream>* off_screen;
 		std::vector<cv::Mat>* camMat;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* camPoints;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints;
@@ -116,10 +120,12 @@ class CaptureFactory {
 	~CaptureFactory();
 	CaptureFactory::Capture* addCapture(std::string naam, std::string omschrijving);
 	void deleteCapture(std::string uuid);
+	void clearScreen();
 	void load();
 
 	private:
 	std::vector<std::stringstream>* on_screen;
+	sf::RenderWindow* window;
 	void renderingThread(sf::RenderWindow *window);
 	void save();
 	std::map<std::string, CaptureFactory::Capture*> capturemap;

@@ -14,6 +14,8 @@ using namespace dlib;
 using namespace sf;
 
 std::mutex m;
+std::mutex m_screen;
+std::mutex m_merging;
 
 class mythread : public std::thread
 {
@@ -245,11 +247,13 @@ CaptureFactory::CaptureFactory(){
 	on_screen = new std::vector<std::stringstream>();
 	std::thread t1( [this] {
 		setenv("DISPLAY",":0.0",0);
-		sf::RenderWindow window(sf::VideoMode(1024, 768), "RenderWindow",sf::Style::Fullscreen);
+		this->window = new sf::RenderWindow(sf::VideoMode(1024, 768), "RenderWindow",sf::Style::Fullscreen);;
 		//sf::RenderWindow window(sf::VideoMode(640, 480), "RenderWindow");
-	    window.setMouseCursorVisible(false);
-		window.setActive(false);
-		renderingThread(&window); } );
+	    window->setMouseCursorVisible(false);
+	    //window->setVerticalSyncEnabled(true);
+	    window->setFramerateLimit(10);
+		//window.setActive(false);
+		renderingThread(window); } );
 	mythread::setScheduling(t1, SCHED_IDLE, 0);
 
 	t1.detach();
@@ -257,6 +261,7 @@ CaptureFactory::CaptureFactory(){
 
 CaptureFactory::~CaptureFactory(){
 	delete mfh;
+	delete on_screen;
 	std::map<std::string, CaptureFactory::Capture*>::iterator it = capturemap.begin();
 	if (it != capturemap.end())
 	{
@@ -286,6 +291,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 	this->naam = naam;
 	this->omschrijving = omschrijving;
 	this->cap = new cv::VideoCapture();
+	this->off_screen = new std::vector<std::stringstream>();
 
 	camMat = new std::vector<cv::Mat>();
 	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
@@ -317,6 +323,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::s
 	this->naam = naam;
 	this->omschrijving = omschrijving;
 	this->cap = new cv::VideoCapture();
+	this->off_screen = new std::vector<std::stringstream>();
 	this->filmpje = filmpje;
 	this->filePoints = filepoints;
 
@@ -350,6 +357,7 @@ CaptureFactory::Capture::~Capture(){
 	delete filePoints;
 	delete pose_model;
 	delete detector;
+	delete off_screen;
 }
 
 /*
@@ -375,10 +383,11 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
     // the rendering loop
     while (window->isOpen())
     {
-       delay(200);
-       std::unique_lock<std::mutex> l(m);
+       std::unique_lock<std::mutex> l(m_screen);
+       window->clear(sf::Color::Black);
        if (on_screen->size() > 0)
-    	for (int i = 0; i < on_screen->size(); ++i)
+       {
+   		for (int i = 0; i < on_screen->size(); ++i)
     	{
     		/*
     		const std::string tmp = manipulated.str();
@@ -391,13 +400,15 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
     		cout << "size: " << size << endl;
     		image.create(1024,768,sf::Color(0,0,0));
     		*/
-       		image.loadFromMemory((*on_screen)[i].str().c_str(),(*on_screen)[i].str().length());
+   			const std::string& tmp = (*on_screen)[i].str();
+   			const char* cstr = tmp.c_str();
+       	    //image.loadFromMemory(cstr,tmp.length());
        		/*
     		image.loadFromMemory(manipulated.str().c_str() + std::string("Content-Type: image/jpeg\r\n\r\n").length(),
     				             manipulated.str().length() - std::string("Content-Type: image/jpeg\r\n\r\n\r\n--frame\r\n").length());
     		*/
 
-       		if (!texture.loadFromImage(image))
+       		if (!texture.loadFromMemory(cstr,tmp.length()))
        		{
        			break;
        		}
@@ -407,23 +418,14 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
        		window->draw(sprite);
        		window->display();
     	}
+       }
        else
        {
-          image.create(1024,768,sf::Color(0,0,0));
-          if (!texture.loadFromImage(image))
-                   {
-                       break;
-                   }
-
-          sprite.setTexture(texture);
-
-          window->draw(sprite);
           window->display();
        }
        l.unlock();
 
 		sf::Event event;
-		/* Some workload may be here */
         while (window->pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
@@ -437,7 +439,6 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
                 }
             }
         }
-
     }
 }
 
@@ -580,6 +581,96 @@ void CaptureFactory::Capture::loadModel(){
 	this->manipulated.clear();
 	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
     model_loaded = true;
+}
+
+void CaptureFactory::Capture::captureDetectAndMerge()
+{
+	std::thread t1( [this] {
+	std::unique_lock<std::mutex> l2(m_merging);
+	openCap(CAP_CAM);
+	cv::Mat captured;
+	std::unique_lock<std::mutex> l(m);
+	camPoints->clear();
+	camMat->clear();
+	for (int i = 0; i < 10; i++)
+	{
+		captured = captureFrame();
+
+		if (captured.empty()) continue;
+
+		manipulated.str("");
+		manipulated.clear();
+		std::vector<std::vector<cv::Point2f>> points = detectFrame(&captured);
+		if (points.size() == 0)
+			continue;
+		else
+		{
+			/* add points of found faces */
+			camMat->push_back(captured);
+			camPoints->push_back(points);
+		}
+	}
+
+	closeCap();
+	if (camPoints->empty())
+	{
+		delete off_screen;
+		off_screen = new std::vector<std::stringstream>(loadFilmpje());
+		l.unlock();
+		l2.unlock();
+		return;
+	}
+	delete off_screen;
+	off_screen = new std::vector<std::stringstream>(mergeFrames());
+	manipulated.str("");
+	manipulated.clear();
+	for (int i = 0; i < off_screen->size(); ++i)
+	{
+		manipulated << "Content-Type: image/jpeg\r\n\r\n" << (*off_screen)[i].str() << "\r\n--frame\r\n";
+	}
+
+	l.unlock();
+	l2.unlock();
+	return;
+	});
+	t1.detach();
+}
+
+std::vector<std::stringstream> CaptureFactory::Capture::loadFilmpje()
+{
+    openCap(CAP_FILE);
+	cv::Mat frame;
+	std::vector<std::stringstream> jpg;
+	for (;;)
+	{
+	   frame = captureFrame();
+	   if (frame.empty()) break;
+	    jpg.push_back(matToJPG(&frame));
+	}
+	closeCap();
+	return jpg;
+}
+
+void CaptureFactory::clearScreen()
+{
+	 std::unique_lock<std::mutex> l(m_screen);
+	 delete on_screen;
+	 this->on_screen = new std::vector<std::stringstream>();
+	 l.unlock();
+}
+
+void CaptureFactory::Capture::onScreen()
+{
+	 delay(200);
+	 std::unique_lock<std::mutex> l3(m_merging);
+	 std::unique_lock<std::mutex> l(m_screen);
+	 std::unique_lock<std::mutex> l2(m);
+	 delete cf.on_screen;
+	 cf.on_screen = off_screen;
+	 this->off_screen = new std::vector<std::stringstream>();
+	 l.unlock();
+	 l2.unlock();
+	 l3.unlock();
 }
 
 cv::Mat CaptureFactory::Capture::captureFrame(){
@@ -932,6 +1023,17 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 		mg_printf(conn, "</body></html>");
 		this->capturefactory.load();
 	}
+	/* if parameter clear is present the clear screen button was pushed */
+	if(CivetServer::getParam(conn, "clear", dummy))
+	{
+		mg_printf(conn,
+		          "HTTP/1.1 200 OK\r\nContent-Type: "
+		          "text/html\r\nConnection: close\r\n\r\n");
+		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/capturefactory\" /></head><body>");
+		mg_printf(conn, "<h2>Clearing screen...!</h2>");
+		mg_printf(conn, "</body></html>");
+		this->capturefactory.clearScreen();
+	}
 	else if(CivetServer::getParam(conn, "newselect", dummy))
 	{
 		CivetServer::getParam(conn, "naam", value);
@@ -1002,6 +1104,9 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/capturefactory\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
 	    ss << "</form>";
+	    ss << "<form style ='float: left; padding: 0px;' action=\"/capturefactory\" method=\"POST\">";
+	    ss << "<button type=\"submit\" name=\"clear\" id=\"clear\">Clear Screen</button>";
+	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	    ss << "<a href=\"/\">Home</a>";
 	    mg_printf(conn, ss.str().c_str());
@@ -1061,16 +1166,25 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	   mg_printf(conn, ss.str().c_str());
 	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	}
+	else if(CivetServer::getParam(conn, "on_screen", dummy))
+	{
+		capture.onScreen();
+
+		std::stringstream ss;
+		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
+	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, "<h2>On Screen!...!</h2>");
+	}
 	else if(CivetServer::getParam(conn, "merge", dummy))
 	{
 		std::unique_lock<std::mutex> l(m);
-		delete capture.cf.on_screen;
-		capture.cf.on_screen = new std::vector<std::stringstream>(capture.mergeFrames());
+		delete capture.off_screen;
+		capture.off_screen = new std::vector<std::stringstream>(capture.mergeFrames());
 		capture.manipulated.str("");
 		capture.manipulated.clear();
-		for (int i = 0; i < capture.cf.on_screen->size(); ++i)
+		for (int i = 0; i < capture.off_screen->size(); ++i)
 		{
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << (*capture.cf.on_screen)[i].str() << "\r\n--frame\r\n";
+			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << (*capture.off_screen)[i].str() << "\r\n--frame\r\n";
 		}
 
 		std::stringstream ss;
@@ -1304,16 +1418,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	{
 		std::stringstream ss;
 		ss << "<script type=\"text/javascript\" src=\"resources/jquery-3.2.0.min.js\"></script>";
-		/*
 		ss << "<script type=\"text/javascript\">";
 		   ss << " $(document).ready(function(){";
 		   ss << "  setInterval(function(){";
 		   ss << "  $.get( \"" << capture.getUrl() << "?running=true\", function( data ) {";
 		   ss << "  $( \"#capture\" ).html( data );";
-		   ss << " });},1000)";
+		   ss << " });},5000)";
 		   ss << "});";
 		ss << "</script>";
-		*/
 		ss << "</head><body>";
 		ss << "<h2>Capture:</h2>";
 		ss << "<form action=\"" << capture.getUrl() << "\" method=\"POST\">";
@@ -1336,6 +1448,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"detect_file\" value=\"detect_file\" id=\"detect__file_button\">Detect File</button>";
 	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Filmpje</button>";
 	    ss << "<button type=\"submit\" name=\"merge\" id=\"merge\">Merge</button>";
+	    ss << "<button type=\"submit\" name=\"on_screen\" id=\"on_screen\">On Screen</button>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss <<  "</br>";
 	    ss << "<div id=\"capture\">";

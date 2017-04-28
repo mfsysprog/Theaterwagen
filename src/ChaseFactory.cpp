@@ -259,6 +259,15 @@ void ChaseFactory::Chase::Action()
 			if (method.compare("Uit") == 0)
 		      cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Stop();
 		}
+		if (action.compare("Capture") == 0)
+		{
+			if (method.compare("Foto") == 0)
+			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->captureDetectAndMerge();
+			if (method.compare("opScherm") == 0)
+			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->onScreen();
+			if (method.compare("clearScherm") == 0)
+			  cf.capture->clearScreen();
+		}
 		if (action.compare("Chase") == 0)
 		{
 			if (method.compare("Play") == 0)
@@ -507,6 +516,25 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   }
 		   ss << "</select>";
 		}
+		if (action.compare("Capture") == 0)
+		{
+		   if (!(value.compare("Capture::clearScherm") == 0))
+		   {
+		   ss << "<select id=\"target\" name=\"target\">";
+		   ss << "<option value=\"\"></option>";
+	 	   for (std::pair<std::string, CaptureFactory::Capture*> element  : chase.cf.capture->capturemap)
+		   {
+	 		   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+		   }
+		   ss << "</select>";
+		   }
+		   else
+		   {
+     		   ss << "<select id=\"target\" name=\"target\">";
+	     	   ss << "<option value=\"n.v.t.\">n.v.t.</option>";
+	     	  ss << "</select>";
+		   }
+		}
 		if (action.compare("Chase") == 0)
 		{
 		   ss << "<select id=\"target\" name=\"target\">";
@@ -572,6 +600,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  if ($(\"#action\").val() == 'Tijd::Wachten') { ";
 	   ss << "    $(\"#target\").hide();";
 	   ss << "    $(\"#tijd_div\").show();";
+	   ss << "   } else if ($(\"#action\").val() == 'Capture::clearScherm') {";
+	   ss << "    $(\"#target\").hide();";
 	   ss << "   } else {";
 	   ss << "    $(\"#target\").show();";
 	   ss << "    $(\"#tijd_div\").hide();";
@@ -603,6 +633,9 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << " <select id=\"action\" name=\"action\">";
 	   ss << "  <option>Aan/Uit::Aan</option>";
 	   ss << "  <option>Aan/Uit::Uit</option>";
+	   ss << "  <option>Capture::Foto</option>";
+	   ss << "  <option>Capture::opScherm</option>";
+	   ss << "  <option>Capture::clearScherm</option>";
 	   ss << "  <option>Chase::Play</option>";
 	   ss << "  <option>Chase::Stop</option>";
 	   ss << "  <option>Geluid::Play</option>";
@@ -850,6 +883,30 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				   ss << (*it_list).action << "</div></td>";
 				   ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 				   ss << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
+				}
+			}
+			if (action.compare("Capture") == 0)
+			{
+				if ((*it_list).action.compare("Capture::clearScherm") == 0)
+				{
+					ss << "<td><div class=\"waarde\">";
+					ss << (*it_list).action << "</div></td>";
+					ss << "<td><div class=\"waarde\"></div></td>";
+				}
+				else
+				if (chase.cf.capture->capturemap.find((*it_list).uuid_or_milliseconds) == chase.cf.capture->capturemap.end())
+				{
+				   (*it_list).invalid = true;
+				   ss << "<td bgcolor=\"red\"><div class=\"waarde\">";
+				   ss << (*it_list).action << "</div></td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</div></td>";
+				}
+				else
+				{
+					ss << "<td><div class=\"waarde\">";
+					ss << (*it_list).action << "</div></td>";
+					ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.capture->capturemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.capture->capturemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 				}
 			}
 			if (action.compare("Chase") == 0)
