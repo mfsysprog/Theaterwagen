@@ -124,7 +124,8 @@ class CaptureFactory {
 	void load();
 
 	private:
-	std::vector<std::stringstream>* on_screen;
+	std::vector<std::vector<char>>* on_screen;
+	bool loaded = false;
 	sf::RenderWindow* window;
 	void renderingThread(sf::RenderWindow *window);
 	void save();

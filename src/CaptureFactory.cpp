@@ -73,7 +73,10 @@ static std::stringstream matToJPG(cv::Mat* input)
     try
     {
         cv::resize((*input), resized, cv::Size(1024,768), 0, 0);
-    	cv::imencode(".jpg", resized, buf, std::vector<int>() );
+        int params[3] = {0};
+        params[0] = CV_IMWRITE_JPEG_QUALITY;
+        params[1] = 40;
+    	cv::imencode(".jpg", resized, buf, std::vector<int>(params, params+2) );
     }
     catch( cv::Exception& e )
     {
@@ -244,13 +247,13 @@ CaptureFactory::CaptureFactory(){
     mfh = new CaptureFactory::CaptureFactoryHandler(*this);
 	server->addHandler("/capturefactory", mfh);
 	load();
-	on_screen = new std::vector<std::stringstream>();
+	on_screen = new std::vector<std::vector<char>>();
 	std::thread t1( [this] {
 		setenv("DISPLAY",":0.0",0);
 		this->window = new sf::RenderWindow(sf::VideoMode(1024, 768), "RenderWindow",sf::Style::Fullscreen);;
 		//sf::RenderWindow window(sf::VideoMode(640, 480), "RenderWindow");
 	    window->setMouseCursorVisible(false);
-	    //window->setVerticalSyncEnabled(true);
+	    window->setVerticalSyncEnabled(true);
 	    window->setFramerateLimit(10);
 		//window.setActive(false);
 		renderingThread(window); } );
@@ -384,10 +387,9 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
     while (window->isOpen())
     {
        std::unique_lock<std::mutex> l(m_screen);
-       window->clear(sf::Color::Black);
        if (on_screen->size() > 0)
        {
-   		for (int i = 0; i < on_screen->size(); ++i)
+   		for (unsigned int i = 0; i < on_screen->size(); ++i)
     	{
     		/*
     		const std::string tmp = manipulated.str();
@@ -400,20 +402,22 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
     		cout << "size: " << size << endl;
     		image.create(1024,768,sf::Color(0,0,0));
     		*/
-   			const std::string& tmp = (*on_screen)[i].str();
-   			const char* cstr = tmp.c_str();
+   			//const std::string& tmp = ;
+   			//const char* cstr = tmp.c_str();
        	    //image.loadFromMemory(cstr,tmp.length());
        		/*
     		image.loadFromMemory(manipulated.str().c_str() + std::string("Content-Type: image/jpeg\r\n\r\n").length(),
     				             manipulated.str().length() - std::string("Content-Type: image/jpeg\r\n\r\n\r\n--frame\r\n").length());
     		*/
 
-       		if (!texture.loadFromMemory(cstr,tmp.length()))
+   			window->clear(sf::Color::Black);
+       		if (!texture.loadFromMemory((*on_screen)[i].data(),(*on_screen)[i].size()))
        		{
        			break;
        		}
-
+       		texture.setSmooth(false);
        		sprite.setTexture(texture);
+       		sprite.setPosition(0,0);
 
        		window->draw(sprite);
        		window->display();
@@ -592,7 +596,7 @@ void CaptureFactory::Capture::captureDetectAndMerge()
 	std::unique_lock<std::mutex> l(m);
 	camPoints->clear();
 	camMat->clear();
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 6; i++)
 	{
 		captured = captureFrame();
 
@@ -624,7 +628,7 @@ void CaptureFactory::Capture::captureDetectAndMerge()
 	off_screen = new std::vector<std::stringstream>(mergeFrames());
 	manipulated.str("");
 	manipulated.clear();
-	for (int i = 0; i < off_screen->size(); ++i)
+	for (unsigned int i = 0; i < off_screen->size(); ++i)
 	{
 		manipulated << "Content-Type: image/jpeg\r\n\r\n" << (*off_screen)[i].str() << "\r\n--frame\r\n";
 	}
@@ -655,7 +659,7 @@ void CaptureFactory::clearScreen()
 {
 	 std::unique_lock<std::mutex> l(m_screen);
 	 delete on_screen;
-	 this->on_screen = new std::vector<std::stringstream>();
+	 this->on_screen = new std::vector<std::vector<char>>();
 	 l.unlock();
 }
 
@@ -666,7 +670,13 @@ void CaptureFactory::Capture::onScreen()
 	 std::unique_lock<std::mutex> l(m_screen);
 	 std::unique_lock<std::mutex> l2(m);
 	 delete cf.on_screen;
-	 cf.on_screen = off_screen;
+	 cf.on_screen = new std::vector<std::vector<char>>();
+	 for (unsigned int i = 0; i < off_screen->size(); ++i)
+	 {
+		 const char *cstr = (*off_screen)[i].str().c_str();
+		 std::vector<char> tmp(cstr, cstr + (*off_screen)[i].str().size());
+		 cf.on_screen->push_back(tmp);
+	 }
 	 this->off_screen = new std::vector<std::stringstream>();
 	 l.unlock();
 	 l2.unlock();
@@ -778,7 +788,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 
 	openCap(CAP_FILE);
 
-	for (int frame = 0; frame < (*filePoints).size(); frame++)
+	for (unsigned int frame = 0; frame < (*filePoints).size(); ++frame)
 	{
 		//delete img_file;
 		cv::Mat img_file = captureFrame();
@@ -788,7 +798,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		//(*fileMat).erase((*fileMat).begin() + frame);
 		cv::Mat img_cam = (*camMat)[frame % ((*camMat).size())].clone();
 		cv::Mat resultaat = img_file.clone();
-		for (int gezicht = 0; gezicht < (*filePoints)[frame].size(); gezicht++)
+		for (unsigned int gezicht = 0; gezicht < (*filePoints)[frame].size(); ++gezicht)
 		{
 	        //convert Mat to float data type
 	        img_cam.convertTo(img_cam, CV_32F);
@@ -814,7 +824,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 
 	        for(int i = 0; i < (int)hullIndex.size(); i++)
 	        {
-	            hull1.push_back((*camPoints)[frame % ((*camPoints).size())][gezicht][hullIndex[i]]);
+	            hull1.push_back((*camPoints)[frame % ((*camPoints).size())][gezicht % ((*camPoints)[frame % ((*camPoints).size())].size())][hullIndex[i]]);
 	            hull2.push_back((*filePoints)[frame][gezicht][hullIndex[i]]);
 	        }
 
