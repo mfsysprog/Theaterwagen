@@ -12,9 +12,9 @@ using namespace std;
 using namespace cv;
 using namespace dlib;
 using namespace sf;
+using namespace sfe;
 
 std::mutex m;
-std::mutex m_screen;
 std::mutex m_merging;
 
 class mythread : public std::thread
@@ -72,10 +72,10 @@ static std::stringstream matToJPG(cv::Mat* input)
     cv::Mat resized;
     try
     {
-        cv::resize((*input), resized, cv::Size(1024,768), 0, 0);
+        cv::resize((*input), resized, cv::Size(640,480), 0, 0);
         int params[3] = {0};
         params[0] = CV_IMWRITE_JPEG_QUALITY;
-        params[1] = 40;
+        params[1] = 80;
     	cv::imencode(".jpg", resized, buf, std::vector<int>(params, params+2) );
     }
     catch( cv::Exception& e )
@@ -247,24 +247,22 @@ CaptureFactory::CaptureFactory(){
     mfh = new CaptureFactory::CaptureFactoryHandler(*this);
 	server->addHandler("/capturefactory", mfh);
 	load();
-	on_screen = new std::vector<std::vector<char>>();
 	std::thread t1( [this] {
 		setenv("DISPLAY",":0.0",0);
-		this->window = new sf::RenderWindow(sf::VideoMode(1024, 768), "RenderWindow",sf::Style::Fullscreen);;
+		this->window = new sf::RenderWindow(sf::VideoMode(1280, 960), "RenderWindow",sf::Style::Fullscreen);
 		//sf::RenderWindow window(sf::VideoMode(640, 480), "RenderWindow");
 	    window->setMouseCursorVisible(false);
 	    window->setVerticalSyncEnabled(true);
 	    window->setFramerateLimit(10);
-		//window.setActive(false);
+	    //window->setActive(false);
 		renderingThread(window); } );
-	mythread::setScheduling(t1, SCHED_IDLE, 0);
+	//mythread::setScheduling(t1, SCHED_IDLE, 0);
 
 	t1.detach();
 }
 
 CaptureFactory::~CaptureFactory(){
 	delete mfh;
-	delete on_screen;
 	std::map<std::string, CaptureFactory::Capture*>::iterator it = capturemap.begin();
 	if (it != capturemap.end())
 	{
@@ -382,16 +380,50 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
 	sf::Image image;
 	sf::Texture texture;
 	sf::Sprite sprite;
+	sfe::Movie movie;
 
-    // the rendering loop
+	// the rendering loop
     while (window->isOpen())
     {
+    	if (loadme)
+    	{
+    		try
+		    {
+    			if (movie.openFromFile(on_screen))
+    			{
+    				movie.play();
+    				loaded = true;
+    				loadme = false;
+    			}
+    			else
+    			{
+    				cout << "Videofile kon niet geopend worden!" << endl;
+    			}
+    		}
+    		catch( cv::Exception& e )
+    		{
+    		  	cout << "Error loading merged.avi: " << e.msg << endl;
+    		}
+
+    	}
+		window->clear(sf::Color::Black);
+    	if (loaded)
+    	{
+        	if (movie.getStatus() == sfe::Status::Stopped)
+        		movie.play();
+			movie.update();
+	   		window->draw(movie);
+    	}
+ 		window->display();
+
+ 	   /*
        std::unique_lock<std::mutex> l(m_screen);
        if (on_screen->size() > 0)
        {
+
    		for (unsigned int i = 0; i < on_screen->size(); ++i)
     	{
-    		/*
+
     		const std::string tmp = manipulated.str();
     		std::ostringstream result;
     		result << std::setw(2) << std::setfill('0') << std::hex << std::uppercase;
@@ -401,26 +433,25 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
     		int size = tmp.size();
     		cout << "size: " << size << endl;
     		image.create(1024,768,sf::Color(0,0,0));
-    		*/
+
    			//const std::string& tmp = ;
    			//const char* cstr = tmp.c_str();
        	    //image.loadFromMemory(cstr,tmp.length());
-       		/*
+
     		image.loadFromMemory(manipulated.str().c_str() + std::string("Content-Type: image/jpeg\r\n\r\n").length(),
     				             manipulated.str().length() - std::string("Content-Type: image/jpeg\r\n\r\n\r\n--frame\r\n").length());
-    		*/
 
-   			window->clear(sf::Color::Black);
        		if (!texture.loadFromMemory((*on_screen)[i].data(),(*on_screen)[i].size()))
        		{
        			break;
-       		}
-       		texture.setSmooth(false);
-       		sprite.setTexture(texture);
-       		sprite.setPosition(0,0);
 
-       		window->draw(sprite);
-       		window->display();
+   			if (!texture.loadFromFile("resources/merged.avi"))
+   			{
+   				break;
+   			}
+       		//texture.setSmooth(false);
+       		//sprite.setTexture(texture);
+       		//sprite.setPosition(0,0);
     	}
        }
        else
@@ -428,6 +459,7 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
           window->display();
        }
        l.unlock();
+       */
 
 		sf::Event event;
         while (window->pollEvent(event))
@@ -657,14 +689,19 @@ std::vector<std::stringstream> CaptureFactory::Capture::loadFilmpje()
 
 void CaptureFactory::clearScreen()
 {
-	 std::unique_lock<std::mutex> l(m_screen);
-	 delete on_screen;
-	 this->on_screen = new std::vector<std::vector<char>>();
-	 l.unlock();
+	 loaded = false;
+	 loadme = false;
 }
 
 void CaptureFactory::Capture::onScreen()
 {
+	 delay(200);
+	 std::unique_lock<std::mutex> l(m_merging);
+	 cf.on_screen = "tmp/" + this->getUuid() + ".avi";
+	 cf.loaded = false;
+	 cf.loadme = true;
+	 l.unlock();
+	 /*
 	 delay(200);
 	 std::unique_lock<std::mutex> l3(m_merging);
 	 std::unique_lock<std::mutex> l(m_screen);
@@ -681,6 +718,7 @@ void CaptureFactory::Capture::onScreen()
 	 l.unlock();
 	 l2.unlock();
 	 l3.unlock();
+	 */
 }
 
 cv::Mat CaptureFactory::Capture::captureFrame(){
@@ -692,7 +730,7 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
 	{
 		*cap >> input;
 		if (!input.empty())
-			cv::resize(input,input,cv::Size(1024,768));
+			cv::resize(input,input,cv::Size(1280,960));
 	}
 	catch( cv::Exception& e )
 	{
@@ -785,6 +823,9 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
 std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 {
 	std::vector<std::stringstream> totaal;
+	std::string recordname = "tmp/" + this->getUuid() + ".avi";
+	VideoWriter record(recordname, CV_FOURCC('D','I','V','X'),
+	    10, cv::Size(1280,960), true);
 
 	openCap(CAP_FILE);
 
@@ -921,6 +962,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	     	 return totaal;
 	      	}
     	    cout << "Push back." << endl;
+    	    record.write(resultaat);
     		totaal.push_back(matToJPG(&resultaat));
 		}
 	}
@@ -1264,10 +1306,10 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	else if(CivetServer::getParam(conn, "save_video", dummy))
 	{
 		Size S = Size((*capture.camMat)[0].cols,(*capture.camMat)[0].rows);
-		int codec = CV_FOURCC('M', 'J', 'P', 'G');
-		VideoWriter outputVideo("resources/capture.avi", codec, 5.0, S, true);
+		int codec = CV_FOURCC('D', 'I', 'V', 'X');
+		VideoWriter outputVideo("resources/capture.avi", codec, 10.0, S, true);
 
-		if (outputVideo.open("resources/capture.avi", codec, 5.0, S, true))
+		if (outputVideo.open("resources/capture.avi", codec, 10.0, S, true))
 			cout << "Video open success!" << endl;
 		else
 			cout << "Video open failure!" << endl;
@@ -1431,7 +1473,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		ss << "<script type=\"text/javascript\">";
 		   ss << " $(document).ready(function(){";
 		   ss << "  setInterval(function(){";
-		   ss << "  $.get( \"" << capture.getUrl() << "?running=true\", function( data ) {";
+		   ss << "  $.get( \"" << capture.getUrl() << "?streaming=true\", function( data ) {";
 		   ss << "  $( \"#capture\" ).html( data );";
 		   ss << " });},5000)";
 		   ss << "});";

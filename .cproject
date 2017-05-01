@@ -126,6 +126,7 @@
 								<option id="gnu.cpp.compiler.option.debugging.level.442984261" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.980885335" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="/home/erik/dlib-19.2"/>
+									<listOptionValue builtIn="false" value="/home/erik/sfeMovie/include"/>
 									<listOptionValue builtIn="false" value="/home/erik/wiringPi/wiringPi"/>
 									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/include/opencv"/>
 									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/include/opencv2"/>
@@ -155,6 +156,7 @@
 									<listOptionValue builtIn="false" value="b64"/>
 									<listOptionValue builtIn="false" value="yaml-cpp"/>
 									<listOptionValue builtIn="false" value="uuid"/>
+									<listOptionValue builtIn="false" value="sfeMovie"/>
 									<listOptionValue builtIn="false" value="sfml-system"/>
 									<listOptionValue builtIn="false" value="sfml-window"/>
 									<listOptionValue builtIn="false" value="sfml-graphics"/>

@@ -25,6 +25,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/photo.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
+#include <SFML/Config.hpp>
 #include <SFML/Graphics.hpp>
 #include <b64/encode.h>
 #include <thread>
@@ -34,6 +35,7 @@
 #include <dlib/image_processing.h>
 #include <dlib/image_io.h>
 #include <dlib/gui_widgets.h>
+#include <sfeMovie/Movie.hpp>
 
 #define RESOURCES_DIR "/home/theaterwagen/resources/"
 #define CONFIG_FILE "/home/theaterwagen/config/capturefactory.yaml"
@@ -124,8 +126,8 @@ class CaptureFactory {
 	void load();
 
 	private:
-	std::vector<std::vector<char>>* on_screen;
-	bool loaded = false;
+	std::string on_screen;
+	volatile bool loadme = false, loaded = false;
 	sf::RenderWindow* window;
 	void renderingThread(sf::RenderWindow *window);
 	void save();

@@ -55,7 +55,7 @@ int main(int, char**){
 
 	do
 	{
-		delay(100);
+		delay(1000);
 	} while(true);
     delete chase;
 	return 0;
