@@ -54,7 +54,7 @@ SoundFactory::Sound::Sound(std::string fn){
 	server->addHandler(url, mh);
 }
 
-SoundFactory::Sound::Sound(std::string uuidstr, std::string fn, bool loop, float volume, float pitch){
+SoundFactory::Sound::Sound(std::string uuidstr, std::string fn, bool loop, float volume, float pitch, unsigned int fadesteps){
 	mh = new SoundFactory::Sound::SoundHandler(*this);
 	sfmbuffer = new sf::SoundBuffer();
 	sfmbuffer->loadFromFile(fn);
@@ -70,6 +70,7 @@ SoundFactory::Sound::Sound(std::string uuidstr, std::string fn, bool loop, float
 	this->setLoop(loop);
 	this->setVolume(volume);
 	this->setPitch(pitch);
+	setFadeSteps(fadesteps);
 }
 
 SoundFactory::Sound::~Sound(){
@@ -116,7 +117,8 @@ void SoundFactory::load(){
 		bool loop = node[i]["loop"].as<bool>();
 		float volume = node[i]["volume"].as<float>();
 		float pitch = node[i]["pitch"].as<float>();
-		SoundFactory::Sound * sound = new SoundFactory::Sound(uuidstr, fn, loop, volume, pitch);
+		unsigned int fadesteps = (unsigned int) node[i]["fadesteps"].as<int>();
+		SoundFactory::Sound * sound = new SoundFactory::Sound(uuidstr, fn, loop, volume, pitch, fadesteps);
 		std::string uuid_str = sound->getUuid();
 		soundmap.insert(std::make_pair(uuid_str,sound));
 	}
@@ -141,6 +143,8 @@ void SoundFactory::save(){
 		emitter << YAML::Value << element.second->getVolume();
 		emitter << YAML::Key << "pitch";
 		emitter << YAML::Value << element.second->getPitch();
+		emitter << YAML::Key << "fadesteps";
+		emitter << YAML::Value << element.second->getFadeSteps();
 		emitter << YAML::EndMap;
 	}
 	emitter << YAML::EndSeq;
@@ -161,6 +165,40 @@ std::string SoundFactory::Sound::getFilename(){
 std::string SoundFactory::Sound::getUrl(){
 	return url;
 }
+
+unsigned int SoundFactory::Sound::getFadeSteps(){
+	return fadesteps;
+}
+
+void SoundFactory::Sound::setFadeSteps(unsigned int fadesteps){
+	this->fadesteps = fadesteps;
+}
+
+void SoundFactory::Sound::fadeOut(){
+	float volume = this->getVolume();
+	float step = volume / fadesteps;
+	for (float i = volume; i > 0; i-= step)
+	{
+		this->setVolume(i);
+		delay(20);
+	}
+	this->stop();
+	this->setVolume(volume);
+}
+
+void SoundFactory::Sound::fadeIn(){
+	float volume = this->getVolume();
+	float step = volume / fadesteps;
+	this->setVolume(0);
+	this->play();
+	for (float i = 0; i < volume; i+= step)
+	{
+		this->setVolume(i);
+		delay(20);
+	}
+	this->setVolume(volume);
+}
+
 
 SoundFactory::Sound* SoundFactory::addSound(std::string fn){
 	SoundFactory::Sound * sound = new SoundFactory::Sound(fn);
@@ -341,7 +379,10 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		sound.setVolume(std::stof(value));
 
 	if(CivetServer::getParam(conn,"pitch", value))
-			sound.setPitch(std::stof(value));
+		sound.setPitch(std::stof(value));
+
+	if(CivetServer::getParam(conn,"fade", value))
+		sound.setFadeSteps(std::stof(value));
 
 	if(CivetServer::getParam(conn, "submit", dummy))
 	{
@@ -366,6 +407,18 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Playing...!</h2>");
 	} else
+	if(CivetServer::getParam(conn, "fadein", dummy))
+	{
+		if(CivetServer::getParam(conn,"loop", dummy))
+		  		sound.setLoop(true);
+		   	else
+		   		sound.setLoop(false);
+		sound.fadeIn();
+		std::stringstream ss;
+		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << sound.getUrl() << "\"/></head><body>";
+		mg_printf(conn,  ss.str().c_str(), "%s");
+		mg_printf(conn, "<h2>Playing...!</h2>");
+	} else
 	if(CivetServer::getParam(conn, "stop", dummy))
 	{
 		if(CivetServer::getParam(conn,"loop", dummy))
@@ -373,6 +426,18 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		   	else
 		   		sound.setLoop(false);
 		sound.stop();
+		std::stringstream ss;
+		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << sound.getUrl() << "\"/></head><body>";
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
+	   	mg_printf(conn, "<h2>Stopping...!</h2>");
+	} else
+	if(CivetServer::getParam(conn, "fadeout", dummy))
+	{
+		if(CivetServer::getParam(conn,"loop", dummy))
+		  		sound.setLoop(true);
+		   	else
+		   		sound.setLoop(false);
+		sound.fadeOut();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << sound.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn,  ss.str().c_str(), "%s");
@@ -406,6 +471,9 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		ss << "<label for=\"pitch\">Pitch</label>"
 			  "<input id=\"pitch\" type=\"range\" min=\"0.8\" max=\"1.2\" step=\"0.02\" value=\"" <<
 			  sound.getPitch() << "\"" << " name=\"pitch\"/>" << "</br>";
+		ss << "<label for=\"fade\">Fade Steps</label>"
+			  "<input id=\"fade\" type=\"range\" min=\"1\" max=\"200\" step=\"1\" value=\"" <<
+			  sound.getFadeSteps() << "\"" << " name=\"fade\"/>" << "<br>";
 		ss << "<label for=\"loop\">Loop</label>";
 		if (sound.getLoop())
 			ss << "<input type=\"checkbox\" name=\"loop\" id=\"loop\" checked=\"checked\">";
@@ -416,7 +484,9 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 		ss <<  "</br>";
 	    ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">Play</button>";
+	    ss << "<button type=\"submit\" name=\"fadein\" value=\"fadein\" id=\"fadein\">Fade In</button>";
 		ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">Stop</button>";
+		ss << "<button type=\"submit\" name=\"fadeout\" value=\"fadeout\" id=\"fadeout\">Fade Out</button>";
 		ss << "<button type=\"submit\" name=\"pause\" value=\"pause\" id=\"pause\">Pause</button>";
 		ss << "</form>";
 		ss <<  "</br>";

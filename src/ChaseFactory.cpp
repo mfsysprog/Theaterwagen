@@ -279,8 +279,12 @@ void ChaseFactory::Chase::Action()
 		{
 			if (method.compare("Play") == 0)
 			  cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->play();
+			if (method.compare("Fade In") == 0)
+			  cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->fadeIn();
 			if (method.compare("Stop") == 0)
 			  cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->stop();
+			if (method.compare("Fade Out") == 0)
+			  cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->fadeOut();
 		}
 		if (action.compare("Motor") == 0)
 		{
@@ -297,8 +301,12 @@ void ChaseFactory::Chase::Action()
 		{
 			if (method.compare("Play") == 0)
 			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->play();
+			if (method.compare("Fade In") == 0)
+			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->fadeIn();
 			if (method.compare("Stop") == 0)
 			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->stop();
+			if (method.compare("Fade Out") == 0)
+			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->fadeOut();
 		}
 		if (action.compare("Scene") == 0)
 		{
@@ -639,13 +647,17 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option>Chase::Play</option>";
 	   ss << "  <option>Chase::Stop</option>";
 	   ss << "  <option>Geluid::Play</option>";
+	   ss << "  <option>Geluid::Fade In</option>";
 	   ss << "  <option>Geluid::Stop</option>";
+	   ss << "  <option>Geluid::Fade Out</option>";
 	   ss << "  <option>Motor::Links</option>";
 	   ss << "  <option>Motor::Rechts</option>";
 	   ss << "  <option>Motor::Stop</option>";
 	   ss << "  <option>Motor::Wachten</option>";
 	   ss << "  <option>Muziek::Play</option>";
+	   ss << "  <option>Muziek::Fade In</option>";
 	   ss << "  <option>Muziek::Stop</option>";
+	   ss << "  <option>Muziek::Fade Out</option>";
 	   ss << "  <option>Scene::Play</option>";
 	   ss << "  <option>Tijd::Wachten</option>";
 	   ss << " </select>";

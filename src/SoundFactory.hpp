@@ -46,9 +46,12 @@ class SoundFactory {
 		friend class SoundFactory;
 		friend class ChaseFactory;
 		public:
-		Sound(std::string uuidstr, std::string fn, bool loop, float volume, float pitch);
+		Sound(std::string uuidstr, std::string fn, bool loop, float volume, float pitch, unsigned int fadesteps);
 		Sound(std::string fn);
 		~Sound();
+		void fadeOut();
+		void fadeIn();
+		unsigned int getFadeSteps();
 		std::string getUuid();
 		std::string getFilename();
 		std::string getUrl();
@@ -64,6 +67,8 @@ class SoundFactory {
 			bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
 			Sound& sound;
 		};
+		void setFadeSteps(unsigned int fadesteps);
+		unsigned int fadesteps = 1;
 		std::string filename;
 		std::string url;
 		uuid_t uuid;
