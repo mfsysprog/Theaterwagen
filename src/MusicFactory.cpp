@@ -7,6 +7,8 @@
 
 #include "MusicFactory.hpp"
 
+std::mutex m_music;
+
 /*
  * MusicFactory Constructor en Destructor
  */
@@ -170,6 +172,7 @@ void MusicFactory::Music::setFadeSteps(unsigned int fadesteps){
 
 void MusicFactory::Music::fadeOut(){
 	std::thread( [this] {
+	std::unique_lock<std::mutex> l(m_music);
 	float volume = this->getVolume();
 	float step = volume / fadesteps;
 	for (float i = volume; i > 0; i-= step)
@@ -179,11 +182,13 @@ void MusicFactory::Music::fadeOut(){
 	}
 	this->stop();
 	this->setVolume(volume);
+	l.unlock();
 	} ).detach();
 }
 
 void MusicFactory::Music::fadeIn(){
 	std::thread( [this] {
+	std::unique_lock<std::mutex> l(m_music);
 	float volume = this->getVolume();
 	float step = volume / fadesteps;
 	this->setVolume(0);
@@ -194,6 +199,7 @@ void MusicFactory::Music::fadeIn(){
 		delay(20);
 	}
 	this->setVolume(volume);
+	l.unlock();
 	} ).detach();
 }
 
@@ -413,6 +419,9 @@ bool MusicFactory::Music::MusicHandler::handleAll(const char *method,
 		   	else
 		   		music.setLoop(false);
 		music.fadeIn();
+		delay(20);
+		std::unique_lock<std::mutex> l(m_music);
+		l.unlock();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << music.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn,  ss.str().c_str(), "%s");
@@ -437,6 +446,9 @@ bool MusicFactory::Music::MusicHandler::handleAll(const char *method,
 		   	else
 		   		music.setLoop(false);
 		music.fadeOut();
+		delay(20);
+		std::unique_lock<std::mutex> l(m_music);
+		l.unlock();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << music.getUrl() << "\"/></head><body>";
 	   	mg_printf(conn,  ss.str().c_str(), "%s");
