@@ -175,6 +175,7 @@ void SoundFactory::Sound::setFadeSteps(unsigned int fadesteps){
 }
 
 void SoundFactory::Sound::fadeOut(){
+	std::thread( [this] {
 	float volume = this->getVolume();
 	float step = volume / fadesteps;
 	for (float i = volume; i > 0; i-= step)
@@ -184,9 +185,11 @@ void SoundFactory::Sound::fadeOut(){
 	}
 	this->stop();
 	this->setVolume(volume);
+	} ).detach();
 }
 
 void SoundFactory::Sound::fadeIn(){
+	std::thread( [this] {
 	float volume = this->getVolume();
 	float step = volume / fadesteps;
 	this->setVolume(0);
@@ -197,6 +200,7 @@ void SoundFactory::Sound::fadeIn(){
 		delay(20);
 	}
 	this->setVolume(volume);
+	} ).detach();
 }
 
 

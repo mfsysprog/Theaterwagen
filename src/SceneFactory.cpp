@@ -16,6 +16,8 @@
  * in firmware/usbdrv/USBID-License.txt.
  */
 
+std::mutex m_scene;
+
 int debug = 0;
 int verbose = 0;
 usb_dev_handle *handle = NULL;
@@ -292,6 +294,8 @@ std::string SceneFactory::Scene::getUrl(){
 }
 
 void SceneFactory::Scene::Play(){
+	std::thread t1( [this] {
+	std::unique_lock<std::mutex> l(m_scene);
 	int nBytes;
 	unsigned char channels_tmp[512] = {0};
 
@@ -315,6 +319,9 @@ void SceneFactory::Scene::Play(){
 	     fprintf(stderr, "USB error: %s\n", usb_strerror());
 	  delay(20);
 	}
+	l.unlock();
+	});
+	t1.detach();
 }
 
 SceneFactory::Scene* SceneFactory::addScene(std::string naam, std::string omschrijving){

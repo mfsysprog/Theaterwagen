@@ -169,6 +169,7 @@ void MusicFactory::Music::setFadeSteps(unsigned int fadesteps){
 }
 
 void MusicFactory::Music::fadeOut(){
+	std::thread( [this] {
 	float volume = this->getVolume();
 	float step = volume / fadesteps;
 	for (float i = volume; i > 0; i-= step)
@@ -178,9 +179,11 @@ void MusicFactory::Music::fadeOut(){
 	}
 	this->stop();
 	this->setVolume(volume);
+	} ).detach();
 }
 
 void MusicFactory::Music::fadeIn(){
+	std::thread( [this] {
 	float volume = this->getVolume();
 	float step = volume / fadesteps;
 	this->setVolume(0);
@@ -191,6 +194,7 @@ void MusicFactory::Music::fadeIn(){
 		delay(20);
 	}
 	this->setVolume(volume);
+	} ).detach();
 }
 
 MusicFactory::Music* MusicFactory::addMusic(std::string fn){

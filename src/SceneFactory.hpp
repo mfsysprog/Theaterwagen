@@ -9,6 +9,8 @@
 #define SCENEFACTORY_HPP_
 
 #include "Theaterwagen.hpp"
+#include <thread>
+#include <mutex>
 #include <string>
 #include <iostream>
 #include <functional>
