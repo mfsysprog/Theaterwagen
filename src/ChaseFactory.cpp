@@ -127,7 +127,7 @@ void ChaseFactory::load(){
 		deleteChase(element.first);
 	}
 
-	char filename[] = CONFIG_FILE;
+	char filename[] = CONFIG_FILE_CHASE;
 	std::fstream file;
 	file.open(filename, std::fstream::in | std::fstream::out | std::fstream::app);
 	/* als bestand nog niet bestaat, dan leeg aanmaken */
@@ -139,7 +139,7 @@ void ChaseFactory::load(){
 	}
 	else file.close();
 
-	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
+	YAML::Node node = YAML::LoadFile(CONFIG_FILE_CHASE);
 	for (std::size_t i=0;i<node.size();i++) {
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
@@ -158,7 +158,7 @@ void ChaseFactory::load(){
 
 void ChaseFactory::save(){
 	YAML::Emitter emitter;
-	std::ofstream fout(CONFIG_FILE);
+	std::ofstream fout(CONFIG_FILE_CHASE);
 	std::map<std::string, ChaseFactory::Chase*>::iterator it = chasemap.begin();
 	std::list<sequence_item>::const_iterator it_list;
 
@@ -244,7 +244,7 @@ void ChaseFactory::Chase::Action()
 	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
 	{
 		if (!this->running) break;
-		std::string::size_type pos = (*it).action.find('::');
+		std::string::size_type pos = (*it).action.find("::");
 		std::string action = (*it).action.substr(0,pos);
 		std::string method = (*it).action.substr(pos+2,(*it).action.length()-pos-2);
 
@@ -406,7 +406,7 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 				          "text/html\r\nConnection: close\r\n\r\n");
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << chase->getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn, ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 	else if(CivetServer::getParam(conn, "new", dummy))
@@ -429,7 +429,7 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
    	   ss << "<a href=\"/chasefactory\">Chases</a>";
        ss <<  "</br>";
        ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn, ss.str().c_str());
+       mg_printf(conn,  ss.str().c_str(), "%s");
        mg_printf(conn, "</body></html>");
 	}
 	/* initial page display */
@@ -465,7 +465,7 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 
@@ -496,14 +496,14 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
     			ss << "<td class=\"kort\"><div class=\"waarde\">&nbsp;</div></td>";
 			ss << "</tr>";
 		}
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		return true;
 	}
 
 	if(CivetServer::getParam(conn, "chosen", value))
 	{
 	   std::stringstream ss;
-	   std::string::size_type pos = value.find('::');
+	   std::string::size_type pos = value.find("::");
 	   std::string action = value.substr(0,pos);
 
 	   if (action.compare("Aan/Uit") == 0)
@@ -585,7 +585,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   }
 		   ss << "</select>";
 		}
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn,  ss.str().c_str(), "%s");
 	}
 	else
 	if(CivetServer::getParam(conn, "add", value))
@@ -662,7 +662,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "<a href=\"/\">Home</a>";
 	   ss << "</body></html>";
 
-	   mg_printf(conn, ss.str().c_str());
+	   mg_printf(conn,  ss.str().c_str(), "%s");
 	}
 	else
    {
@@ -688,7 +688,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   std::stringstream ss;
 		   ss << "<html><head>";
 		   ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-		   mg_printf(conn, ss.str().c_str());
+		   mg_printf(conn,  ss.str().c_str(), "%s");
 		   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	}
 	else
@@ -708,7 +708,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   std::stringstream ss;
 	   ss << "<html><head>";
 	   ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-	   mg_printf(conn, ss.str().c_str());
+	   mg_printf(conn,  ss.str().c_str(), "%s");
 	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	}
 	/* if parameter start is present start button was pushed */
@@ -718,7 +718,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   std::stringstream ss;
 	   ss << "<html><head>";
 	   ss << "<meta http-equiv=\"refresh\" content=\"0;url=\"" << chase.getUrl() << "\"/>";
-	   mg_printf(conn, ss.str().c_str());
+	   mg_printf(conn,  ss.str().c_str(), "%s");
 	   mg_printf(conn, "<h2>Starten...!</h2>");
 	}
 	/* if parameter stop is present stop button was pushed */
@@ -728,7 +728,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		std::stringstream ss;
 		ss << "<html><head>";
 		ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Stoppen...!</h2>");
 	}
 	/* if parameter delete is present delete button was pushed */
@@ -740,7 +740,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		std::stringstream ss;
 		ss << "<html><head>";
 		ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Verwijderen...!</h2>");
 	}
 	/* if parameter up is present up button was pushed */
@@ -758,7 +758,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		std::stringstream ss;
 		ss << "<html><head>";
 		ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Verplaatsen...!</h2>");
 	}
 	/* if parameter down is present down button was pushed */
@@ -776,14 +776,14 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		std::stringstream ss;
 		ss << "<html><head>";
 		ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Verplaatsen...!</h2>");
 	}
 	else
 	{
 		std::stringstream ss;
 		ss << "<html><head>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "<h2>&nbsp;</h2>");
 	}
 	/* initial page display */
@@ -860,7 +860,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	    ss << "<th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th><div class=\"waarde\">Actie</div></th><th><div class=\"waarde\">Waarde</div></th></tr></thead>";
 		for (it_list = chase.sequence_list->begin(); it_list != chase.sequence_list->end(); ++it_list)
 		{
-			std::string::size_type pos = (*it_list).action.find('::');
+			std::string::size_type pos = (*it_list).action.find("::");
 			std::string action = (*it_list).action.substr(0,pos);
 			ss << "<tr>";
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"add\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"add\">&#8627;</button>";
@@ -1010,7 +1010,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		ss << "<a href=\"/chasefactory\">Chases</a>";
 	    ss << "<br>";
 	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn,  ss.str().c_str(), "%s");
 	}
 
 	mg_printf(conn, "</body></html>\n");

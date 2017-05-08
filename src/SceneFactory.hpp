@@ -8,6 +8,7 @@
 #ifndef SCENEFACTORY_HPP_
 #define SCENEFACTORY_HPP_
 
+#include "Theaterwagen.hpp"
 #include <string>
 #include <iostream>
 #include <functional>
@@ -25,10 +26,15 @@
 #include "yaml-cpp/yaml.h"
 #include "FixtureFactory.hpp"
 
-#define RESOURCES_DIR "/home/theaterwagen/resources/"
-#define CONFIG_FILE "/home/theaterwagen/config/scenefactory.yaml"
+#define CONFIG_FILE_SCENE "config/scenefactory.yaml"
 
 extern CivetServer* server;
+
+enum fade : int {
+	 FADE_OFF,
+	 FADE_IN,
+	 FADE_OUT
+};
 
 class SceneFactory {
 	friend class ChaseFactory;

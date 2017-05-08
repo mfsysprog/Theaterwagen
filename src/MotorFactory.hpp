@@ -8,6 +8,7 @@
 #ifndef MOTORFACTORY_HPP_
 #define MOTORFACTORY_HPP_
 
+#include "Theaterwagen.hpp"
 #include <string>
 #include <iostream>
 #include <functional>
@@ -22,8 +23,7 @@
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
 
-#define RESOURCES_DIR "/home/theaterwagen/resources/"
-#define CONFIG_FILE "/home/theaterwagen/config/motorfactory.yaml"
+#define CONFIG_FILE_MOTOR "config/motorfactory.yaml"
 
 extern CivetServer* server;
 

@@ -8,6 +8,7 @@
 #ifndef SOUNDFACTORY_HPP_
 #define SOUNDFACTORY_HPP_
 
+#include "Theaterwagen.hpp"
 #include <string>
 #include <iostream>
 #include <functional>
@@ -23,8 +24,7 @@
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
 
-#define RESOURCES_DIR "/home/theaterwagen/resources/"
-#define CONFIG_FILE "/home/theaterwagen/config/soundfactory.yaml"
+#define CONFIG_FILE_SOUND "config/soundfactory.yaml"
 
 extern CivetServer* server;
 

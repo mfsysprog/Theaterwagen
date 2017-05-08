@@ -36,9 +36,9 @@
 #include <dlib/image_io.h>
 #include <dlib/gui_widgets.h>
 #include <sfeMovie/Movie.hpp>
+#include "Theaterwagen.hpp"
 
-#define RESOURCES_DIR "/home/theaterwagen/resources/"
-#define CONFIG_FILE "/home/theaterwagen/config/capturefactory.yaml"
+#define CONFIG_FILE_CAPTURE "config/capturefactory.yaml"
 #define FACE_DOWNSAMPLE_RATIO 2
 
 extern CivetServer* server;
@@ -113,8 +113,7 @@ class CaptureFactory {
 		uuid_t uuid;
 		cv::VideoCapture* cap;
 		cv::CascadeClassifier* face_cascade;
-		dlib::frontal_face_detector* detector;
-		dlib::shape_predictor* pose_model;
+		//dlib::frontal_face_detector* detector;
 		bool model_loaded = false;
 	};
 	public:
@@ -126,6 +125,7 @@ class CaptureFactory {
 	void load();
 
 	private:
+	dlib::shape_predictor* pose_model;
 	std::string on_screen;
 	volatile bool loadme = false, loaded = false;
 	sf::RenderWindow* window;

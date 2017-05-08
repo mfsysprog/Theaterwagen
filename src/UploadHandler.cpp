@@ -98,7 +98,7 @@ bool UploadHandler::handleAll(const char *method,
 	std::string param = "chan";
 
 	/* upload was submitted */
-	if(method == "POST")
+	if(strcmp(method,"POST") == 0)
 	{
 		/* Handler may access the request info using mg_get_request_info */
 		const struct mg_request_info *req_info = mg_get_request_info(conn);
@@ -155,7 +155,7 @@ bool UploadHandler::handleAll(const char *method,
 	    ss <<  "<br>";
 	    ss <<  "<br>";
 	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn, "%s", ss.str().c_str());
 		mg_printf(conn, "</body></html>");
 	}
 

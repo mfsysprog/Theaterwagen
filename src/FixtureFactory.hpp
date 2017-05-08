@@ -8,6 +8,7 @@
 #ifndef FIXTUREFACTORY_HPP_
 #define FIXTUREFACTORY_HPP_
 
+#include "Theaterwagen.hpp"
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -24,8 +25,7 @@
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
 
-#define RESOURCES_DIR "/home/theaterwagen/resources/"
-#define CONFIG_FILE "/home/theaterwagen/config/fixturefactory.yaml"
+#define CONFIG_FILE_FIXTURE "config/fixturefactory.yaml"
 
 extern CivetServer* server;
 

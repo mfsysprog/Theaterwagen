@@ -506,6 +506,7 @@ static fptr getCallBack(direction dir, int gpio)
 		case 78:return &myCallbackRight39;
 		case 79:return &myCallbackRight40;
 	}
+	return NULL;
 }
 
 /*
@@ -611,7 +612,7 @@ void MotorFactory::load(){
 		deleteMotor(element.first);
 	}
 
-	char filename[] = CONFIG_FILE;
+	char filename[] = CONFIG_FILE_MOTOR;
 	std::fstream file;
 	file.open(filename, std::fstream::in | std::fstream::out | std::fstream::app);
 	/* als bestand nog niet bestaat, dan leeg aanmaken */
@@ -623,7 +624,7 @@ void MotorFactory::load(){
 	}
 	else file.close();
 
-	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
+	YAML::Node node = YAML::LoadFile(CONFIG_FILE_MOTOR);
 	for (std::size_t i=0;i<node.size();i++) {
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
@@ -640,7 +641,7 @@ void MotorFactory::load(){
 
 void MotorFactory::save(){
 	YAML::Emitter emitter;
-	std::ofstream fout(CONFIG_FILE);
+	std::ofstream fout(CONFIG_FILE_MOTOR);
 	std::map<std::string, MotorFactory::Motor*>::iterator it = motormap.begin();
 
 	emitter << YAML::BeginSeq;
@@ -927,7 +928,7 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 				          "text/html\r\nConnection: close\r\n\r\n");
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << motor->getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 	else if(CivetServer::getParam(conn, "new", dummy))
@@ -958,7 +959,7 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
        ss << "<a href=\"/motorfactory\">Motoren</a>";
        ss <<  "</br>";
        ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn, ss.str().c_str());
+       mg_printf(conn,  ss.str().c_str(), "%s");
        mg_printf(conn, "</body></html>");
 	}
 	/* initial page display */
@@ -994,7 +995,7 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 
@@ -1032,7 +1033,7 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 
 	   std::stringstream ss;
 	   ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << motor.getUrl() << "\"/></head><body>";
-	   mg_printf(conn, ss.str().c_str());
+	   mg_printf(conn,  ss.str().c_str(), "%s");
 	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	}
 	/* if parameter left is present left button was pushed */
@@ -1041,7 +1042,7 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 		motor.Start(LEFT);
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << motor.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Naar links...!</h2>");
 	}
 	/* if parameter stop is present stop button was pushed */
@@ -1050,7 +1051,7 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 		motor.Stop();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << motor.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Stoppen...!</h2>");
 	}
 	/* if parameter right is present right button was pushed */
@@ -1059,7 +1060,7 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 		motor.Start(RIGHT);
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << motor.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Naar rechts...!</h2>");
 	}
 	else
@@ -1109,7 +1110,7 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 	    ss << "<a href=\"/motorfactory\">Motoren</a>";
 	    ss << "<br>";
 	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn,  ss.str().c_str(), "%s");
 	}
 
 	mg_printf(conn, "</body></html>\n");

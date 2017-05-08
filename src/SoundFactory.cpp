@@ -97,7 +97,7 @@ void SoundFactory::load(){
 		deleteSound(element.first);
 	}
 
-	char filename[] = CONFIG_FILE;
+	char filename[] = CONFIG_FILE_SOUND;
 	std::fstream file;
 	file.open(filename, std::fstream::in | std::fstream::out | std::fstream::app);
 	/* als bestand nog niet bestaat, dan leeg aanmaken */
@@ -109,7 +109,7 @@ void SoundFactory::load(){
 	}
 	else file.close();
 
-	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
+	YAML::Node node = YAML::LoadFile(CONFIG_FILE_SOUND);
 	for (std::size_t i=0;i<node.size();i++) {
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string fn = node[i]["filename"].as<std::string>();
@@ -124,7 +124,7 @@ void SoundFactory::load(){
 
 void SoundFactory::save(){
 	YAML::Emitter emitter;
-	std::ofstream fout(CONFIG_FILE);
+	std::ofstream fout(CONFIG_FILE_SOUND);
 	std::map<std::string, SoundFactory::Sound*>::iterator it = soundmap.begin();
 
 	emitter << YAML::BeginSeq;
@@ -249,7 +249,7 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 				          "text/html\r\nConnection: close\r\n\r\n");
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << sound->getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 	else if(CivetServer::getParam(conn, "new", dummy))
@@ -285,7 +285,7 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
        ss << "<a href=\"/soundfactory\">Geluiden</a>";
        ss <<  "</br>";
        ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn, ss.str().c_str());
+       mg_printf(conn,  ss.str().c_str(), "%s");
        mg_printf(conn, "</body></html>");
 	}
 	/* initial page display */
@@ -320,7 +320,7 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 
@@ -351,7 +351,7 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		   		sound.setLoop(false);
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << sound.getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	} else
 	if(CivetServer::getParam(conn, "play", dummy))
@@ -363,7 +363,7 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		sound.play();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << sound.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Playing...!</h2>");
 	} else
 	if(CivetServer::getParam(conn, "stop", dummy))
@@ -375,7 +375,7 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		sound.stop();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << sound.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Stopping...!</h2>");
 	} else
 	if(CivetServer::getParam(conn, "pause", dummy))
@@ -387,7 +387,7 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		sound.pause();
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << sound.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Pausing...!</h2>");
 	} else
 	{
@@ -408,9 +408,9 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 			  sound.getPitch() << "\"" << " name=\"pitch\"/>" << "</br>";
 		ss << "<label for=\"loop\">Loop</label>";
 		if (sound.getLoop())
-			ss << "<input type=\"checkbox\" name=\"loop\" id=\"loop\" checked=\"checked\"\>";
+			ss << "<input type=\"checkbox\" name=\"loop\" id=\"loop\" checked=\"checked\">";
 		else
-			ss << "<input type=\"checkbox\" name=\"loop\" id=\"loop\"\>";
+			ss << "<input type=\"checkbox\" name=\"loop\" id=\"loop\">";
 		ss << "</br>";
 		ss << "</br>";
 		ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
@@ -425,7 +425,7 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 		ss << "<a href=\"/musicfactory\">Muziek</a>";
 		ss <<  "</br>";
 		ss << "<a href=\"/\">Home</a>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 	return true;

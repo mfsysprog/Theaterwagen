@@ -16,6 +16,7 @@ using namespace sfe;
 
 std::mutex m;
 std::mutex m_merging;
+std::mutex m_pose;
 
 class mythread : public std::thread
 {
@@ -32,16 +33,18 @@ class mythread : public std::thread
     sched_param sch_params;
 };
 
+/*
 static cv::Rect dlibRectangleToOpenCV(dlib::rectangle r)
 {
   return cv::Rect(cv::Point2i(r.left(), r.top()), cv::Point2i(r.right() + 1, r.bottom() + 1));
 }
-
+*/
 static dlib::rectangle openCVRectToDlib(cv::Rect r)
 {
   return dlib::rectangle((long)r.tl().x, (long)r.tl().y, (long)r.br().x - 1, (long)r.br().y - 1);
 }
 
+/*
 static std::stringstream matToBase64PNG(cv::Mat* input)
 {
     std::vector<uchar> buf;
@@ -65,7 +68,7 @@ static std::stringstream matToBase64PNG(cv::Mat* input)
     png << encoded.str();
     return png;
 }
-
+*/
 static std::stringstream matToJPG(cv::Mat* input)
 {
     std::vector<uchar> buf;
@@ -245,6 +248,10 @@ static std::stringstream drawToJPG(cv::Mat* input, std::vector<std::vector<cv::P
  */
 CaptureFactory::CaptureFactory(){
     mfh = new CaptureFactory::CaptureFactoryHandler(*this);
+    pose_model = new dlib::shape_predictor();
+	cout << "Reading in shape predictor..." << endl;
+    deserialize("shape_predictor_68_face_landmarks.dat") >> *pose_model;
+    cout << "Done reading in shape predictor ..." << endl;
 	server->addHandler("/capturefactory", mfh);
 	load();
 	std::thread t1( [this] {
@@ -263,6 +270,7 @@ CaptureFactory::CaptureFactory(){
 
 CaptureFactory::~CaptureFactory(){
 	delete mfh;
+	delete pose_model;
 	std::map<std::string, CaptureFactory::Capture*>::iterator it = capturemap.begin();
 	if (it != capturemap.end())
 	{
@@ -303,8 +311,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 	std::unique_lock<std::mutex> l(m);
 	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
 	l.unlock();
-	pose_model = new dlib::shape_predictor();
-	detector = new dlib::frontal_face_detector();
+	//detector = new dlib::frontal_face_detector();
 
 	std::thread t1( [this] { loadModel(); } );
 	mythread::setScheduling(t1, SCHED_IDLE, 0);
@@ -336,8 +343,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::s
 	std::unique_lock<std::mutex> l(m);
 	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
 	l.unlock();
-	pose_model = new dlib::shape_predictor();
-	detector = new dlib::frontal_face_detector();
+	//detector = new dlib::frontal_face_detector();
 
 	std::thread t1( [this] { loadModel(); } );
 	mythread::setScheduling(t1, SCHED_IDLE, 0);
@@ -356,8 +362,7 @@ CaptureFactory::Capture::~Capture(){
 	delete camMat;
 	delete camPoints;
 	delete filePoints;
-	delete pose_model;
-	delete detector;
+	//delete detector;
 	delete off_screen;
 }
 
@@ -485,7 +490,7 @@ void CaptureFactory::load(){
 		deleteCapture(element.first);
 	}
 
-	char filename[] = CONFIG_FILE;
+	char filename[] = CONFIG_FILE_CAPTURE;
 	std::fstream file;
 	file.open(filename, std::fstream::in | std::fstream::out | std::fstream::app);
 	/* als bestand nog niet bestaat, dan leeg aanmaken */
@@ -497,7 +502,7 @@ void CaptureFactory::load(){
 	}
 	else file.close();
 
-	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
+	YAML::Node node = YAML::LoadFile(CONFIG_FILE_CAPTURE);
 	for (std::size_t i=0;i<node.size();i++) {
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
@@ -529,7 +534,7 @@ void CaptureFactory::load(){
 
 void CaptureFactory::save(){
 	YAML::Emitter emitter;
-	std::ofstream fout(CONFIG_FILE);
+	std::ofstream fout(CONFIG_FILE_CAPTURE);
 	std::map<std::string, CaptureFactory::Capture*>::iterator it = capturemap.begin();
 
 	emitter << YAML::BeginSeq;
@@ -603,13 +608,10 @@ void CaptureFactory::Capture::closeCap(){
 }
 
 void CaptureFactory::Capture::loadModel(){
-	delete detector;
-	this->detector = new dlib::frontal_face_detector(get_frontal_face_detector());
+	//delete detector;
+	//this->detector = new dlib::frontal_face_detector(get_frontal_face_detector());
 	this->face_cascade = new CascadeClassifier();
 	if( !(*face_cascade).load("haarcascade_frontalface_default.xml") ){ printf("--(!)Error loading face cascade\n"); return; };
-	cout << "Reading in shape predictor..." << endl;
-    deserialize("shape_predictor_68_face_landmarks.dat") >> *pose_model;
-    cout << "Done reading in shape predictor ..." << endl;
 	cv::Mat boodschap(1280,960,CV_8UC3,cv::Scalar(255,255,255));
 	cv::putText(boodschap, "Gezichtsherkenningsmodel geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
 	std::unique_lock<std::mutex> l(m);
@@ -796,7 +798,9 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
         dlib::rectangle r = openCVRectToDlib(faces[i]);
 
     	// Landmark detection on full sized image
-    	shape = (*pose_model)(img, r);
+    	std::unique_lock<std::mutex> l(m_pose);
+    	shape = (*cf.pose_model)(img, r);
+    	l.unlock();
         //shapes.push_back(pose_model(cimg, faces[i]));
         shapes.push_back(shape);
 
@@ -1101,7 +1105,7 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 				          "text/html\r\nConnection: close\r\n\r\n");
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << capture->getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn, ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 	else if(CivetServer::getParam(conn, "new", dummy))
@@ -1122,7 +1126,7 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
        ss << "<a href=\"/capturefactory\">Captures</a>";
        ss <<  "</br>";
        ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn, ss.str().c_str());
+       mg_printf(conn, ss.str().c_str(), "%s");
        mg_printf(conn, "</body></html>");
 	}
 	/* initial page display */
@@ -1161,7 +1165,7 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn, ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 
@@ -1201,7 +1205,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    else
 	    	ss << "Model Loading...<br>";
 	    //ss << "<img alt=\"Manipulated Image\" src=\"data:image/png;base64," << capture.manipulated->str() << "\"/><br>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn, ss.str().c_str(), "%s");
 		return true;
 	}
 
@@ -1215,7 +1219,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 
 	   std::stringstream ss;
 	   ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
-	   mg_printf(conn, ss.str().c_str());
+	   mg_printf(conn, ss.str().c_str(), "%s");
 	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	}
 	else if(CivetServer::getParam(conn, "on_screen", dummy))
@@ -1224,7 +1228,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>On Screen!...!</h2>");
 	}
 	else if(CivetServer::getParam(conn, "merge", dummy))
@@ -1234,14 +1238,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.off_screen = new std::vector<std::stringstream>(capture.mergeFrames());
 		capture.manipulated.str("");
 		capture.manipulated.clear();
-		for (int i = 0; i < capture.off_screen->size(); ++i)
+		for (unsigned int i = 0; i < capture.off_screen->size(); ++i)
 		{
 			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << (*capture.off_screen)[i].str() << "\r\n--frame\r\n";
 		}
 
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Merged!...!</h2>");
 	}
 	else if(CivetServer::getParam(conn, "newselect", value))
@@ -1265,7 +1269,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.closeCap();
 
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << capture.getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn, ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 	else if(CivetServer::getParam(conn, "new", dummy))
@@ -1299,7 +1303,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
        ss << "<a href=\"/capturefactory\">Captures</a>";
        ss <<  "<br>";
        ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn, ss.str().c_str());
+       mg_printf(conn, ss.str().c_str(), "%s");
        mg_printf(conn, "</body></html>");
 	}
 	/* if parameter start is present start button was pushed */
@@ -1313,14 +1317,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			cout << "Video open success!" << endl;
 		else
 			cout << "Video open failure!" << endl;
-		for (int i = 0; i < (*capture.camMat).size(); ++i)
+		for (unsigned int i = 0; i < (*capture.camMat).size(); ++i)
 		{
 			outputVideo << (*capture.camMat)[i];
 		}
 		outputVideo.release();
 		std::stringstream ss;
 		//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Video opgeslagen...!</h2>");
 	}
 	/* if parameter start is present start button was pushed */
@@ -1334,7 +1338,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
-		for (int i = 0; i < capture.camMat->size(); ++i)
+		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
 		{
 			cv::Mat mat  = (*capture.camMat)[i];
 			/* add points of found faces */
@@ -1342,7 +1346,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		}
 		std::stringstream ss;
 	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Nieuwe Capture...!</h2>");
 	}
 	else if(CivetServer::getParam(conn, "capture_multi", value))
@@ -1358,7 +1362,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
-		for (int i = 0; i < capture.camMat->size(); ++i)
+		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
 		{
 			cv::Mat mat  = (*capture.camMat)[i];
 			/* add points of found faces */
@@ -1366,7 +1370,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		}
 		std::stringstream ss;
 	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Frames Captured...!</h2>");
 	}
 	else if(CivetServer::getParam(conn, "capture_next", dummy))
@@ -1377,7 +1381,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
-		for (int i = 0; i < capture.camMat->size(); ++i)
+		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
 		{
 			cv::Mat mat  = (*capture.camMat)[i];
 			/* add points of found faces */
@@ -1385,7 +1389,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		}
 		std::stringstream ss;
 	//	ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Frame Toegevoegd...!</h2>");
 	}
 	/* if parameter stop is present stop button was pushed */
@@ -1397,7 +1401,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		std::unique_lock<std::mutex> l(m);
 		capture.manipulated.str("");
 		capture.manipulated.clear();
-		for (int i = 0; i < capture.camMat->size(); ++i)
+		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
 		{
 			cv::Mat mat  = (*capture.camMat)[i];
 			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&mat);
@@ -1422,7 +1426,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Gezichtsdetectie op achtergrond...!</h2>");
 	}
 	else if(CivetServer::getParam(conn, "detect_file", dummy))
@@ -1456,28 +1460,28 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << capture.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Gezichtsdetectie op achtergrond...!</h2>");
 	}
 	else
 	{
 		std::stringstream ss;
 		ss << "<html><head>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn, ss.str().c_str(), "%s");
 		mg_printf(conn, "<h2>&nbsp;</h2>");
 	}
 	/* initial page display */
 	{
 		std::stringstream ss;
 		ss << "<script type=\"text/javascript\" src=\"resources/jquery-3.2.0.min.js\"></script>";
-		ss << "<script type=\"text/javascript\">";
-		   ss << " $(document).ready(function(){";
-		   ss << "  setInterval(function(){";
-		   ss << "  $.get( \"" << capture.getUrl() << "?streaming=true\", function( data ) {";
-		   ss << "  $( \"#capture\" ).html( data );";
-		   ss << " });},5000)";
-		   ss << "});";
-		ss << "</script>";
+		//ss << "<script type=\"text/javascript\">";
+		   //ss << " $(document).ready(function(){";
+		   //ss << "  setInterval(function(){";
+		   //ss << "  $.get( \"" << capture.getUrl() << "?streaming=true\", function( data ) {";
+		   //ss << "  $( \"#capture\" ).html( data );";
+		  // ss << " });},5000)";
+		  // ss << "});";
+		//ss << "</script>";
 		ss << "</head><body>";
 		ss << "<h2>Capture:</h2>";
 		ss << "<form action=\"" << capture.getUrl() << "\" method=\"POST\">";
@@ -1510,7 +1514,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss << "<a href=\"/capturefactory\">Capture</a>";
 	    ss << "<br>";
 	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn, ss.str().c_str(), "%s");
 	}
 
 	mg_printf(conn, "</body></html>\n");

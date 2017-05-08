@@ -8,6 +8,7 @@
 #ifndef CHASEFACTORY_HPP_
 #define CHASEFACTORY_HPP_
 
+#include "Theaterwagen.hpp"
 #include <string>
 #include <iostream>
 #include <functional>
@@ -30,8 +31,7 @@
 #include "ToggleFactory.hpp"
 #include "CaptureFactory.hpp"
 
-#define RESOURCES_DIR "/home/theaterwagen/resources/"
-#define CONFIG_FILE "/home/theaterwagen/config/chasefactory.yaml"
+#define CONFIG_FILE_CHASE "config/chasefactory.yaml"
 
 extern CivetServer* server;
 
@@ -101,13 +101,13 @@ class ChaseFactory {
 	private:
 	void save();
 
+	CaptureFactory* capture;
 	FixtureFactory* fixture;
 	SceneFactory* scene;
 	MusicFactory* music;
 	SoundFactory* sound;
 	MotorFactory* motor;
 	ToggleFactory* toggle;
-	CaptureFactory* capture;
 
 	std::map<std::string, ChaseFactory::Chase*> chasemap;
 	ChaseFactoryHandler* mfh;

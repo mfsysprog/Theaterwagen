@@ -208,7 +208,7 @@ void SceneFactory::load(){
 		deleteScene(element.first);
 	}
 
-	char filename[] = CONFIG_FILE;
+	char filename[] = CONFIG_FILE_SCENE;
 	std::fstream file;
 	file.open(filename, std::fstream::in | std::fstream::out | std::fstream::app);
 	/* als bestand nog niet bestaat, dan leeg aanmaken */
@@ -220,7 +220,7 @@ void SceneFactory::load(){
 	}
 	else file.close();
 
-	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
+	YAML::Node node = YAML::LoadFile(CONFIG_FILE_SCENE);
 	for (std::size_t i=0;i<node.size();i++) {
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
@@ -239,7 +239,7 @@ void SceneFactory::load(){
 
 void SceneFactory::save(){
 	YAML::Emitter emitter;
-	std::ofstream fout(CONFIG_FILE);
+	std::ofstream fout(CONFIG_FILE_SCENE);
 	std::map<std::string, SceneFactory::Scene*>::iterator it = scenemap.begin();
 
 	emitter << YAML::BeginSeq;
@@ -386,7 +386,7 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 				          "text/html\r\nConnection: close\r\n\r\n");
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << scene->getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 	else if(CivetServer::getParam(conn, "new", dummy))
@@ -408,7 +408,7 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
        ss << "<a href=\"/scenefactory\">Scenes</a>";
        ss <<  "</br>";
        ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn, ss.str().c_str());
+       mg_printf(conn,  ss.str().c_str(), "%s");
        mg_printf(conn, "</body></html>");
 	}
 	/* initial page display */
@@ -444,7 +444,7 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 
@@ -479,7 +479,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		  	}
 		}
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << scene.getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	} else
 	if(CivetServer::getParam(conn, "play", dummy))
@@ -500,7 +500,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		}
 		scene.Play();
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << scene.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str());
+	   	mg_printf(conn,  ss.str().c_str(), "%s");
 	   	mg_printf(conn, "<h2>Playing...!</h2>");
 	} else
 	{
@@ -540,7 +540,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		ss << "<a href=\"/scenefactory\">Scenes</a>";
 		ss <<  "</br>";
 		ss << "<a href=\"/\">Home</a>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 	return true;

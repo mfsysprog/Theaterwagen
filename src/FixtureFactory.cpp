@@ -77,7 +77,7 @@ void FixtureFactory::load(){
 		deleteFixture(element.first);
 	}
 
-	char filename[] = CONFIG_FILE;
+	char filename[] = CONFIG_FILE_FIXTURE;
 	std::fstream file;
 	file.open(filename, std::fstream::in | std::fstream::out | std::fstream::app);
 	/* als bestand nog niet bestaat, dan leeg aanmaken */
@@ -89,7 +89,7 @@ void FixtureFactory::load(){
 	}
 	else file.close();
 
-	YAML::Node node = YAML::LoadFile(CONFIG_FILE);
+	YAML::Node node = YAML::LoadFile(CONFIG_FILE_FIXTURE);
 	for (std::size_t i=0;i<node.size();i++) {
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
@@ -102,7 +102,7 @@ void FixtureFactory::load(){
 
 void FixtureFactory::save(){
 	YAML::Emitter emitter;
-	std::ofstream fout(CONFIG_FILE);
+	std::ofstream fout(CONFIG_FILE_FIXTURE);
 	std::map<int, FixtureFactory::Fixture*>::iterator it = fixturemap.begin();
 
 	emitter << YAML::BeginSeq;
@@ -231,7 +231,7 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
 				          "text/html\r\nConnection: close\r\n\r\n");
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << fixture->getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 	else if(CivetServer::getParam(conn, "new", dummy))
@@ -257,7 +257,7 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
        ss << "<a href=\"/fixturefactory\">Fixtures</a>";
        ss <<  "</br>";
        ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn, ss.str().c_str());
+       mg_printf(conn,  ss.str().c_str(), "%s");
        mg_printf(conn, "</body></html>");
 	}
 	/* initial page display */
@@ -293,7 +293,7 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str());
+	    mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 
@@ -323,7 +323,7 @@ bool FixtureFactory::Fixture::FixtureHandler::handleAll(const char *method,
 		  		fixture.number_channels = atoi(value.c_str());
 		std::stringstream ss;
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << fixture.getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
 	} else
 	{
@@ -357,7 +357,7 @@ bool FixtureFactory::Fixture::FixtureHandler::handleAll(const char *method,
 		ss << "<a href=\"/scenefactory\">Scenes</a>";
 		ss <<  "</br>";
 		ss << "<a href=\"/\">Home</a>";
-		mg_printf(conn, ss.str().c_str());
+		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
 	return true;

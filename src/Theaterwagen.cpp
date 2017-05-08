@@ -6,6 +6,8 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
+#include "Theaterwagen.hpp"
+
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
 #include "CivetServer.h"
@@ -15,9 +17,6 @@
 #include "ChaseFactory.hpp"
 
 using namespace std;
-
-#define DOCUMENT_ROOT "."
-#define PORT "8080"
 
 CivetServer* server = nullptr;
 
@@ -30,7 +29,7 @@ int main(int, char**){
 		    "document_root", DOCUMENT_ROOT, "listening_ports", PORT, 0};
 
 	    std::vector<std::string> cpp_options;
-	    for (int i=0; i<(sizeof(options)/sizeof(options[0])-1); i++) {
+	    for (unsigned int i=0; i<(sizeof(options)/sizeof(options[0])-1); i++) {
 	        cpp_options.push_back(options[i]);
 	    }
 
@@ -41,7 +40,7 @@ int main(int, char**){
 	UploadHandler hu;
 	server->addHandler("/upload", hu);
 
-	const size_t num_faces = 2;
+	//const size_t num_faces = 2;
 	//FaceDetectorAndTracker detector("haarcascade_frontalface_default.xml", 0, num_faces);
 	//FaceSwapper face_swapper("shape_predictor_68_face_landmarks.dat");
 
