@@ -159,7 +159,7 @@ SceneFactory::Scene::Scene(FixtureFactory* ff, std::string naam, std::string oms
 	mh = new SceneFactory::Scene::SceneHandler(*this);
 	uuid_generate( (unsigned char *)&uuid );
 
-	this->channels = new unsigned char[512]{0};
+	this->channels = new std::vector<std::vector<unsigned char>>(512, std::vector<unsigned char>(2));
 	this->ff = ff;
 	this->naam = naam;
 	this->omschrijving = omschrijving;
@@ -169,7 +169,7 @@ SceneFactory::Scene::Scene(FixtureFactory* ff, std::string naam, std::string oms
 	server->addHandler(url, mh);
 }
 
-SceneFactory::Scene::Scene(FixtureFactory* ff, std::string uuidstr, std::string naam, std::string omschrijving, unsigned char* channels){
+SceneFactory::Scene::Scene(FixtureFactory* ff, std::string uuidstr, std::string naam, std::string omschrijving, fadetype fade, unsigned int fadesteps, std::vector<std::vector<unsigned char>>* channels){
 	mh = new SceneFactory::Scene::SceneHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 
@@ -177,6 +177,8 @@ SceneFactory::Scene::Scene(FixtureFactory* ff, std::string uuidstr, std::string 
 	this->ff = ff;
 	this->naam = naam;
 	this->omschrijving = omschrijving;
+	this->fade = fade;
+	this->fadesteps = fadesteps;
 	std::stringstream ss;
 	ss << "/scene-" << this->getUuid();
 	url = ss.str().c_str();
@@ -225,13 +227,16 @@ void SceneFactory::load(){
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
-		unsigned char* channels = new unsigned char[512];
+		fadetype fade = (fadetype) node[i]["fade"].as<int>();
+		unsigned int fadesteps = (unsigned int) node[i]["fadesteps"].as<int>();
+		std::vector<std::vector<unsigned char>>* channels = new std::vector<std::vector<unsigned char>>(512, std::vector<unsigned char>(2));
 		for (std::size_t k=0;k < 512;k++)
 		{
 			//fprintf(stderr,"Value for channel %i:  %u\n",k,atoi(node[i]["channels"][k].as<std::string>().c_str()));
-			channels[k] = atoi(node[i]["channels"][k].as<std::string>().c_str());
+			(*channels)[k][0] = atoi(node[i]["channels"][k]["value"].as<std::string>().c_str());
+			(*channels)[k][1] = atoi(node[i]["channels"][k]["exclude"].as<std::string>().c_str());
 		}
-		SceneFactory::Scene * scene = new SceneFactory::Scene(ff, uuidstr, naam, omschrijving, channels);
+		SceneFactory::Scene * scene = new SceneFactory::Scene(ff, uuidstr, naam, omschrijving, fade, fadesteps, channels);
 		std::string uuid_str = scene->getUuid();
 		scenemap.insert(std::make_pair(uuid_str,scene));
 	}
@@ -252,12 +257,21 @@ void SceneFactory::save(){
 		emitter << YAML::Value << element.second->naam;
 		emitter << YAML::Key << "omschrijving";
 		emitter << YAML::Value << element.second->omschrijving;
+		emitter << YAML::Key << "fade";
+		emitter << YAML::Value << (int) element.second->fade;
+		emitter << YAML::Key << "fadesteps";
+		emitter << YAML::Value << (int) element.second->fadesteps;
 		emitter << YAML::Key << "channels";
 		emitter << YAML::Flow;
 		emitter << YAML::BeginSeq;
 		for (unsigned int i = 0; i < 512 ; i++)
 		{
-			emitter << std::to_string(element.second->channels[i]);
+			emitter << YAML::BeginMap;
+			emitter << YAML::Key << "value";
+			emitter << std::to_string((*element.second->channels)[i][0]);
+			emitter << YAML::Key << "exclude";
+			emitter << std::to_string((*element.second->channels)[i][1]);
+			emitter << YAML::EndMap;
 		}
 		emitter << YAML::EndSeq;
 		emitter << YAML::EndMap;
@@ -279,10 +293,28 @@ std::string SceneFactory::Scene::getUrl(){
 
 void SceneFactory::Scene::Play(){
 	int nBytes;
-	nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-		                                    cmd_SetChannelRange, 512, 0, (char *)this->channels, 512, 1000);
-	if (nBytes < 0)
-	   fprintf(stderr, "USB error: %s\n", usb_strerror());
+	unsigned char channels_tmp[512] = {0};
+
+	for (unsigned int i = 1; i <= fadesteps; ++i)
+	{
+	  for (int k = 0; k < 512; k++)
+	  {
+		  // exclude channel
+		  if ((*channels)[k][1] == '1' || fade == FADE_OFF)
+			  channels_tmp[k] =  (*channels)[k][0];
+		  // included channel
+		  else
+		  if (fade == FADE_IN)
+			  channels_tmp[k] =  (int)((float)(*channels)[k][0] / (float)fadesteps) * i;
+		  else
+			  channels_tmp[k] = (int)(float)(*channels)[k][0] - (((float)(*channels)[k][0] / (float)fadesteps) * i);
+	  }
+	  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+		                                    cmd_SetChannelRange, 512, 0, (char *)channels_tmp, 512, 1000);
+	  if (nBytes < 0)
+	     fprintf(stderr, "USB error: %s\n", usb_strerror());
+	  delay(20);
+	}
 }
 
 SceneFactory::Scene* SceneFactory::addScene(std::string naam, std::string omschrijving){
@@ -311,6 +343,13 @@ std::string SceneFactory::Scene::getOmschrijving(){
 	return omschrijving;
 }
 
+fadetype SceneFactory::Scene::getFade(){
+	return fade;
+}
+
+unsigned int SceneFactory::Scene::getFadeSteps(){
+	return fadesteps;
+}
 
 bool SceneFactory::SceneFactoryHandler::handleGet(CivetServer *server, struct mg_connection *conn)
 	{
@@ -468,6 +507,10 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		  		scene.naam = value;
 		if(CivetServer::getParam(conn,"omschrijving", value))
 		  		scene.omschrijving = value;
+		if(CivetServer::getParam(conn,"fade", value))
+		  		scene.fade = (fadetype) atoi(value.c_str());
+		if(CivetServer::getParam(conn,"fadesteps", value))
+		  		scene.fadesteps = atoi(value.c_str());
 		std::stringstream ss;
 		for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
 			for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
@@ -475,7 +518,14 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 				std::stringstream channel;
 				channel << "chan" << i;
 				CivetServer::getParam(conn,channel.str().c_str(), value);
-				scene.channels[i-1] = atoi(value.c_str());
+				(*scene.channels)[i-1][0] = atoi(value.c_str());
+				std::stringstream exclude;
+				exclude << "exclude" << i;
+				CivetServer::getParam(conn,exclude.str().c_str(), value);
+				if (value.compare("ja") == 0)
+					(*scene.channels)[i-1][1] = '1';
+				else
+					(*scene.channels)[i-1][1] = '0';
 		  	}
 		}
 		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << scene.getUrl() << "\"/></head><body>";
@@ -488,6 +538,10 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		  		scene.naam = value;
 		if(CivetServer::getParam(conn,"omschrijving", value))
 		  		scene.omschrijving = value;
+		if(CivetServer::getParam(conn,"fade", value))
+		  		scene.fade = (fadetype) atoi(value.c_str());
+		if(CivetServer::getParam(conn,"fadesteps", value))
+		  		scene.fadesteps = atoi(value.c_str());
 		std::stringstream ss;
 		for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
 			for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
@@ -495,7 +549,14 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 				std::stringstream channel;
 				channel << "chan" << i;
 				CivetServer::getParam(conn,channel.str().c_str(), value);
-				scene.channels[i-1] = atoi(value.c_str());
+				(*scene.channels)[i-1][0] = atoi(value.c_str());
+				std::stringstream exclude;
+				exclude << "exclude" << i;
+				CivetServer::getParam(conn,exclude.str().c_str(), value);
+				if (value.compare("ja") == 0)
+					(*scene.channels)[i-1][1] = '1';
+				else
+					(*scene.channels)[i-1][1] = '0';
 		  	}
 		}
 		scene.Play();
@@ -515,22 +576,61 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 					  "<input id=\"naam\" type=\"text\" value=\"" <<
 					  scene.getNaam() << "\"" << " name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
-					  "<input id=\"naam\" type=\"text\" value=\"" <<
+					  "<input id=\"omschrijving\" type=\"text\" value=\"" <<
 					  scene.getOmschrijving() << "\"" << " name=\"omschrijving\"/>" << "</br>";
-		ss << "</br>";
+		ss << "<label for=\"fade\">Fade:</label>"
+					  "<select id=\"fade\" name=\"fade\"/>";
+		if (scene.getFade() == FADE_IN)
+		{
+		  ss << "<option value=\"0\">Geen Fade</option>"
+		     << "<option value=\"1\" selected>Fade In</option>"
+	  		 << "<option value=\"2\">Fade Out</option>";
+	    }
+		else if (scene.getFade() == FADE_OUT)
+		{
+		  ss << "<option value=\"0\">Geen Fade</option>"
+		     << "<option value=\"1\">Fade In</option>"
+	  		 << "<option value=\"2\" selected>Fade Out</option>";
+		}
+		else
+		{
+		  ss << "<option value=\"0\" selected>Geen Fade</option>"
+		     << "<option value=\"1\">Fade In</option>"
+	  		 << "<option value=\"2\">Fade Out</option>";
+		}
+
+
+		ss << "</select>";
+		ss << "<br>";
+		ss << "<label for=\"fadesteps\">Fade Stappen</label>";
+		ss << "<td><input id=\"fadesteps\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
+			  scene.getFadeSteps() << "\"" << " name=\"fadesteps\" />";
+		ss << "</tr>";
+
+		ss << "<br>";
+		ss << "<br>";
 	    for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
 	    	ss << "<a href=\"" << element.second->getUrl() << "\">" << element.second->naam << "</a><br>";
 	    	ss << "Base adres: &nbsp;" << element.second->base_channel << "<br>";
 	    	ss << "Omschrijving: &nbsp;" << element.second->omschrijving << "<br>";
-	    	ss << "Channels:" << "<br>";
+	    	ss << "Kanalen:" << "<br>";
+	    	ss << "<table><th>Kanaal</th><th>Exclude</th><th>Waarde</th>";
 	    	for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
 	    	{
-	    		ss << "<label for=\"chan" << i << "\">" << i << "</label>";
-	    		ss << "<input id=\"chan" << i << "\"" <<
+	    		ss << "<tr>";
+	    		ss << "<td><label for=\"chan" << i << "\">" << i << "</label></td>";
+	    		if ((*scene.channels)[i-1][1] == '1')
+	    			ss << "<td><input id=\"exclude" << i << "\"" <<
+						" type=\"checkbox\" value=\"ja\" name=\"exclude" << i << "\" checked/>" << "</td>";
+	    		else
+	    			ss << "<td><input id=\"exclude" << i << "\"" <<
+						" type=\"checkbox\" value=\"ja\" name=\"exclude" << i << "\"/>" << "</td>";
+	    		ss << "<td><input id=\"chan" << i << "\"" <<
 					  " type=\"range\" min=\"0\" max=\"255\" step=\"1\" value=\"" <<
-					  std::to_string(scene.channels[i-1]).c_str() << "\"" << " name=\"chan" << i << "\"/>" << "</br>";
-
+					  std::to_string((*scene.channels)[i-1][0]).c_str() << "\"" << " name=\"chan" << i << "\"/>" << "</td>";
+	    		ss << "</tr>";
 	    	}
+		    ss << "</table>";
 	    }
 	    ss << "<br>";
 		ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
