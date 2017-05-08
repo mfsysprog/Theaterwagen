@@ -90,6 +90,7 @@ class SceneFactory {
 	SceneFactory(FixtureFactory* ff);
 	~SceneFactory();
 	SceneFactory::Scene* addScene(std::string naam, std::string omschrijving);
+	SceneFactory::Scene* addScene(std::string naam, std::string omschrijving, std::string uuid_like);
 	void deleteScene(std::string uuid);
 	void load();
 

@@ -324,6 +324,16 @@ SceneFactory::Scene* SceneFactory::addScene(std::string naam, std::string omschr
 	return scene;
 }
 
+SceneFactory::Scene* SceneFactory::addScene(std::string naam, std::string omschrijving, std::string uuid_like){
+	SceneFactory::Scene * scene = new SceneFactory::Scene(ff, naam, omschrijving);
+	std::string uuid_str = scene->getUuid();
+	scene->fade = (*scenemap.find(uuid_like)).second->fade;
+	scene->fadesteps = (*scenemap.find(uuid_like)).second->fadesteps;
+	scene->channels = (*scenemap.find(uuid_like)).second->channels;
+	scenemap.insert(std::make_pair(uuid_str,scene));
+	return scene;
+}
+
 void SceneFactory::deleteScene(std::string uuid){
 	std::map<std::string, SceneFactory::Scene*>::iterator it = scenemap.begin();
     it = scenemap.find(uuid);
@@ -411,14 +421,29 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 		mg_printf(conn, "</body></html>");
 		this->scenefactory.load();
 	}
-	else if(CivetServer::getParam(conn, "newselect", dummy))
+	else if(CivetServer::getParam(conn, "newselect", value))
 	{
-		CivetServer::getParam(conn, "naam", value);
-		std::string naam = value;
-		CivetServer::getParam(conn, "omschrijving", value);
-		std::string omschrijving = value;
+		std::string uuid = value;
+		SceneFactory::Scene* scene;
 
-		SceneFactory::Scene* scene = scenefactory.addScene(naam, omschrijving);
+		if (!uuid.compare("-1") == 0)
+		{
+			CivetServer::getParam(conn, "naam", value);
+			std::string naam = value;
+			CivetServer::getParam(conn, "omschrijving", value);
+			std::string omschrijving = value;
+
+			scene = scenefactory.addScene(naam, omschrijving, uuid);
+		}
+		else
+		{
+			CivetServer::getParam(conn, "naam", value);
+			std::string naam = value;
+			CivetServer::getParam(conn, "omschrijving", value);
+			std::string omschrijving = value;
+
+			scene = scenefactory.addScene(naam, omschrijving);
+		}
 
 		mg_printf(conn,
 				          "HTTP/1.1 200 OK\r\nContent-Type: "
@@ -428,7 +453,7 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 		mg_printf(conn,  ss.str().c_str(), "%s");
 		mg_printf(conn, "</body></html>");
 	}
-	else if(CivetServer::getParam(conn, "new", dummy))
+	else if(CivetServer::getParam(conn, "new", value))
 	{
        mg_printf(conn,
 		        "HTTP/1.1 200 OK\r\nContent-Type: "
@@ -440,7 +465,7 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
   			 "<input id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
 	         "<input id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
-	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
+	   ss << "<button type=\"submit\" name=\"newselect\" value=\"" << value << "\" ";
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
        ss <<  "</br>";
@@ -473,7 +498,7 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 	    }
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Nieuw</button>";
+	    ss << "<button type=\"submit\" name=\"new\" value=\"-1\" id=\"new\">Nieuw</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">Opslaan</button>";
@@ -636,7 +661,10 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 		ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">Play</button>";
 	    ss << "</form>";
-		ss <<  "</br>";
+	    ss << "<form style ='float: left; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
+	    ss << "<button type=\"submit\" name=\"new\" value=\"" << scene.getUuid() <<"\" id=\"new\">Nieuw Als</button>";
+	    ss << "</form>";
+	    ss << "<br style=\"clear:both\">";
 		ss << "<a href=\"/scenefactory\">Scenes</a>";
 		ss <<  "</br>";
 		ss << "<a href=\"/\">Home</a>";
