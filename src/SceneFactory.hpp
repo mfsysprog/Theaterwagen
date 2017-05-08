@@ -32,12 +32,6 @@
 
 extern CivetServer* server;
 
-enum fadetype {
-	 FADE_OFF,
-	 FADE_IN,
-	 FADE_OUT
-};
-
 class SceneFactory {
 	friend class ChaseFactory;
 	private:
@@ -56,14 +50,15 @@ class SceneFactory {
 		friend class SceneFactory;
 		friend class ChaseFactory;
 		public:
-		Scene(FixtureFactory* ff, std::string uuidstr, std::string naam, std::string omschrijving, fadetype fade, unsigned int fadesteps, std::vector<std::vector<unsigned char>>* channels);
+		Scene(FixtureFactory* ff, std::string uuidstr, std::string naam, std::string omschrijving, unsigned int fadesteps, std::vector<std::vector<unsigned char>>* channels);
 		Scene(FixtureFactory* ff, std::string naam, std::string omschrijving);
 		~Scene();
 		void Play();
+		void fadeOut();
+		void fadeIn();
 		std::string getUuid();
 		std::string getNaam();
 		std::string getOmschrijving();
-		fadetype getFade();
 		unsigned int getFadeSteps();
 		std::string getUrl();
 		private:
@@ -81,7 +76,6 @@ class SceneFactory {
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
-		fadetype fade = FADE_OFF;
 		uuid_t uuid;
 		unsigned int fadesteps = 1;
 		std::vector<std::vector<unsigned char>>* channels;

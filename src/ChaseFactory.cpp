@@ -312,6 +312,10 @@ void ChaseFactory::Chase::Action()
 		{
 			if (method.compare("Play") == 0)
 			  cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Play();
+			if (method.compare("Fade In") == 0)
+			  cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->fadeIn();
+			if (method.compare("Fade Out") == 0)
+			  cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->fadeOut();
 		}
 		if (action.compare("Tijd") == 0)
 		{
@@ -659,6 +663,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option>Muziek::Stop</option>";
 	   ss << "  <option>Muziek::Fade Out</option>";
 	   ss << "  <option>Scene::Play</option>";
+	   ss << "  <option>Scene::Fade In</option>";
+	   ss << "  <option>Scene::Fade Out</option>";
 	   ss << "  <option>Tijd::Wachten</option>";
 	   ss << " </select>";
 	   ss << " <select id=\"target\" name=\"target\">";
