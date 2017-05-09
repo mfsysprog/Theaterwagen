@@ -30,6 +30,7 @@
 #include "MotorFactory.hpp"
 #include "ToggleFactory.hpp"
 #include "CaptureFactory.hpp"
+#include "WebHandler.hpp"
 
 #define CONFIG_FILE_CHASE "config/chasefactory.yaml"
 
@@ -108,6 +109,7 @@ class ChaseFactory {
 	SoundFactory* sound;
 	MotorFactory* motor;
 	ToggleFactory* toggle;
+	WebHandler* web;
 
 	std::map<std::string, ChaseFactory::Chase*> chasemap;
 	ChaseFactoryHandler* mfh;

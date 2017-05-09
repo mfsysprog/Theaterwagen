@@ -23,6 +23,7 @@ ChaseFactory::ChaseFactory(){
 	sound = new SoundFactory();
 	motor = new MotorFactory();
 	toggle = new ToggleFactory();
+	web = new WebHandler();
 	capture = new CaptureFactory();
 
 	std::map<std::string, ChaseFactory::Chase*>::iterator it = chasemap.begin();
@@ -52,6 +53,7 @@ ChaseFactory::~ChaseFactory(){
 	delete sound;
 	delete motor;
 	delete toggle;
+	delete web;
 	delete capture;
 }
 
@@ -307,6 +309,13 @@ void ChaseFactory::Chase::Action()
 			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->stop();
 			if (method.compare("Fade Out") == 0)
 			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->fadeOut();
+		}
+		if (action.compare("Portret") == 0)
+		{
+			if (method.compare("Voor") == 0)
+			  cf.web->setVoor();
+			if (method.compare("Na") == 0)
+			  cf.web->setNa();
 		}
 		if (action.compare("Scene") == 0)
 		{
@@ -587,6 +596,12 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   }
 		   ss << "</select>";
 		}
+		if (action.compare("Portret") == 0)
+		{
+		   ss << "<select id=\"target\" name=\"target\">";
+	       ss << "<option value=\"n.v.t.\">n.v.t.</option>";
+           ss << "</select>";
+		}
 		if (action.compare("Scene") == 0)
 		{
 		   ss << "<select id=\"target\" name=\"target\">";
@@ -613,6 +628,10 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "    $(\"#target\").hide();";
 	   ss << "    $(\"#tijd_div\").show();";
 	   ss << "   } else if ($(\"#action\").val() == 'Capture::clearScherm') {";
+	   ss << "    $(\"#target\").hide();";
+	   ss << "   } else if ($(\"#action\").val() == 'Portret::Voor') {";
+	   ss << "    $(\"#target\").hide();";
+	   ss << "   } else if ($(\"#action\").val() == 'Portret::Na') {";
 	   ss << "    $(\"#target\").hide();";
 	   ss << "   } else {";
 	   ss << "    $(\"#target\").show();";
@@ -662,6 +681,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option>Muziek::Fade In</option>";
 	   ss << "  <option>Muziek::Stop</option>";
 	   ss << "  <option>Muziek::Fade Out</option>";
+	   ss << "  <option>Portret::Voor</option>";
+	   ss << "  <option>Portret::Na</option>";
 	   ss << "  <option>Scene::Play</option>";
 	   ss << "  <option>Scene::Fade In</option>";
 	   ss << "  <option>Scene::Fade Out</option>";
@@ -994,6 +1015,12 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 			    	ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 				    ss << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></div></td>";
 				}
+			}
+			if (action.compare("Portret") == 0)
+			{
+				ss << "<td><div class=\"waarde\">";
+				ss << (*it_list).action << "</div></td>";
+				ss << "<td><div class=\"waarde\"></div></td>";
 			}
 			if (action.compare("Scene") == 0)
 			{
