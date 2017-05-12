@@ -1219,6 +1219,7 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 		mg_printf(conn, "</body></html>");
 		this->capturefactory.load();
 	}
+	else
 	/* if parameter clear is present the clear screen button was pushed */
 	if(CivetServer::getParam(conn, "clear", dummy))
 	{

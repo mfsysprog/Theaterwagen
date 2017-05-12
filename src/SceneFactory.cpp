@@ -349,9 +349,7 @@ void SceneFactory::Scene::Play(){
 	int nBytes;
 	unsigned char channels_tmp[512] = {0};
 
-	for (unsigned int i = 1; i <= fadesteps; ++i)
-	{
-	  for (int k = 0; k < 512; k++)
+    for (int k = 0; k < 512; k++)
 	  {
 			  channels_tmp[k] =  (*channels)[k][0];
 	  }
@@ -360,7 +358,6 @@ void SceneFactory::Scene::Play(){
 	  if (nBytes < 0)
 	     fprintf(stderr, "USB error: %s\n", usb_strerror());
 	  delay(20);
-	}
 }
 
 SceneFactory::Scene* SceneFactory::addScene(std::string naam, std::string omschrijving){
