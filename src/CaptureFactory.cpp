@@ -14,6 +14,17 @@ using namespace dlib;
 using namespace sf;
 using namespace sfe;
 
+#include <chrono>
+#include <iostream>
+using namespace std::chrono;
+
+cv::Size feather_amount;
+uint8_t LUTJE[3][256];
+int source_hist_int[3][256];
+int target_hist_int[3][256];
+float source_histogram[3][256];
+float target_histogram[3][256];
+
 std::mutex m;
 std::mutex m_merging;
 std::mutex m_pose;
@@ -154,6 +165,15 @@ std::vector <cv::Point2f> get_points(const dlib::full_object_detection& d)
     	points.push_back(cv::Point2f(d.part(i).x(), d.part(i).y()));
     }
 
+    //calculate forehead left (point index 68)
+    points.push_back(cv::Point2f(points[17].x+(points[17].x-points[2].x),points[17].y - (points[2].y-points[17].y)));
+
+    //calculate forehead middle (point index 69)
+    points.push_back(cv::Point2f(points[27].x+(points[29].x-points[8].x), points[29].y - (points[8].y - points[29].y)));
+
+    //calculate forehead right ((point index 70)
+    points.push_back(cv::Point2f(points[26].x+(points[26].x-points[14].x),points[26].y - (points[14].y-points[26].y)));
+
     return points;
 }
 
@@ -215,6 +235,136 @@ void warpTriangle(Mat &img1, Mat &img2, std::vector<Point2f> &t1, std::vector<Po
 
 }
 
+void featherMask(cv::Mat &refined_masks)
+{
+    cv::erode(refined_masks, refined_masks, getStructuringElement(cv::MORPH_RECT, feather_amount), cv::Point(-1, -1), 1, cv::BORDER_CONSTANT, cv::Scalar(0));
+
+    cv::blur(refined_masks, refined_masks, feather_amount, cv::Point(-1, -1), cv::BORDER_CONSTANT);
+}
+
+inline void pasteFacesOnFrame(cv::Mat& small_frame, cv::Mat& warpped_faces, cv::Mat& refined_masks)
+{
+    for (int i = 0; i < small_frame.rows; i++)
+    {
+        auto frame_pixel = small_frame.row(i).data;
+        auto faces_pixel = warpped_faces.row(i).data;
+        auto masks_pixel = refined_masks.row(i).data;
+
+        for (int j = 0; j < small_frame.cols; j++)
+        {
+            if (*masks_pixel != 0)
+            {
+                *frame_pixel = ((255 - *masks_pixel) * (*frame_pixel) + (*masks_pixel) * (*faces_pixel)) >> 8; // divide by 256
+                *(frame_pixel + 1) = ((255 - *(masks_pixel + 1)) * (*(frame_pixel + 1)) + (*(masks_pixel + 1)) * (*(faces_pixel + 1))) >> 8;
+                *(frame_pixel + 2) = ((255 - *(masks_pixel + 2)) * (*(frame_pixel + 2)) + (*(masks_pixel + 2)) * (*(faces_pixel + 2))) >> 8;
+            }
+
+            frame_pixel += 3;
+            faces_pixel += 3;
+            masks_pixel++;
+        }
+    }
+}
+
+void specifyHistogram(const cv::Mat source_image, cv::Mat target_image, cv::Mat mask)
+{
+
+    std::memset(source_hist_int, 0, sizeof(int) * 3 * 256);
+    std::memset(target_hist_int, 0, sizeof(int) * 3 * 256);
+
+    for (int i = 0; i < mask.rows; i++)
+    {
+        auto current_mask_pixel = mask.row(i).data;
+        auto current_source_pixel = source_image.row(i).data;
+        auto current_target_pixel = target_image.row(i).data;
+
+        for (int j = 0; j < mask.cols; j++)
+        {
+            if (*current_mask_pixel != 0) {
+                source_hist_int[0][*current_source_pixel]++;
+                source_hist_int[1][*(current_source_pixel + 1)]++;
+                source_hist_int[2][*(current_source_pixel + 2)]++;
+
+                target_hist_int[0][*current_target_pixel]++;
+                target_hist_int[1][*(current_target_pixel + 1)]++;
+                target_hist_int[2][*(current_target_pixel + 2)]++;
+            }
+
+            // Advance to next pixel
+            current_source_pixel += 3;
+            current_target_pixel += 3;
+            current_mask_pixel++;
+        }
+    }
+
+    // Calc CDF
+    for (int i = 1; i < 256; i++)
+    {
+        source_hist_int[0][i] += source_hist_int[0][i - 1];
+        source_hist_int[1][i] += source_hist_int[1][i - 1];
+        source_hist_int[2][i] += source_hist_int[2][i - 1];
+
+        target_hist_int[0][i] += target_hist_int[0][i - 1];
+        target_hist_int[1][i] += target_hist_int[1][i - 1];
+        target_hist_int[2][i] += target_hist_int[2][i - 1];
+    }
+
+    // Normalize CDF
+    for (int i = 0; i < 256; i++)
+    {
+        source_histogram[0][i] = (source_hist_int[0][255] ? (float)source_hist_int[0][i] / source_hist_int[0][255] : 0);
+        source_histogram[1][i] = (source_hist_int[1][255] ? (float)source_hist_int[1][i] / source_hist_int[1][255] : 0);
+        source_histogram[2][i] = (source_hist_int[2][255] ? (float)source_hist_int[2][i] / source_hist_int[2][255] : 0);
+
+        target_histogram[0][i] = (target_hist_int[0][255] ? (float)target_hist_int[0][i] / target_hist_int[0][255] : 0);
+        target_histogram[1][i] = (target_hist_int[1][255] ? (float)target_hist_int[1][i] / target_hist_int[1][255] : 0);
+        target_histogram[2][i] = (target_hist_int[2][255] ? (float)target_hist_int[2][i] / target_hist_int[2][255] : 0);
+    }
+
+    // Create lookup table
+
+    auto binary_search = [&](const float needle, const float haystack[]) -> uint8_t
+    {
+        uint8_t l = 0, r = 255, m;
+        while (l < r)
+        {
+            m = (l + r) / 2;
+            if (needle > haystack[m])
+                l = m + 1;
+            else
+                r = m - 1;
+        }
+        // TODO check closest value
+        return m;
+    };
+
+    for (size_t i = 0; i < 256; i++)
+    {
+        LUTJE[0][i] = binary_search(target_histogram[0][i], source_histogram[0]);
+        LUTJE[1][i] = binary_search(target_histogram[1][i], source_histogram[1]);
+        LUTJE[2][i] = binary_search(target_histogram[2][i], source_histogram[2]);
+    }
+
+    // repaint pixels
+    for (int i = 0; i < mask.rows; i++)
+    {
+        auto current_mask_pixel = mask.row(i).data;
+        auto current_target_pixel = target_image.row(i).data;
+        for (int j = 0; j < mask.cols; j++)
+        {
+            if (*current_mask_pixel != 0)
+            {
+                *current_target_pixel = LUTJE[0][*current_target_pixel];
+                *(current_target_pixel + 1) = LUTJE[1][*(current_target_pixel + 1)];
+                *(current_target_pixel + 2) = LUTJE[2][*(current_target_pixel + 2)];
+            }
+
+            // Advance to next pixel
+            current_target_pixel += 3;
+            current_mask_pixel++;
+        }
+    }
+}
 
 static std::stringstream drawToJPG(cv::Mat* input, std::vector<std::vector<cv::Point2f>>* points)
 {
@@ -769,8 +919,8 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        cv_image<bgr_pixel> img(*input);
        cv_image<bgr_pixel> cimg(im_small);
        //faces = (*detector)(cimg);
-       cv::Mat reeds;
-       cvtColor( *input, reeds, CV_BGR2GRAY );
+       cv::UMat reeds;
+       cvtColor( *input, reeds, CV_BGR2GRAY);
        equalizeHist( reeds, reeds );
        (*face_cascade).detectMultiScale( reeds, faces, 1.3, 6, 0|CV_HAAR_SCALE_IMAGE, Size(60, 60) );
        if (faces.size() == 0)
@@ -810,14 +960,6 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        for (unsigned long i = 0; i < faces.size(); ++i)
        {
     	   points.push_back(get_points(shapes[i]));
-           //calculate forehead left (point index 68)
-           points[i].push_back(cv::Point2f(points[i][17].x+(points[i][17].x-points[i][2].x),points[i][17].y - (points[i][2].y-points[i][17].y)));
-
-           //calculate forehead middle (point index 69)
-           points[i].push_back(cv::Point2f(points[i][27].x+(points[i][29].x-points[i][8].x), points[i][29].y - (points[i][8].y - points[i][29].y)));
-
-           //calculate forehead right ((point index 70)
-           points[i].push_back(cv::Point2f(points[i][26].x+(points[i][26].x-points[i][14].x),points[i][26].y - (points[i][14].y-points[i][26].y)));
        }
 
        return points;
@@ -835,6 +977,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 
 	for (unsigned int frame = 0; frame < (*filePoints).size(); ++frame)
 	{
+		high_resolution_clock::time_point t1 = high_resolution_clock::now();
 		//delete img_file;
 		cv::Mat img_file = captureFrame();
 		if (img_file.empty()) break;
@@ -854,8 +997,6 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	        std::vector<Point2f> hull2;
 	        std::vector<int> hullIndex;
 
-	        cout << "Finding convex hull." << endl;
-
 	        try
 	        {
 	         convexHull((*filePoints)[frame][gezicht], hullIndex, false, false);
@@ -873,8 +1014,6 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	            hull2.push_back((*filePoints)[frame][gezicht][hullIndex[i]]);
 	        }
 
-	        cout << "Finding delaunay triangulation." << endl;
-
 	        // Find delaunay triangulation for points on the convex hull
 	        std::vector< std::vector<int> > dt;
 	        cv::Rect rect(0, 0, resultaat.cols, resultaat.rows);
@@ -888,9 +1027,6 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	         std::cout << "exception caught in calculateDelauneyTriangles: " << err_msg << std::endl;
 	     	 return totaal;
 	      	}
-
-
-	        cout << "Applying affine transformation." << endl;
 
 	        // Apply affine transformation to Delaunay triangles
 	        for(size_t i = 0; i < dt.size(); i++)
@@ -916,8 +1052,6 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 
 	        resultaat.convertTo(resultaat, CV_8UC3);
 
-	        cout << "Calculating mask." << endl;
-
 	        // Calculate mask
 	        std::vector<Point> hull8U;
 	        for(int i = 0; i < (int)hull2.size(); i++)
@@ -925,8 +1059,6 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	            Point pt(hull2[i].x, hull2[i].y);
 	            hull8U.push_back(pt);
 	        }
-
-	        cout << "Fill Convex Poly." << endl;
 
 	        cv::Mat mask = Mat::zeros(img_file.rows, img_file.cols, img_file.depth());
 
@@ -941,21 +1073,27 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
           	 return totaal;
 	      	}
 
+            feather_amount.width = feather_amount.height = (int)cv::norm((*filePoints)[frame][gezicht][0] - (*filePoints)[frame][gezicht][16]) / 8;
+            featherMask(mask);
+
 	        // Clone seamlessly.
 	        cv::Rect r = boundingRect(hull2);
 	        //Point center = (r.tl() + r.br()) / 2;
-	        Point centertest = Point(img_file(r).cols / 2,img_file(r).rows / 2);
-
-	        cout << "Seamlessclone." << endl;
+	        //Point centertest = Point(img_file(r).cols / 2,img_file(r).rows / 2);
 
 	        try
 	        {
-	         cv::Mat imgtest1 = img_file(r);
-	         cv::Mat imgtest2 = resultaat(r);
-	         cv::Mat masktest = mask(r);
-	         cv::Mat output;
-	         cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
-             cout << "Copy to output." << endl;
+	        /*
+	         cv::UMat imgtest1 = img_file(r).getUMat(cv::ACCESS_READ);
+	         cv::UMat imgtest2 = resultaat(r).getUMat(cv::ACCESS_READ);
+	         cv::UMat masktest = mask(r).getUMat(cv::ACCESS_READ);
+	         cv::UMat output; */
+		     cv::Mat facefromcam = resultaat(r);
+		     cv::Mat maskfromface = mask(r);
+		     cv::Mat output = img_file(r);
+             specifyHistogram(output, facefromcam, maskfromface);
+	         //cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
+	         pasteFacesOnFrame(output, facefromcam, maskfromface);
 		     output.copyTo(resultaat(r));
 	        }
             catch( cv::Exception& e )
@@ -965,9 +1103,11 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	         std::cout << "exception caught in seamlessClone: " << err_msg << std::endl;
 	     	 return totaal;
 	      	}
-    	    cout << "Push back." << endl;
     	    record.write(resultaat);
     		totaal.push_back(matToJPG(&resultaat));
+    		high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    		auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+            cout << "merging frame took: " << int_ms.count() << " milliseconds" << endl;
 		}
 	}
 	closeCap();
