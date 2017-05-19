@@ -406,8 +406,11 @@ CaptureFactory::CaptureFactory(){
 	load();
 	std::thread t1( [this] {
 		setenv("DISPLAY",":0.0",0);
-		this->window = new sf::RenderWindow(sf::VideoMode(1280, 960), "RenderWindow",sf::Style::Fullscreen);
+//		this->window = new sf::RenderWindow(sf::VideoMode(1024, 768), "RenderWindow",sf::Style::Fullscreen);
+		//this->window = new sf::RenderWindow(sf::VideoMode(1024, 768), "RenderWindow");
 		//sf::RenderWindow window(sf::VideoMode(640, 480), "RenderWindow");
+		sf::VideoMode desktop = sf::VideoMode().getDesktopMode();
+		this->window = new sf::RenderWindow(desktop, "Theaterwagen", sf::Style::None);
 	    window->setMouseCursorVisible(false);
 	    window->setVerticalSyncEnabled(true);
 	    window->setFramerateLimit(10);
@@ -456,7 +459,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 	filePoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 
-	cv::Mat boodschap(1280,960,CV_8UC3,cv::Scalar(255,255,255));
+	cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
 	cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
 	std::unique_lock<std::mutex> l(m);
 	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
@@ -488,7 +491,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::s
 	camMat = new std::vector<cv::Mat>();
 	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 
-	cv::Mat boodschap(1280,960,CV_8UC3,cv::Scalar(255,255,255));
+	cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
 	cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
 	std::unique_lock<std::mutex> l(m);
 	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
@@ -762,7 +765,7 @@ void CaptureFactory::Capture::loadModel(){
 	//this->detector = new dlib::frontal_face_detector(get_frontal_face_detector());
 	this->face_cascade = new CascadeClassifier();
 	if( !(*face_cascade).load("haarcascade_frontalface_default.xml") ){ printf("--(!)Error loading face cascade\n"); return; };
-	cv::Mat boodschap(1280,960,CV_8UC3,cv::Scalar(255,255,255));
+	cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
 	cv::putText(boodschap, "Gezichtsherkenningsmodel geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
 	std::unique_lock<std::mutex> l(m);
 	this->manipulated.str("");
@@ -882,7 +885,7 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
 	{
 		*cap >> input;
 		if (!input.empty())
-			cv::resize(input,input,cv::Size(1280,960));
+			cv::resize(input,input,cv::Size(1024,768));
 	}
 	catch( cv::Exception& e )
 	{
@@ -971,7 +974,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	std::vector<std::stringstream> totaal;
 	std::string recordname = "tmp/" + this->getUuid() + ".avi";
 	VideoWriter record(recordname, CV_FOURCC('D','I','V','X'),
-	    10, cv::Size(1280,960), true);
+	    10, cv::Size(1024,768), true);
 
 	openCap(CAP_FILE);
 
@@ -988,6 +991,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		cv::Mat resultaat = img_file.clone();
 		for (unsigned int gezicht = 0; gezicht < (*filePoints)[frame].size(); ++gezicht)
 		{
+			if (gezicht >= (*camPoints)[frame].size()) continue;
 	        //convert Mat to float data type
 	        img_cam.convertTo(img_cam, CV_32F);
 	        resultaat.convertTo(resultaat, CV_32F);
@@ -1081,6 +1085,8 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	        //Point center = (r.tl() + r.br()) / 2;
 	        //Point centertest = Point(img_file(r).cols / 2,img_file(r).rows / 2);
 
+	        cv::Mat orig = img_file(r).clone();
+
 	        try
 	        {
 	        /*
@@ -1091,9 +1097,10 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		     cv::Mat facefromcam = resultaat(r);
 		     cv::Mat maskfromface = mask(r);
 		     cv::Mat output = img_file(r);
-             specifyHistogram(output, facefromcam, maskfromface);
+		     specifyHistogram(output, facefromcam, maskfromface);
 	         //cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
 	         pasteFacesOnFrame(output, facefromcam, maskfromface);
+	         addWeighted(output, 0.6, orig, 0.4, 0.0, output);
 		     output.copyTo(resultaat(r));
 	        }
             catch( cv::Exception& e )
@@ -1103,6 +1110,13 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	         std::cout << "exception caught in seamlessClone: " << err_msg << std::endl;
 	     	 return totaal;
 	      	}
+            //we should fill out at least one 10 fps period
+            if ((*filePoints).size() == 1)
+             for (int i = 0; i < 10; i++)
+             {
+            	 record.write(resultaat);
+             }
+            else
     	    record.write(resultaat);
     		totaal.push_back(matToJPG(&resultaat));
     		high_resolution_clock::time_point t2 = high_resolution_clock::now();
