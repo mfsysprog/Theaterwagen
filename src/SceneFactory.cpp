@@ -1,5 +1,5 @@
 /*
- * SceneFactory.cpp
+x * SceneFactory.cpp
  *
  *  Created on: Mar 5, 2017
  *      Author: erik
@@ -425,38 +425,29 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 {
 	std::string dummy;
 	std::string value;
+	std::string message="&nbsp;";
+	std::string meta="";
+	std::stringstream ss;
 
 	if(CivetServer::getParam(conn, "delete", value))
 	{
-	   mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-			   	  "text/html\r\nConnection: close\r\n\r\n");
-	   mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"0;url=/scenefactory\" /></head><body>");
-	   mg_printf(conn, "</body></html>");
+	   meta = "<meta http-equiv=\"refresh\" content=\"0;url=/scenefactory\">";
 	   this->scenefactory.deleteScene(value);
 	}
 	else
 	/* if parameter save is present the save button was pushed */
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
-		mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-		          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/scenefactory\" /></head><body>");
-		mg_printf(conn, "<h2>Scene opgeslagen...!</h2>");
-		mg_printf(conn, "</body></html>");
-		this->scenefactory.save();
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/scenefactory\">";
+		message = "Scene opgeslagen!";
+        this->scenefactory.save();
 	}
 	else
 	/* if parameter load is present the load button was pushed */
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
-		mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-		          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/scenefactory\" /></head><body>");
-		mg_printf(conn, "<h2>Scene ingeladen...!</h2>");
-		mg_printf(conn, "</body></html>");
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/scenefactory\">";
+		message = "Scene ingeladen!";
 		this->scenefactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", value))
@@ -483,47 +474,26 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 			scene = scenefactory.addScene(naam, omschrijving);
 		}
 
-		mg_printf(conn,
-				          "HTTP/1.1 200 OK\r\nContent-Type: "
-				          "text/html\r\nConnection: close\r\n\r\n");
-		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << scene->getUrl() << "\"/></head><body>";
-		mg_printf(conn,  ss.str().c_str(), "%s");
-		mg_printf(conn, "</body></html>");
+		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + scene->getUrl() + "\"/>";
 	}
 	else if(CivetServer::getParam(conn, "new", value))
 	{
-       mg_printf(conn,
-		        "HTTP/1.1 200 OK\r\nContent-Type: "
-		         "text/html\r\nConnection: close\r\n\r\n");
-       mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-	   std::stringstream ss;
 	   ss << "<form action=\"/scenefactory\" method=\"POST\">";
+	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">Naam:</label>"
-  			 "<input id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
-	         "<input id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"" << value << "\" ";
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
-       ss <<  "</br>";
-       ss << "<a href=\"/scenefactory\">Scenes</a>";
-       ss <<  "</br>";
-       ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn,  ss.str().c_str(), "%s");
-       mg_printf(conn, "</body></html>");
 	}
 	/* initial page display */
 	else
 	{
-		mg_printf(conn,
-			          "HTTP/1.1 200 OK\r\nContent-Type: "
-			          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-		std::stringstream ss;
 		std::map<std::string, SceneFactory::Scene*>::iterator it = scenefactory.scenemap.begin();
-		ss << "<h2>Beschikbare scenes:</h2>";
-	    for (std::pair<std::string, SceneFactory::Scene*> element : scenefactory.scenemap) {
+		for (std::pair<std::string, SceneFactory::Scene*> element : scenefactory.scenemap) {
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
 	    	ss << "</form>";
@@ -545,11 +515,10 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
-	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn,  ss.str().c_str(), "%s");
-		mg_printf(conn, "</body></html>");
 	}
 
+	ss = getHtml(meta, message, "scene",  ss.str().c_str());
+	mg_printf(conn,  ss.str().c_str(), "%s");
 	return true;
 }
 
@@ -559,10 +528,9 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 {
 	std::string value;
 	std::string dummy;
-
-	mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-		          "text/html\r\nConnection: close\r\n\r\n");
+	std::string message="&nbsp;";
+	std::string meta="";
+	std::stringstream ss;
 
 	if(CivetServer::getParam(conn, "submit", dummy))
 	{
@@ -589,9 +557,8 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 					(*scene.channels)[i-1][1] = '0';
 		  	}
 		}
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << scene.getUrl() << "\"/></head><body>";
-		mg_printf(conn,  ss.str().c_str(), "%s");
-		mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
+		message = "Wijzigingen opgeslagen!";
 	} else
 	if(CivetServer::getParam(conn, "play", dummy))
 	{
@@ -619,10 +586,10 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		  	}
 		}
 		scene.Play();
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << scene.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn,  ss.str().c_str(), "%s");
-	   	mg_printf(conn, "<h2>Playing...!</h2>");
-	} else
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
+		message = "Afspelen!";
+	}
+	else
 	if(CivetServer::getParam(conn, "fadein", dummy))
 	{
 		if(CivetServer::getParam(conn,"naam", value))
@@ -649,9 +616,8 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		  	}
 		}
 		scene.fadeIn();
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << scene.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn,  ss.str().c_str(), "%s");
-	   	mg_printf(conn, "<h2>Fading in...!</h2>");
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
+		message = "Fadein!";
 	} else
 	if(CivetServer::getParam(conn, "fadeout", dummy))
 	{
@@ -679,30 +645,25 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		  	}
 		}
 		scene.fadeOut();
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << scene.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn,  ss.str().c_str(), "%s");
-	   	mg_printf(conn, "<h2>Fading Out...!</h2>");
-	} else
-	{
-		mg_printf(conn, "<h2>&nbsp;</h2>");
-		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
+		message = "Fadeout!";
 	}
+
 	{
-		std::stringstream ss;
-		ss << "<h2>Scenes:</h2>";
 		ss << "<form action=\"" << scene.getUrl() << "\" method=\"POST\">";
+		ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">Naam:</label>"
-					  "<input id=\"naam\" type=\"text\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" value=\"" <<
 					  scene.getNaam() << "\"" << " name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
-					  "<input id=\"omschrijving\" type=\"text\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" value=\"" <<
 					  scene.getOmschrijving() << "\"" << " name=\"omschrijving\"/>" << "</br>";
 		ss << "<br>";
 		ss << "<label for=\"fadesteps\">Fade Stappen</label>";
-		ss << "<td><input id=\"fadesteps\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
+		ss << "<td><input class=\"inside\" id=\"fadesteps\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
 			  scene.getFadeSteps() << "\"" << " name=\"fadesteps\" />";
 		ss << "</tr>";
-
+		ss << "</div>";
 		ss << "<br>";
 		ss << "<br>";
 	    for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
@@ -710,7 +671,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    	ss << "Base adres: &nbsp;" << element.second->base_channel << "<br>";
 	    	ss << "Omschrijving: &nbsp;" << element.second->omschrijving << "<br>";
 	    	ss << "Kanalen:" << "<br>";
-	    	ss << "<table><th>Kanaal</th><th>Exclude</th><th>Waarde</th>";
+	    	ss << "<table class=\"container\"><th>Kanaal</th><th>Exclude</th><th>Waarde</th>";
 	    	for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
 	    	{
 	    		ss << "<tr>";
@@ -738,12 +699,10 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"new\" value=\"" << scene.getUuid() <<"\" id=\"new\">Nieuw Als</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
-		ss << "<a href=\"/scenefactory\">Scenes</a>";
-		ss <<  "</br>";
-		ss << "<a href=\"/\">Home</a>";
-		mg_printf(conn,  ss.str().c_str(), "%s");
-		mg_printf(conn, "</body></html>");
 	}
+
+	ss = getHtml(meta, message, "scene", ss.str().c_str());
+	mg_printf(conn,  ss.str().c_str(), "%s");
 	return true;
 }
 

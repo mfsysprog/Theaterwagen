@@ -67,7 +67,11 @@ class CaptureFactory {
 		friend class CaptureFactory;
 		friend class ChaseFactory;
 		Capture(CaptureFactory& cf, std::string naam, std::string omschrijving);
-		Capture(CaptureFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, std::string filmpje, std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints);
+		Capture(CaptureFactory& cf, std::string uuidstr, std::string naam,
+				std::string omschrijving, std::string filmpje,
+				std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints,
+				unsigned int mix_from,
+				unsigned int mix_to);
 		~Capture();
 		void captureDetectAndMerge();
 		void onScreen();
@@ -108,6 +112,8 @@ class CaptureFactory {
 		std::stringstream manipulated;
 		std::vector<std::stringstream>* off_screen;
 		std::vector<cv::Mat>* camMat;
+		unsigned int mix_from = 100;
+		unsigned int mix_to = 100;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* camPoints;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints;
 		uuid_t uuid;

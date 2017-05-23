@@ -179,39 +179,30 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
 {
 	std::string dummy;
 	std::string value;
+	std::string message="&nbsp;";
+	std::string meta="";
+    std::stringstream ss;
 
 	if(CivetServer::getParam(conn, "delete", value))
 	{
-	   mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-			   	  "text/html\r\nConnection: close\r\n\r\n");
-	   mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"0;url=/fixturefactory\" /></head><body>");
-	   mg_printf(conn, "</body></html>");
+	   meta = "<meta http-equiv=\"refresh\" content=\"0;url=/fixturefactory\" />";
 	   this->fixturefactory.deleteFixture(atoi(value.c_str()));
 	}
 	else
 	/* if parameter save is present the save button was pushed */
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
-		mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-		          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/fixturefactory\" /></head><body>");
-		mg_printf(conn, "<h2>Fixture opgeslagen...!</h2>");
-		mg_printf(conn, "</body></html>");
-		this->fixturefactory.save();
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/fixturefactory\" />";
+	   message = "Fixture opgeslagen!";
+       this->fixturefactory.save();
 	}
 	else
 	/* if parameter load is present the load button was pushed */
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
-		mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-		          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/fixturefactory\" /></head><body>");
-		mg_printf(conn, "<h2>Fixture ingeladen...!</h2>");
-		mg_printf(conn, "</body></html>");
-		this->fixturefactory.load();
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/fixturefactory\" />";
+	   message = "Fixture ingeladen!";
+       this->fixturefactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", dummy))
 	{
@@ -226,50 +217,29 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
 
 		FixtureFactory::Fixture* fixture = fixturefactory.addFixture(naam, omschrijving, base, number);
 
-		mg_printf(conn,
-				          "HTTP/1.1 200 OK\r\nContent-Type: "
-				          "text/html\r\nConnection: close\r\n\r\n");
-		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << fixture->getUrl() << "\"/></head><body>";
-		mg_printf(conn,  ss.str().c_str(), "%s");
-		mg_printf(conn, "</body></html>");
+		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + fixture->getUrl() + "\"/>";
 	}
 	else if(CivetServer::getParam(conn, "new", dummy))
 	{
-       mg_printf(conn,
-		        "HTTP/1.1 200 OK\r\nContent-Type: "
-		         "text/html\r\nConnection: close\r\n\r\n");
-       mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-	   std::stringstream ss;
 	   ss << "<form action=\"/fixturefactory\" method=\"POST\">";
+	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">Naam:</label>"
-  			 "<input id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
-	         "<input id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "<label for=\"base\">Base adres:</label>"
-	   	     "<input id=\"base\" type=\"text\" size=\"3\" name=\"base\"/>" << "</br>";
+	   	     "<input class=\"inside\" id=\"base\" type=\"text\" size=\"3\" name=\"base\"/>" << "</br>";
 	   ss << "<label for=\"number\">Aantal channels:</label>"
-	   	   	     "<input id=\"number\" type=\"text\" size=\"3\" name=\"number\"/>" << "</br>";
+	   	   	 "<input class=\"inside\" id=\"number\" type=\"text\" size=\"3\" name=\"number\"/>" << "</br>";
+	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
-       ss <<  "</br>";
-       ss << "<a href=\"/fixturefactory\">Fixtures</a>";
-       ss <<  "</br>";
-       ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn,  ss.str().c_str(), "%s");
-       mg_printf(conn, "</body></html>");
-	}
+  }
 	/* initial page display */
 	else
 	{
-		mg_printf(conn,
-			          "HTTP/1.1 200 OK\r\nContent-Type: "
-			          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-		std::stringstream ss;
 		std::map<int, FixtureFactory::Fixture*>::iterator it = fixturefactory.fixturemap.begin();
-		ss << "<h2>Beschikbare fixtures:</h2>";
 	    for (std::pair<int, FixtureFactory::Fixture*> element : fixturefactory.fixturemap) {
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
@@ -292,11 +262,10 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
-	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn,  ss.str().c_str(), "%s");
-		mg_printf(conn, "</body></html>");
 	}
 
+	ss = getHtml(meta, message, "fixture",  ss.str().c_str());
+    mg_printf(conn,  ss.str().c_str(), "%s");
 	return true;
 }
 
@@ -306,10 +275,9 @@ bool FixtureFactory::Fixture::FixtureHandler::handleAll(const char *method,
 {
 	std::string value;
 	std::string dummy;
-
-	mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-		          "text/html\r\nConnection: close\r\n\r\n");
+	std::string message="&nbsp;";
+	std::string meta="";
+    std::stringstream ss;
 
 	if(CivetServer::getParam(conn, "submit", dummy))
 	{
@@ -321,45 +289,35 @@ bool FixtureFactory::Fixture::FixtureHandler::handleAll(const char *method,
 		  		fixture.base_channel = atoi(value.c_str());
 		if(CivetServer::getParam(conn,"number", value))
 		  		fixture.number_channels = atoi(value.c_str());
-		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << fixture.getUrl() << "\"/></head><body>";
-		mg_printf(conn,  ss.str().c_str(), "%s");
-		mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
-	} else
-	{
-		mg_printf(conn, "<h2>&nbsp;</h2>");
-		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + fixture.getUrl() + "\"/>";
+		message = "Wijzigingen opgeslagen!";
 	}
+
 	{
-		std::stringstream ss;
-		ss << "<h2>Fixtures:</h2>";
 		ss << "<form action=\"" << fixture.getUrl() << "\" method=\"POST\">";
+		 ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">Naam:</label>"
-					  "<input id=\"naam\" type=\"text\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" value=\"" <<
 					  fixture.getNaam() << "\"" << " name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
-					  "<input id=\"naam\" type=\"text\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" value=\"" <<
 					  fixture.getOmschrijving() << "\"" << " name=\"omschrijving\"/>" << "</br>";
 		ss << "<label for=\"base\">Base adres:</label>"
-			  "<input id=\"base\" type=\"text\" value=\"" <<
+			  "<input class=\"inside\" id=\"base\" type=\"text\" value=\"" <<
 			  fixture.base_channel << "\"" << " name=\"base\"/>" << "</br>";
 		ss << "<label for=\"number\">Aantal channels:</label>"
-			  "<input id=\"number\" type=\"text\" value=\"" <<
+			  "<input class=\"inside\" id=\"number\" type=\"text\" value=\"" <<
 			  fixture.number_channels << "\"" << " name=\"number\"/>" << "</br>";
+		ss << "</div>";
 		ss << "</br>";
 		ss << "</br>";
 		ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 		ss <<  "</br>";
 	    ss << "</form>";
-		ss <<  "</br>";
-		ss << "<a href=\"/fixturefactory\">Fixtures</a>";
-		ss <<  "</br>";
-		ss << "<a href=\"/scenefactory\">Scenes</a>";
-		ss <<  "</br>";
-		ss << "<a href=\"/\">Home</a>";
-		mg_printf(conn,  ss.str().c_str(), "%s");
-		mg_printf(conn, "</body></html>");
 	}
+
+	ss = getHtml(meta, message, "fixture",  ss.str().c_str());
+	mg_printf(conn,  ss.str().c_str(), "%s");
 	return true;
 }
 

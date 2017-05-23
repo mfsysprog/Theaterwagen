@@ -96,13 +96,15 @@ bool UploadHandler::handleAll(const char *method,
 	std::string s[8] = "";
 	std::string dummy;
 	std::string param = "chan";
+	std::string message="&nbsp;";
+	std::string meta="";
+	std::stringstream ss;
 
 	/* upload was submitted */
 	if(strcmp(method,"POST") == 0)
 	{
 		/* Handler may access the request info using mg_get_request_info */
 		const struct mg_request_info *req_info = mg_get_request_info(conn);
-		int i, j, ret;
 		struct tfiles_checksums chksums;
 		md5_byte_t digest[16];
 		struct mg_form_data_handler fdh = {field_disp_read_on_the_fly,
@@ -116,49 +118,31 @@ bool UploadHandler::handleAll(const char *method,
 
 			memset(&chksums, 0, sizeof(chksums));
 
-			mg_printf(conn,
-			          "HTTP/1.1 200 OK\r\n"
-			          "Content-Type: text/html\r\n"
-			          "Connection: close\r\n\r\n");
-
 			/* Call the form handler */
-			mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"3;url=/upload\" /></head><body>");
-			mg_printf(conn, "<h2>Uploaded files and their checksums:</h2>");
-			ret = mg_handle_form_request(conn, &fdh);
-			for (i = 0; i < chksums.index; i++) {
+			meta = "<meta http-equiv=\"refresh\" content=\"3;url=/upload\" />";
+			message = "Uploaded files:";
+			mg_handle_form_request(conn, &fdh);
+			for (int i = 0; i < chksums.index; i++) {
 				md5_finish(&(chksums.file[i].chksum), digest);
 				/* Visual Studio 2010+ support llu */
-				mg_printf(conn,
-				          "\r\n%s       ",
-				          chksums.file[i].name);
-				for (j = 0; j < 16; j++) {
-					mg_printf(conn, "%02x", (unsigned int)digest[j]);
-				}
-				mg_printf(conn,"</br>");
+				ss << chksums.file[i].name << endl;
+				ss << "</br>";
 			}
-			mg_printf(conn, "\r\n%i files\r\n", ret);
-			mg_printf(conn, "</body></html>");
 	}
 	else
 	{
-		mg_printf(conn,
-			          "HTTP/1.1 200 OK\r\nContent-Type: "
-			          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-		mg_printf(conn, "<form action=\"/upload\" method=\"POST\" enctype=\"multipart/form-data\">");
-		std::stringstream ss;
-	    ss << "<h2>File upload. Maximaal " << MAX_FILES << " bestanden per keer. </h2>";
+		message = "File upload. Maximaal 10 bestanden per keer.";
+		ss << "<form action=\"/upload\" method=\"POST\" enctype=\"multipart/form-data\">";
 	    ss << "<input type=\"file\" name=\"file\" id=\"file\" multiple>";
 	    ss <<  "<br>";
 	    ss <<  "<br>";
-	    ss << "<input type=\"submit\" value=\"Upload...\" id=\"submit\">";
+	    ss << "<button type=\"submit\" id=\"submit\">Upload...</button>";
 	    ss <<  "<br>";
 	    ss <<  "<br>";
-	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, "%s", ss.str().c_str());
-		mg_printf(conn, "</body></html>");
 	}
 
+	ss = getHtml(meta, message, "upload",  ss.str().c_str());
+	mg_printf(conn, "%s", ss.str().c_str());
 	return true;
 }
 

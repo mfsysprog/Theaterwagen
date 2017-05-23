@@ -8,6 +8,7 @@
 #ifndef TOGGLEFACTORY_HPP_
 #define TOGGLEFACTORY_HPP_
 
+#include "Theaterwagen.hpp"
 #include <string>
 #include <iostream>
 #include <functional>

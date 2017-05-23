@@ -8,6 +8,7 @@
 #ifndef UPLOADHANDLER_H_
 #define UPLOADHANDLER_H_
 
+#include "Theaterwagen.hpp"
 #include <string>
 #include <iostream>
 #include <functional>

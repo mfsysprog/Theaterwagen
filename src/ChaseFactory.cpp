@@ -373,39 +373,30 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 {
 	std::string dummy;
 	std::string value;
+	std::string message="&nbsp;";
+	std::string meta="";
 
 	if(CivetServer::getParam(conn, "delete", value))
 	{
-	   mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-			   	  "text/html\r\nConnection: close\r\n\r\n");
-	   mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"0;url=/chasefactory\" /></head><body>");
-	   mg_printf(conn, "</body></html>");
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/chasefactory\" />";
+	   message = "Verwijderd!";
 	   this->chasefactory.deleteChase(value);
 	}
 	else
 	/* if parameter save is present the save button was pushed */
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
-		mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-		          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/chasefactory\" /></head><body>");
-		mg_printf(conn, "<h2>Chase opgeslagen...!</h2>");
-		mg_printf(conn, "</body></html>");
-		this->chasefactory.save();
+	   meta = "<meta http-equiv=\"refresh\" content=\"0;url=/chasefactory\" />";
+	   message = "Opgeslagen!";
+	   this->chasefactory.save();
 	}
 	else
 	/* if parameter load is present the load button was pushed */
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
-		mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-		          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/chasefactory\" /></head><body>");
-		mg_printf(conn, "<h2>Chase ingeladen...!</h2>");
-		mg_printf(conn, "</body></html>");
-		this->chasefactory.load();
+	   meta = "<meta http-equiv=\"refresh\" content=\"0;url=/chasefactory\" />";
+	   message = "Geladen!";
+       this->chasefactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", dummy))
 	{
@@ -421,48 +412,31 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 			autostart = false;
 
 		ChaseFactory::Chase* chase = chasefactory.addChase(naam, omschrijving, autostart);
-
-		mg_printf(conn,
-				          "HTTP/1.1 200 OK\r\nContent-Type: "
-				          "text/html\r\nConnection: close\r\n\r\n");
-		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << chase->getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str(), "%s");
-		mg_printf(conn, "</body></html>");
+	    mg_printf(conn, "</body></html>");
+		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + chase->getUrl() + "\"/>";
 	}
-	else if(CivetServer::getParam(conn, "new", dummy))
+
+	std::stringstream ss;
+
+	if(CivetServer::getParam(conn, "new", dummy))
 	{
-       mg_printf(conn,
-		        "HTTP/1.1 200 OK\r\nContent-Type: "
-		         "text/html\r\nConnection: close\r\n\r\n");
-       mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-	   std::stringstream ss;
 	   ss << "<form action=\"/chasefactory\" method=\"POST\">";
+	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">Naam:</label>"
-  			 "<input id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
-	         "<input id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "<label for=\"autostart\">Automatisch starten:</label>"
 	         "<input id=\"autostart\" type=\"checkbox\" name=\"autostart\" value=\"ja\"/>" << "</br>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
+   	   ss << "</div>";
    	   ss << "</form>";
-   	   ss << "<a href=\"/chasefactory\">Chases</a>";
-       ss <<  "</br>";
-       ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn,  ss.str().c_str(), "%s");
-       mg_printf(conn, "</body></html>");
 	}
 	/* initial page display */
 	else
 	{
-		mg_printf(conn,
-			          "HTTP/1.1 200 OK\r\nContent-Type: "
-			          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-		std::stringstream ss;
 		std::map<std::string, ChaseFactory::Chase*>::iterator it = chasefactory.chasemap.begin();
-		ss << "<h2>Beschikbare Chases:</h2>";
 	    for (std::pair<std::string, ChaseFactory::Chase*> element : chasefactory.chasemap) {
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
@@ -485,10 +459,10 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
-	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn,  ss.str().c_str(), "%s");
-		mg_printf(conn, "</body></html>");
 	}
+
+	ss = getHtml(meta, message, "chase", ss.str().c_str());
+    mg_printf(conn, ss.str().c_str(), "%s");
 
 	return true;
 }
@@ -500,9 +474,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	std::string s[8] = "";
 	std::string dummy;
 	std::string value;
-	mg_printf(conn,
-	          "HTTP/1.1 200 OK\r\nContent-Type: "
-	          "text/html\r\nConnection: close\r\n\r\n");
+	std::string message="&nbsp";
+	std::string meta="";
 
 	if(CivetServer::getParam(conn, "running", dummy))
 	{
@@ -521,9 +494,11 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		return true;
 	}
 
+	std::stringstream ss;
+    std::stringstream tohead;
+
 	if(CivetServer::getParam(conn, "chosen", value))
 	{
-	   std::stringstream ss;
 	   std::string::size_type pos = value.find("::");
 	   std::string action = value.substr(0,pos);
 
@@ -617,48 +592,44 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	else
 	if(CivetServer::getParam(conn, "add", value))
 	{
-	   std::stringstream ss;
-	   ss << "<html><head>";
-	   ss << "<script type=\"text/javascript\" src=\"resources/jquery-3.2.0.min.js\"></script>";
-	   ss << "<script type=\"text/javascript\">";
-	   ss << " $(document).ready(function(){";
-	   ss << "  $(\"#tijd_div\").hide();";
-	   ss << "  $(\"#action\").change(function(){";
-	   ss << "  if ($(\"#action\").val() == 'Tijd::Wachten') { ";
-	   ss << "    $(\"#target\").hide();";
-	   ss << "    $(\"#tijd_div\").show();";
-	   ss << "   } else if ($(\"#action\").val() == 'Capture::clearScherm') {";
-	   ss << "    $(\"#target\").hide();";
-	   ss << "   } else if ($(\"#action\").val() == 'Portret::Voor') {";
-	   ss << "    $(\"#target\").hide();";
-	   ss << "   } else if ($(\"#action\").val() == 'Portret::Na') {";
-	   ss << "    $(\"#target\").hide();";
-	   ss << "   } else {";
-	   ss << "    $(\"#target\").show();";
-	   ss << "    $(\"#tijd_div\").hide();";
-	   ss << "  }";
-	   ss << "  action_val = $(\"#action\").val();";
-	   ss << "  $.get( \"" << chase.getUrl() << "?chosen=\"+action_val, function( data ) {";
-	   ss << "  $( \"#target\" ).html( data );";
-	   ss << "  if ($(\"#target\").val() != '') { ";
-	   ss << "    $(\"#submit\").prop('disabled',false);";
-	   ss << "   } else";
-	   ss << "   {$(\"#submit\").prop('disabled',true);}";
-	   ss << "  });";
-	   ss << " });";
-	   ss << "});";
-	   ss << "</script>";
-	   ss << "<script type=\"text/javascript\">";
-	   ss << " $(document).ready(function(){";
-	   ss << "  $(\"#target\").change(function(){";
-	   ss << "  if ($(\"#target\").val() != '') { ";
-	   ss << "    $(\"#submit\").prop('disabled',false);";
-	   ss << "   } else {$(\"#submit\").prop('disabled',true);}";
-	   ss << "  });";
-	   ss << " });";
-	   ss << "</script>";
-	   ss << "</head>";
-	   ss << "<body>";
+	   tohead << "<script type=\"text/javascript\">";
+	   tohead << " $(document).ready(function(){";
+	   tohead << "  $(\"#tijd_div\").hide();";
+	   tohead << "  $(\"#action\").change(function(){";
+	   tohead << "  if ($(\"#action\").val() == 'Tijd::Wachten') { ";
+	   tohead << "    $(\"#target\").hide();";
+	   tohead << "    $(\"#tijd_div\").show();";
+	   tohead << "   } else if ($(\"#action\").val() == 'Capture::clearScherm') {";
+	   tohead << "    $(\"#target\").hide();";
+	   tohead << "   } else if ($(\"#action\").val() == 'Portret::Voor') {";
+	   tohead << "    $(\"#target\").hide();";
+	   tohead << "   } else if ($(\"#action\").val() == 'Portret::Na') {";
+	   tohead << "    $(\"#target\").hide();";
+	   tohead << "   } else {";
+	   tohead << "    $(\"#target\").show();";
+	   tohead << "    $(\"#tijd_div\").hide();";
+	   tohead << "  }";
+	   tohead << "  action_val = $(\"#action\").val();";
+	   tohead << "  $.get( \"" << chase.getUrl() << "?chosen=\"+action_val, function( data ) {";
+	   tohead << "  $( \"#target\" ).html( data );";
+	   tohead << "  if ($(\"#target\").val() != '') { ";
+	   tohead << "    $(\"#submit\").prop('disabled',false);";
+	   tohead << "   } else";
+	   tohead << "   {$(\"#submit\").prop('disabled',true);}";
+	   tohead << "  });";
+	   tohead << " });";
+	   tohead << "});";
+	   tohead << "</script>";
+	   tohead << "<script type=\"text/javascript\">";
+	   tohead << " $(document).ready(function(){";
+	   tohead << "  $(\"#target\").change(function(){";
+	   tohead << "  if ($(\"#target\").val() != '') { ";
+	   tohead << "    $(\"#submit\").prop('disabled',false);";
+	   tohead << "   } else {$(\"#submit\").prop('disabled',true);}";
+	   tohead << "  });";
+	   tohead << " });";
+	   tohead << "</script>";
+
 	   ss << "<form action=\"" << chase.getUrl() << "\" method=\"POST\">";
 	   ss << " <input type=\"hidden\" name=\"iter\" value=\"" << value << "\">";
 	   ss << " <select id=\"action\" name=\"action\">";
@@ -696,12 +667,6 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "<button type=\"submit\" name=\"submit_action\" value=\"submit_action\" id=\"submit\" disabled>Submit</button></br>";
 	   ss << "</br>";
 	   ss << "</form>";
-       ss << "<a href=\"/chasefactory\">Chases</a>";
-	   ss << "<br>";
-	   ss << "<a href=\"/\">Home</a>";
-	   ss << "</body></html>";
-
-	   mg_printf(conn,  ss.str().c_str(), "%s");
 	}
 	else
    {
@@ -724,11 +689,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 			   chase.sequence_list->push_front(sequence);
 		   }
 
-		   std::stringstream ss;
-		   ss << "<html><head>";
-		   ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-		   mg_printf(conn,  ss.str().c_str(), "%s");
-		   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
+		   meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + chase.getUrl() + "\"/>";
+		   message = "Wijzigingen opgeslagen!";
 	}
 	else
 	/* if parameter submit is present the submit button was pushed */
@@ -744,31 +706,23 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   else
 		   chase.autostart = false;
 
-	   std::stringstream ss;
-	   ss << "<html><head>";
-	   ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-	   mg_printf(conn,  ss.str().c_str(), "%s");
-	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + chase.getUrl() + "\"/>";
+	   message = "Wijzigingen opgeslagen!";
 	}
 	/* if parameter start is present start button was pushed */
 	else if(CivetServer::getParam(conn, "start", dummy))
 	{
 	   chase.Start();
-	   std::stringstream ss;
-	   ss << "<html><head>";
-	   ss << "<meta http-equiv=\"refresh\" content=\"0;url=\"" << chase.getUrl() << "\"/>";
-	   mg_printf(conn,  ss.str().c_str(), "%s");
-	   mg_printf(conn, "<h2>Starten...!</h2>");
+
+	   meta = "<meta http-equiv=\"refresh\" content=\"0;url=\"" + chase.getUrl() + "\"/>";
+	   message = "Starten!";
 	}
 	/* if parameter stop is present stop button was pushed */
 	else if(CivetServer::getParam(conn, "stop", dummy))
 	{
 		chase.Stop();
-		std::stringstream ss;
-		ss << "<html><head>";
-		ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-	   	mg_printf(conn,  ss.str().c_str(), "%s");
-	   	mg_printf(conn, "<h2>Stoppen...!</h2>");
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + chase.getUrl() + "\"/>";
+	   	message = "Stoppen!";
 	}
 	/* if parameter delete is present delete button was pushed */
 	else if(CivetServer::getParam(conn, "delete", value))
@@ -776,11 +730,9 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		std::list<sequence_item>::iterator first = chase.sequence_list->begin();
 		std::advance(first, atoi(value.c_str()));
 		chase.sequence_list->erase(first);
-		std::stringstream ss;
-		ss << "<html><head>";
-		ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-	   	mg_printf(conn,  ss.str().c_str(), "%s");
-	   	mg_printf(conn, "<h2>Verwijderen...!</h2>");
+
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + chase.getUrl() + "\"/>";
+	   	message = "Verwijderen!";
 	}
 	/* if parameter up is present up button was pushed */
 	else if(CivetServer::getParam(conn, "up", value))
@@ -795,10 +747,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 			std::swap(*first,*second);
 		}
 		std::stringstream ss;
-		ss << "<html><head>";
-		ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-	   	mg_printf(conn,  ss.str().c_str(), "%s");
-	   	mg_printf(conn, "<h2>Verplaatsen...!</h2>");
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + chase.getUrl() + "\"/>";
+	   	message = "Verplaatsen!";
 	}
 	/* if parameter down is present down button was pushed */
 	else if(CivetServer::getParam(conn, "down", value))
@@ -812,49 +762,38 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 			std::advance(second, atoi(value.c_str())+1);
 			std::swap(*first,*second);
 		}
-		std::stringstream ss;
-		ss << "<html><head>";
-		ss << "<meta http-equiv=\"refresh\" content=\"1;url=\"" << chase.getUrl() << "\"/>";
-	   	mg_printf(conn,  ss.str().c_str(), "%s");
-	   	mg_printf(conn, "<h2>Verplaatsen...!</h2>");
+
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + chase.getUrl() + "\"/>";
+	   	message = "Verplaatsen!";
 	}
-	else
-	{
-		std::stringstream ss;
-		ss << "<html><head>";
-	   	mg_printf(conn,  ss.str().c_str(), "%s");
-		mg_printf(conn, "<h2>&nbsp;</h2>");
-	}
+
 	/* initial page display */
 	{
-		std::stringstream ss;
-		ss << "<script type=\"text/javascript\" src=\"resources/jquery-3.2.0.min.js\"></script>";
-		ss << "<script type=\"text/javascript\">";
-		   ss << " $(document).ready(function(){";
-		   ss << "  setInterval(function(){";
-		   ss << "  $.get( \"" << chase.getUrl() << "?running=true\", function( data ) {";
-		   ss << "  $( \"#chase_active\" ).html( data );";
-		   ss << " });},1000)";
-		   ss << "});";
-		ss << "</script>";
-		ss << "<style>";
-		ss << ".wrap {display: table; width: 100%; height: 100%;}";
-		ss << ".cell-wrap {display: table-cell; vertical-align: top; height: 100%;}";
-		ss << ".cell-wrap.links {width: 10%;}";
-		ss << ".rechts tr:nth-child(even){background-color: #eee;}";
-		ss << ".waarde {height: 40px; overflow: hidden;}";
-		ss << ".kort {width:5%; text-align: center;}";
-		ss << "table {border-collapse: collapse; border-spacing: 0; height: 100%; width: 100%; table-layout: fixed;}";
-		ss << "table td, table th {border: 1px solid black;text-align: left; width:25%}";
-		ss << "</style>";
-		ss << "</head><body>";
-		ss << "<h2>Chases:</h2>";
+		tohead << "<script type=\"text/javascript\">";
+		tohead << " $(document).ready(function(){";
+		tohead << "  setInterval(function(){";
+		tohead << "  $.get( \"" << chase.getUrl() << "?running=true\", function( data ) {";
+		tohead << "  $( \"#chase_active\" ).html( data );";
+		tohead << " });},1000)";
+		tohead << "});";
+		tohead << "</script>";
+		tohead << "<style>";
+		tohead << ".wrap {display: table; width: 100%; height: 100%;}";
+		tohead << ".cell-wrap {display: table-cell; vertical-align: top; height: 100%;}";
+		tohead << ".cell-wrap.links {width: 10%;}";
+		tohead << ".rechts tr:nth-child(even){background-color: #eee;}";
+		tohead << ".waarde {height: 40px; overflow: hidden;}";
+		tohead << ".kort {width:5%; text-align: center;}";
+		tohead << "table {border-collapse: collapse; border-spacing: 0; height: 100%; width: 100%; table-layout: fixed;}";
+		tohead << "table td, table th {border: 1px solid black;text-align: left; width:25%}";
+		tohead << "</style>";
 		ss << "<form action=\"" << chase.getUrl() << "\" method=\"POST\">";
+		ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">Naam:</label>"
-					  "<input id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
 					  chase.naam << "\" name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
-					  "<input id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
 					  chase.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
 		if (chase.autostart)
 		{
@@ -866,15 +805,16 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 			ss << "<label for=\"autostart\">Automatisch starten:</label>"
 			   	   	  "<input id=\"autostart\" type=\"checkbox\" name=\"autostart\" value=\"ja\"/>" << "</br>";
 		}
-	    ss <<  "<br>";
+	    ss << "<br>";
+	    ss << "</div>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 		ss << "<br>";
 	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
 	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"start\" value=\"start\" id=\"start\">START</button>";
 	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">STOP</button>";
-	    ss <<  "</br>";
-	    ss << "<h2>Acties:</h2>";
+	    ss << "<br>";
+	    ss << "<br>";
 	    ss << "<div class=\"wrap\">";
 	    ss << "<div class=\"cell-wrap links\">";
 	    ss << "<table class=\"links\">";
@@ -1052,13 +992,10 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		ss << "</div>";
 		ss << "<br style=\"clear:both\">";
 		ss << "</form>";
-		ss << "<a href=\"/chasefactory\">Chases</a>";
-	    ss << "<br>";
-	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn,  ss.str().c_str(), "%s");
 	}
 
-	mg_printf(conn, "</body></html>\n");
+	ss = getHtml(meta, message, "chase", ss.str().c_str(), tohead.str().c_str());
+    mg_printf(conn,  ss.str().c_str(), "%s");
    }
 	return true;
 }

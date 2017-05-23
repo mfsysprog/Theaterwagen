@@ -233,38 +233,29 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 {
 	std::string dummy;
 	std::string value;
+	std::string message="&nbsp;";
+	std::string meta="";
+	std::stringstream ss;
 
 	if(CivetServer::getParam(conn, "delete", value))
 	{
-	   mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-			   	  "text/html\r\nConnection: close\r\n\r\n");
-	   mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"0;url=/togglefactory\" /></head><body>");
-	   mg_printf(conn, "</body></html>");
+	   meta = "<meta http-equiv=\"refresh\" content=\"0;url=/togglefactory\" />";
 	   this->togglefactory.deleteToggle(value);
 	}
 	else
 	/* if parameter save is present the save button was pushed */
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
-		mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-		          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/togglefactory\" /></head><body>");
-		mg_printf(conn, "<h2>Toggle opgeslagen...!</h2>");
-		mg_printf(conn, "</body></html>");
-		this->togglefactory.save();
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/togglefactory\" />";
+	   message = "Opgeslagen!";
+       this->togglefactory.save();
 	}
 	else
 	/* if parameter load is present the load button was pushed */
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
-		mg_printf(conn,
-		          "HTTP/1.1 200 OK\r\nContent-Type: "
-		          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta http-equiv=\"refresh\" content=\"1;url=/togglefactory\" /></head><body>");
-		mg_printf(conn, "<h2>Toggle ingeladen...!</h2>");
-		mg_printf(conn, "</body></html>");
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/togglefactory\" />";
+	    message = "Ingeladen!";
 		this->togglefactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", dummy))
@@ -278,49 +269,29 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 
 		ToggleFactory::Toggle* toggle = togglefactory.addToggle(naam, omschrijving, relay);
 
-		mg_printf(conn,
-				          "HTTP/1.1 200 OK\r\nContent-Type: "
-				          "text/html\r\nConnection: close\r\n\r\n");
-		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"0;url=" << toggle->getUrl() << "\"/></head><body>";
-		mg_printf(conn, ss.str().c_str(), "%s");
-		mg_printf(conn, "</body></html>");
+		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + toggle->getUrl() + "\"/>";
 	}
 	else if(CivetServer::getParam(conn, "new", dummy))
 	{
-       mg_printf(conn,
-		        "HTTP/1.1 200 OK\r\nContent-Type: "
-		         "text/html\r\nConnection: close\r\n\r\n");
-       mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-	   std::stringstream ss;
 	   ss << "<form action=\"/togglefactory\" method=\"POST\">";
+	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">Naam:</label>"
-  			 "<input id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
-	         "<input id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "<label for=\"relay\">Relais GPIO:</label>"
-	   	     "<input id=\"relay\" type=\"text\" size=\"3\" name=\"relay\"/>" << "</br>";
+	   	     "<input class=\"inside\" id=\"relay\" type=\"text\" size=\"3\" name=\"relay\"/>" << "</br>";
+	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
    	   ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
        ss <<  "</br>";
-       ss << "<a href=\"/togglefactory\">Aan/Uit</a>";
-       ss <<  "</br>";
-       ss << "<a href=\"/\">Home</a>";
-       mg_printf(conn, ss.str().c_str(),"%s");
-       mg_printf(conn, "</body></html>");
 	}
 	/* initial page display */
 	else
 	{
-		mg_printf(conn,
-			          "HTTP/1.1 200 OK\r\nContent-Type: "
-			          "text/html\r\nConnection: close\r\n\r\n");
-		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-		std::stringstream ss;
 		std::map<std::string, ToggleFactory::Toggle*>::iterator it = togglefactory.togglemap.begin();
-		ss << "<h2>Beschikbare Aan/Uit:</h2>";
 	    for (std::pair<std::string, ToggleFactory::Toggle*> element : togglefactory.togglemap) {
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
@@ -343,11 +314,10 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
-	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str(),"%s");
-		mg_printf(conn, "</body></html>");
 	}
 
+	ss = getHtml(meta, message, "toggle",  ss.str().c_str());
+    mg_printf(conn, ss.str().c_str(),"%s");
 	return true;
 }
 
@@ -358,9 +328,9 @@ bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
 	std::string s[8] = "";
 	std::string dummy;
 	std::string param = "chan";
-	mg_printf(conn,
-	          "HTTP/1.1 200 OK\r\nContent-Type: "
-	          "text/html\r\nConnection: close\r\n\r\n");
+	std::string message="&nbsp;";
+	std::string meta="";
+	std::stringstream ss;
 
 	/* if parameter submit is present the submit button was pushed */
 	if(CivetServer::getParam(conn, "submit", dummy))
@@ -374,45 +344,35 @@ bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
 
 	   toggle.Initialize();
 
-	   std::stringstream ss;
-	   ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << toggle.getUrl() << "\"/></head><body>";
-	   mg_printf(conn, ss.str().c_str(),"%s");
-	   mg_printf(conn, "<h2>Wijzigingen opgeslagen...!</h2>");
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + toggle.getUrl() + "\"/>";
+	   message = "Wijzigingen opgeslagen!";
 	}
 	/* if parameter start is present start button was pushed */
 	else if(CivetServer::getParam(conn, "start", dummy))
 	{
 		toggle.Start();
-		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << toggle.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str(),"%s");
-	   	mg_printf(conn, "<h2>Starten...!</h2>");
+        meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + toggle.getUrl() + "\"/>";
+	    message = "Starten!";
 	}
 	/* if parameter stop is present stop button was pushed */
 	else if(CivetServer::getParam(conn, "stop", dummy))
 	{
 		toggle.Stop();
-		std::stringstream ss;
-		ss << "<html><head><meta http-equiv=\"refresh\" content=\"1;url=\"" << toggle.getUrl() << "\"/></head><body>";
-	   	mg_printf(conn, ss.str().c_str(),"%s");
-	   	mg_printf(conn, "<h2>Stoppen...!</h2>");
+        meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + toggle.getUrl() + "\"/>";
+	    message = "Stoppen!";
 	}
-	else
-	{
-		mg_printf(conn, "<h2>&nbsp;</h2>");
-		mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-	}
+
 	/* initial page display */
 	{
-		std::stringstream ss;
-		ss << "<h2>Aan/Uit:</h2>";
 		ss << "<form action=\"" << toggle.getUrl() << "\" method=\"POST\">";
+		ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">Naam:</label>"
-					  "<input id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
 					  toggle.naam << "\" name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
-					  "<input id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
 					  toggle.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
+		ss << "</div>";
 		ss << "<br>";
 	    ss << "Huidige status relais:&nbsp;" << digitalRead(toggle.relay) << "<br>";
 	    ss <<  "<br>";
@@ -421,20 +381,20 @@ bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"start\" value=\"start\" id=\"start\">START</button>";
 	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">STOP</button>";
 		ss << "<h2>GPIO pin:</h2>";
-	    ss << "<label for=\"relay\">Right Relay GPIO pin:</label>"
-	    	  "<input id=\"relay\" type=\"text\" size=\"4\" value=\"" <<
+		ss << "<div class=\"container\">";
+		ss << "<label for=\"relay\">Right Relay GPIO pin:</label>"
+	    	  "<input class=\"inside\" id=\"relay\" type=\"text\" size=\"4\" value=\"" <<
 	    	  toggle.relay << "\" name=\"relay\"/>" << "</br>";
-	    ss <<  "</br>";
+	    ss << "<br>";
+	    ss << "</div>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss <<  "</br>";
 	    ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
-	    ss << "<a href=\"/togglefactory\">Aan/Uit</a>";
-	    ss << "<br>";
-	    ss << "<a href=\"/\">Home</a>";
-	    mg_printf(conn, ss.str().c_str(),"%s");
+
 	}
 
-	mg_printf(conn, "</body></html>\n");
+	ss = getHtml(meta, message, "toggle",  ss.str().c_str());
+    mg_printf(conn, ss.str().c_str(),"%s");
 	return true;
 }
 
