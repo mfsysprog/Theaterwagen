@@ -99,6 +99,7 @@ class ChaseFactory {
 	ChaseFactory::Chase* addChase(std::string naam, std::string omschrijving, bool autostart);
 	void deleteChase(std::string uuid);
 	void load();
+	void saveAll();
 	private:
 	void save();
 

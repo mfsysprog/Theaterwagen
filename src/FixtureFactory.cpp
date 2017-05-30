@@ -193,7 +193,7 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/fixturefactory\" />";
-	   message = "Fixture opgeslagen!";
+	   message = "Opgeslagen!";
        this->fixturefactory.save();
 	}
 	else
@@ -201,7 +201,7 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/fixturefactory\" />";
-	   message = "Fixture ingeladen!";
+	   message = "Ingeladen!";
        this->fixturefactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", dummy))
@@ -235,9 +235,9 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
-  }
+	}
+
 	/* initial page display */
-	else
 	{
 		std::map<int, FixtureFactory::Fixture*>::iterator it = fixturefactory.fixturemap.begin();
 	    for (std::pair<int, FixtureFactory::Fixture*> element : fixturefactory.fixturemap) {

@@ -158,6 +158,17 @@ void ChaseFactory::load(){
 	}
 }
 
+void ChaseFactory::saveAll(){
+	fixture->save();
+	scene->save();
+	music->save();
+	sound->save();
+	motor->save();
+	toggle->save();
+	capture->save();
+	this->save();
+}
+
 void ChaseFactory::save(){
 	YAML::Emitter emitter;
 	std::ofstream fout(CONFIG_FILE_CHASE);
@@ -376,6 +387,19 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 	std::string message="&nbsp;";
 	std::string meta="";
 
+	if(CivetServer::getParam(conn, "saveall", dummy))
+	{
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/\" />";
+	   message = "Alles opgeslagen!";
+	   std::stringstream ss;
+
+       ss = getHtml(meta, message, "home", ss.str().c_str());
+	   mg_printf(conn, ss.str().c_str(), "%s");
+
+	   this->chasefactory.saveAll();
+	   return true;
+	}
+
 	if(CivetServer::getParam(conn, "delete", value))
 	{
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/chasefactory\" />";
@@ -386,7 +410,7 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 	/* if parameter save is present the save button was pushed */
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
-	   meta = "<meta http-equiv=\"refresh\" content=\"0;url=/chasefactory\" />";
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/chasefactory\" />";
 	   message = "Opgeslagen!";
 	   this->chasefactory.save();
 	}
@@ -394,7 +418,7 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 	/* if parameter load is present the load button was pushed */
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
-	   meta = "<meta http-equiv=\"refresh\" content=\"0;url=/chasefactory\" />";
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/chasefactory\" />";
 	   message = "Geladen!";
        this->chasefactory.load();
 	}

@@ -439,7 +439,7 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/scenefactory\">";
-		message = "Scene opgeslagen!";
+		message = "Opgeslagen!";
         this->scenefactory.save();
 	}
 	else
@@ -447,7 +447,7 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/scenefactory\">";
-		message = "Scene ingeladen!";
+		message = "Ingeladen!";
 		this->scenefactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", value))
@@ -489,8 +489,8 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
 	}
+
 	/* initial page display */
-	else
 	{
 		std::map<std::string, SceneFactory::Scene*>::iterator it = scenefactory.scenemap.begin();
 		for (std::pair<std::string, SceneFactory::Scene*> element : scenefactory.scenemap) {
@@ -531,6 +531,23 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	std::string message="&nbsp;";
 	std::string meta="";
 	std::stringstream ss;
+	std::stringstream tohead;
+
+	if(CivetServer::getParam(conn, "slide", value))
+	{
+		int channel = atoi(value.c_str());
+		CivetServer::getParam(conn,"value", value);
+		(*scene.channels)[channel-1][0] = atoi(value.c_str());
+		//cout << "Slide channel : " << channel << endl;
+		//cout << "Slide value : " << value << endl;
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		scene.Play();
+		return true;
+	}
 
 	if(CivetServer::getParam(conn, "submit", dummy))
 	{
@@ -568,7 +585,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		  		scene.omschrijving = value;
 		if(CivetServer::getParam(conn,"fadesteps", value))
 		  		scene.fadesteps = atoi(value.c_str());
-		std::stringstream ss;
+		//std::stringstream ss;
 		for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
 			for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
 			{
@@ -598,7 +615,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		  		scene.omschrijving = value;
 		if(CivetServer::getParam(conn,"fadesteps", value))
 		  		scene.fadesteps = atoi(value.c_str());
-		std::stringstream ss;
+		//std::stringstream ss;
 		for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
 			for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
 			{
@@ -627,7 +644,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		  		scene.omschrijving = value;
 		if(CivetServer::getParam(conn,"fadesteps", value))
 		  		scene.fadesteps = atoi(value.c_str());
-		std::stringstream ss;
+		//std::stringstream ss;
 		for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
 			for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
 			{
@@ -666,6 +683,9 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		ss << "</div>";
 		ss << "<br>";
 		ss << "<br>";
+		tohead << "<script type=\"text/javascript\">";
+		tohead << " $(document).ready(function(){";
+
 	    for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
 	    	ss << "<a href=\"" << element.second->getUrl() << "\">" << element.second->naam << "</a><br>";
 	    	ss << "Base adres: &nbsp;" << element.second->base_channel << "<br>";
@@ -674,6 +694,11 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    	ss << "<table class=\"container\"><th>Kanaal</th><th>Exclude</th><th>Waarde</th>";
 	    	for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
 	    	{
+	    		tohead << " $('#chan" << i <<"').on('input', function() {";
+	    		tohead << " $.get( \"" << scene.getUrl() << "\", { slide: \"" << i << "\", value: $('#chan" << i << "').val() }, function( data ) {";
+	    		tohead << "  $( \"#chan" << i << "\" ).html( data );})";
+      		    tohead << "});";
+
 	    		ss << "<tr>";
 	    		ss << "<td><label for=\"chan" << i << "\">" << i << "</label></td>";
 	    		if ((*scene.channels)[i-1][1] == '1')
@@ -689,6 +714,9 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    	}
 		    ss << "</table>";
 	    }
+	    tohead << "});";
+		tohead << "</script>";
+
 	    ss << "<br>";
 		ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 		ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">Play</button>";
@@ -701,7 +729,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    ss << "<br style=\"clear:both\">";
 	}
 
-	ss = getHtml(meta, message, "scene", ss.str().c_str());
+	ss = getHtml(meta, message, "scene", ss.str().c_str(), tohead.str().c_str());
 	mg_printf(conn,  ss.str().c_str(), "%s");
 	return true;
 }

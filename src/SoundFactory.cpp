@@ -310,8 +310,8 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
        ss << "</form>";
        (void) closedir(dirp);
 	}
+
 	/* initial page display */
-	else
 	{
 		std::map<std::string, SoundFactory::Sound*>::iterator it = soundfactory.soundmap.begin();
 	    for (std::pair<std::string, SoundFactory::Sound*> element : soundfactory.soundmap) {

@@ -288,8 +288,8 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
    	   ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
        ss <<  "</br>";
 	}
+
 	/* initial page display */
-	else
 	{
 		std::map<std::string, ToggleFactory::Toggle*>::iterator it = togglefactory.togglemap.begin();
 	    for (std::pair<std::string, ToggleFactory::Toggle*> element : togglefactory.togglemap) {

@@ -886,7 +886,7 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/motorfactory\">";
-	   message = "Motor opgeslagen!";
+	   message = "Opgeslagen!";
        this->motorfactory.save();
 	}
 	else
@@ -894,7 +894,7 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/motorfactory\">";
-		message = "Motor ingeladen!";
+		message = "Ingeladen!";
 		this->motorfactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", dummy))
@@ -943,8 +943,8 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
    	   ss << "</form>";
    	   ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
 	}
+
 	/* initial page display */
-	else
 	{
 		std::map<std::string, MotorFactory::Motor*>::iterator it = motorfactory.motormap.begin();
 		for (std::pair<std::string, MotorFactory::Motor*> element : motorfactory.motormap) {

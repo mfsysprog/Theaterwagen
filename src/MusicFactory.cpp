@@ -303,8 +303,8 @@ bool MusicFactory::MusicFactoryHandler::handleAll(const char *method,
        ss << "</form>";
        (void) closedir(dirp);
  	}
+
 	/* initial page display */
-	else
 	{
 		std::map<std::string, MusicFactory::Music*>::iterator it = musicfactory.musicmap.begin();
 	    for (std::pair<std::string, MusicFactory::Music*> element : musicfactory.musicmap) {
