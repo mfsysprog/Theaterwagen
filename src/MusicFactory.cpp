@@ -278,7 +278,8 @@ bool MusicFactory::MusicFactoryHandler::handleAll(const char *method,
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + music->getUrl() + "\"/>";
 	}
-	else if(CivetServer::getParam(conn, "new", dummy))
+
+	if(CivetServer::getParam(conn, "new", dummy))
 	{
 	   DIR *dirp;
 	   struct dirent *dp;
@@ -303,19 +304,23 @@ bool MusicFactory::MusicFactoryHandler::handleAll(const char *method,
        ss << "</form>";
        (void) closedir(dirp);
  	}
-
+	else
 	/* initial page display */
 	{
 		std::map<std::string, MusicFactory::Music*>::iterator it = musicfactory.musicmap.begin();
 	    for (std::pair<std::string, MusicFactory::Music*> element : musicfactory.musicmap) {
+			ss << "<br style=\"clear:both\">";
+			ss << "<div class=\"row\">";
+			ss << "Filename:&nbsp;" << element.second->getFilename();
+			ss << "<br style=\"clear:both\">";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
 	    	ss << "</form>";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/musicfactory\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.second->getUuid() << "\" id=\"delete\">Verwijderen</button>&nbsp;";
-			ss << "Filename:&nbsp;" << element.second->getFilename();
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
+			ss << "</div>";
 		}
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/musicfactory\" method=\"POST\">";

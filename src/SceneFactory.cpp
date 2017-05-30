@@ -476,7 +476,8 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + scene->getUrl() + "\"/>";
 	}
-	else if(CivetServer::getParam(conn, "new", value))
+
+	if(CivetServer::getParam(conn, "new", value))
 	{
 	   ss << "<form action=\"/scenefactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
@@ -489,20 +490,24 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
 	}
-
+	else
 	/* initial page display */
 	{
 		std::map<std::string, SceneFactory::Scene*>::iterator it = scenefactory.scenemap.begin();
 		for (std::pair<std::string, SceneFactory::Scene*> element : scenefactory.scenemap) {
+			ss << "<br style=\"clear:both\">";
+			ss << "<div class=\"row\">";
+			ss << "Naam:&nbsp;" << element.second->getNaam() << "&nbsp;";
+			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving();
+			ss << "<br style=\"clear:both\">";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
 	    	ss << "</form>";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.second->getUuid() << "\" id=\"delete\">Verwijderen</button>&nbsp;";
-			ss << "Naam:&nbsp;" << element.second->getNaam() << "&nbsp;";
-			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving();
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
+			ss << "</div>";
 	    }
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
@@ -694,7 +699,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    	ss << "<table class=\"container\"><th>Kanaal</th><th>Exclude</th><th>Waarde</th>";
 	    	for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
 	    	{
-	    		tohead << " $('#chan" << i <<"').on('input', function() {";
+	    		tohead << " $('#chan" << i <<"').on('change', function() {";
 	    		tohead << " $.get( \"" << scene.getUrl() << "\", { slide: \"" << i << "\", value: $('#chan" << i << "').val() }, function( data ) {";
 	    		tohead << "  $( \"#chan" << i << "\" ).html( data );})";
       		    tohead << "});";

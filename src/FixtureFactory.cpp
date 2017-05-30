@@ -219,7 +219,8 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + fixture->getUrl() + "\"/>";
 	}
-	else if(CivetServer::getParam(conn, "new", dummy))
+
+	if(CivetServer::getParam(conn, "new", dummy))
 	{
 	   ss << "<form action=\"/fixturefactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
@@ -236,20 +237,24 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
    	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
    	   ss << "</form>";
 	}
-
+	else
 	/* initial page display */
 	{
 		std::map<int, FixtureFactory::Fixture*>::iterator it = fixturefactory.fixturemap.begin();
 	    for (std::pair<int, FixtureFactory::Fixture*> element : fixturefactory.fixturemap) {
+			ss << "<br style=\"clear:both\">";
+			ss << "<div class=\"row\">";
+			ss << "Naam:&nbsp;" << element.second->getNaam() << " &nbsp;";
+			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
+			ss << "<br style=\"clear:both\">";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
 	    	ss << "</form>";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/fixturefactory\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.second->base_channel << "\" id=\"delete\">Verwijderen</button>&nbsp;";
-			ss << "Naam:&nbsp;" << element.second->getNaam() << " &nbsp;";
-			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
+			ss << "</div>";
 	    }
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/fixturefactory\" method=\"POST\">";

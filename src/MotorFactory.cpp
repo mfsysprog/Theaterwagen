@@ -916,13 +916,9 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + motor->getUrl() + "\"/>";
 	}
-	else if(CivetServer::getParam(conn, "new", dummy))
+
+	if(CivetServer::getParam(conn, "new", dummy))
 	{
-       mg_printf(conn,
-		        "HTTP/1.1 200 OK\r\nContent-Type: "
-		         "text/html\r\nConnection: close\r\n\r\n");
-       mg_printf(conn, "<html><head><meta charset=\"UTF-8\"></head><body>");
-	   std::stringstream ss;
 	   ss << "<form action=\"/motorfactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">Naam:</label>"
@@ -943,20 +939,24 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
    	   ss << "</form>";
    	   ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
 	}
-
+	else
 	/* initial page display */
 	{
 		std::map<std::string, MotorFactory::Motor*>::iterator it = motorfactory.motormap.begin();
 		for (std::pair<std::string, MotorFactory::Motor*> element : motorfactory.motormap) {
-	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
+			ss << "<br style=\"clear:both\">";
+			ss << "<div class=\"row\">";
+			ss << "Naam:&nbsp;" << element.second->getNaam() << " &nbsp;";
+			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
+			ss << "<br style=\"clear:both\">";
+			ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
 	    	ss << "</form>";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/motorfactory\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.first << "\" id=\"delete\">Verwijderen</button>&nbsp;";
-			ss << "Naam:&nbsp;" << element.second->getNaam() << " &nbsp;";
-			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
+			ss << "</div>";
 	    }
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/motorfactory\" method=\"POST\">";

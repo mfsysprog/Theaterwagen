@@ -271,7 +271,8 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + toggle->getUrl() + "\"/>";
 	}
-	else if(CivetServer::getParam(conn, "new", dummy))
+
+	if(CivetServer::getParam(conn, "new", dummy))
 	{
 	   ss << "<form action=\"/togglefactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
@@ -288,20 +289,24 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
    	   ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
        ss <<  "</br>";
 	}
-
+	else
 	/* initial page display */
 	{
 		std::map<std::string, ToggleFactory::Toggle*>::iterator it = togglefactory.togglemap.begin();
 	    for (std::pair<std::string, ToggleFactory::Toggle*> element : togglefactory.togglemap) {
+			ss << "<br style=\"clear:both\">";
+			ss << "<div class=\"row\">";
+			ss << "Naam:&nbsp;" << element.second->getNaam() << " &nbsp;";
+			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
+			ss << "<br style=\"clear:both\">";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
 	    	ss << "</form>";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/togglefactory\" method=\"POST\">";
 	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.first << "\" id=\"delete\">Verwijderen</button>&nbsp;";
-			ss << "Naam:&nbsp;" << element.second->getNaam() << " &nbsp;";
-			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
+			ss << "</div>";
 	    }
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/togglefactory\" method=\"POST\">";
