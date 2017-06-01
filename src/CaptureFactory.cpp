@@ -86,10 +86,10 @@ static std::stringstream matToJPG(cv::Mat* input)
     cv::Mat resized;
     try
     {
-        cv::resize((*input), resized, cv::Size(640,480), 0, 0);
+        cv::resize((*input), resized, cv::Size(320,240), 0, 0);
         int params[3] = {0};
         params[0] = CV_IMWRITE_JPEG_QUALITY;
-        params[1] = 80;
+        params[1] = 60;
     	cv::imencode(".jpg", resized, buf, std::vector<int>(params, params+2) );
     }
     catch( cv::Exception& e )
@@ -459,11 +459,11 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 	filePoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 
-	cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
-	cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
-	std::unique_lock<std::mutex> l(m);
-	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
-	l.unlock();
+	//cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
+	//cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
+	//std::unique_lock<std::mutex> l(m);
+	//this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
+	//l.unlock();
 	//detector = new dlib::frontal_face_detector();
 
 	std::thread t1( [this] { loadModel(); } );
@@ -497,11 +497,11 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::s
 	camMat = new std::vector<cv::Mat>();
 	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 
-	cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
-	cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
-	std::unique_lock<std::mutex> l(m);
-	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
-	l.unlock();
+	//cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
+	//cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
+	//std::unique_lock<std::mutex> l(m);
+	//this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
+	//l.unlock();
 	//detector = new dlib::frontal_face_detector();
 
 	std::thread t1( [this] { loadModel(); } );
@@ -566,7 +566,7 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
     		}
     		catch( cv::Exception& e )
     		{
-    		  	cout << "Error loading merged.avi: " << e.msg << endl;
+    		  	cout << "Error loading merged mp4: " << e.msg << endl;
     		}
 
     	}
@@ -777,12 +777,6 @@ void CaptureFactory::Capture::loadModel(){
 	//this->detector = new dlib::frontal_face_detector(get_frontal_face_detector());
 	this->face_cascade = new CascadeClassifier();
 	if( !(*face_cascade).load("haarcascade_frontalface_default.xml") ){ printf("--(!)Error loading face cascade\n"); return; };
-	cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
-	cv::putText(boodschap, "Gezichtsherkenningsmodel geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
-	std::unique_lock<std::mutex> l(m);
-	this->manipulated.str("");
-	this->manipulated.clear();
-	this->manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&boodschap).str() << "\r\n--frame\r\n";
     model_loaded = true;
 }
 
@@ -801,8 +795,6 @@ void CaptureFactory::Capture::captureDetectAndMerge()
 
 		if (captured.empty()) continue;
 
-		manipulated.str("");
-		manipulated.clear();
 		std::vector<std::vector<cv::Point2f>> points = detectFrame(&captured);
 		if (points.size() == 0)
 			continue;
@@ -823,14 +815,9 @@ void CaptureFactory::Capture::captureDetectAndMerge()
 		l2.unlock();
 		return;
 	}
+
 	delete off_screen;
 	off_screen = new std::vector<std::stringstream>(mergeFrames());
-	manipulated.str("");
-	manipulated.clear();
-	for (unsigned int i = 0; i < off_screen->size(); ++i)
-	{
-		manipulated << "Content-Type: image/jpeg\r\n\r\n" << (*off_screen)[i].str() << "\r\n--frame\r\n";
-	}
 
 	l.unlock();
 	l2.unlock();
@@ -864,7 +851,7 @@ void CaptureFactory::Capture::onScreen()
 {
 	 delay(200);
 	 std::unique_lock<std::mutex> l(m_merging);
-	 cf.on_screen = "tmp/" + this->getUuid() + ".avi";
+	 cf.on_screen = "tmp/" + this->getUuid() + ".mp4";
 	 cf.loaded = false;
 	 cf.loadme = true;
 	 l.unlock();
@@ -984,8 +971,8 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
 std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 {
 	std::vector<std::stringstream> totaal;
-	std::string recordname = "tmp/" + this->getUuid() + ".avi";
-	VideoWriter record(recordname, CV_FOURCC('D','I','V','X'),
+	std::string recordname = "tmp/" + this->getUuid() + ".mp4";
+	VideoWriter record(recordname, CV_FOURCC('H','2','6','4'),
 	    10, cv::Size(1024,768), true);
 
 	openCap(CAP_FILE);
@@ -1332,13 +1319,22 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		mg_printf(conn,
 			          "HTTP/1.1 200 OK\r\nContent-Type: "
 			          "multipart/x-mixed-replace; boundary=frame\r\n\r\n");
-		std::stringstream ss;
-		std::unique_lock<std::mutex> l(m);
-		ss << capture.manipulated.str();
-		ss.seekp(0, ios::end);
-		stringstream::pos_type offset = ss.tellp();
-		ss.seekp(0, ios::beg);
-		mg_write(conn, ss.str().c_str(), offset);
+		//std::unique_lock<std::mutex> l(m);
+		//ss << capture.manipulated.str();
+		//l.unlock();
+		//ss.seekp(0, ios::end);
+		//stringstream::pos_type offset = ss.tellp();
+		//for(;;)
+		for (unsigned int i = 0; i < capture.off_screen->size(); ++i)
+		{
+			std::stringstream ss;
+			ss << "Content-Type: image/jpeg\r\n\r\n" << (*capture.off_screen)[i].str() << "\r\n--frame\r\n";
+			ss.seekp(0, ios::end);
+			stringstream::pos_type offset = ss.tellp();
+			ss.seekp(0, ios::beg);
+			mg_write(conn, ss.str().c_str(), offset);
+			delay(100);
+		}
 		return true;
 	}
 
@@ -1369,12 +1365,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		std::unique_lock<std::mutex> l(m);
 		delete capture.off_screen;
 		capture.off_screen = new std::vector<std::stringstream>(capture.mergeFrames());
-		capture.manipulated.str("");
-		capture.manipulated.clear();
-		for (unsigned int i = 0; i < capture.off_screen->size(); ++i)
-		{
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << (*capture.off_screen)[i].str() << "\r\n--frame\r\n";
-		}
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = "Samengevoegd!";
@@ -1384,20 +1374,24 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		//capture.fileMat->clear();
 		//capture.filePoints->clear();
 		std::unique_lock<std::mutex> l(m);
-		capture.manipulated.str("");
-		capture.manipulated.clear();
 		capture.filmpje = value;
 		std::stringstream ss;
 		capture.openCap(CAP_FILE);
 		cv::Mat frame;
 		std::stringstream jpg;
+
+		delete capture.off_screen;
+		capture.off_screen = new std::vector<std::stringstream>();
+
 		for (;;)
 		{
 			frame = capture.captureFrame();
 			if (frame.empty()) break;
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&frame).str() << "\r\n--frame\r\n";
+			capture.off_screen->push_back(matToJPG(&frame));
 		}
 		capture.closeCap();
+
+		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + capture.getUrl() + "\"/>";
 	}
@@ -1405,10 +1399,10 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	else if(CivetServer::getParam(conn, "save_video", dummy))
 	{
 		Size S = Size((*capture.camMat)[0].cols,(*capture.camMat)[0].rows);
-		int codec = CV_FOURCC('D', 'I', 'V', 'X');
-		VideoWriter outputVideo("resources/capture.avi", codec, 10.0, S, true);
+		int codec = CV_FOURCC('H', '2', '6', '4');
+		VideoWriter outputVideo("resources/capture.mp4", codec, 10.0, S, true);
 
-		if (outputVideo.open("resources/capture.avi", codec, 10.0, S, true))
+		if (outputVideo.open("resources/capture.mp4", codec, 10.0, S, true))
 			cout << "Video open success!" << endl;
 		else
 			cout << "Video open failure!" << endl;
@@ -1430,13 +1424,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.camMat->push_back(capture.captureFrame());
 		capture.closeCap();
 		std::unique_lock<std::mutex> l(m);
-		capture.manipulated.str("");
-		capture.manipulated.clear();
+
+		delete capture.off_screen;
+		capture.off_screen = new std::vector<std::stringstream>();
+
 		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
 		{
 			cv::Mat mat  = (*capture.camMat)[i];
-			/* add points of found faces */
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&mat).str() << "\r\n--frame\r\n";
+			capture.off_screen->push_back(matToJPG(&mat));
 		}
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
@@ -1453,13 +1448,16 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		}
 		capture.closeCap();
 		std::unique_lock<std::mutex> l(m);
-		capture.manipulated.str("");
-		capture.manipulated.clear();
+
+		delete capture.off_screen;
+		capture.off_screen = new std::vector<std::stringstream>();
+
 		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
 		{
 			cv::Mat mat  = (*capture.camMat)[i];
 			/* add points of found faces */
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&mat).str() << "\r\n--frame\r\n";
+			cout << "adding frame " << i << endl;
+			capture.off_screen->push_back(matToJPG(&mat));
 		}
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
@@ -1471,13 +1469,15 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.camMat->push_back(capture.captureFrame());
 		capture.closeCap();
 		std::unique_lock<std::mutex> l(m);
-		capture.manipulated.str("");
-		capture.manipulated.clear();
+
+		delete capture.off_screen;
+		capture.off_screen = new std::vector<std::stringstream>();
+
 		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
 		{
 			cv::Mat mat  = (*capture.camMat)[i];
 			/* add points of found faces */
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << matToJPG(&mat).str() << "\r\n--frame\r\n";
+			capture.off_screen->push_back(matToJPG(&mat));
 		}
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
@@ -1490,8 +1490,10 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 
 		std::vector<std::vector<cv::Point2f>> points;
 		std::unique_lock<std::mutex> l(m);
-		capture.manipulated.str("");
-		capture.manipulated.clear();
+
+		delete capture.off_screen;
+		capture.off_screen = new std::vector<std::stringstream>();
+
 		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
 		{
 			cv::Mat mat  = (*capture.camMat)[i];
@@ -1505,10 +1507,10 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			{
 				/* add points of found faces */
 				capture.camPoints->push_back(points);
-				capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << drawToJPG(&mat, &points).str() << "\r\n--frame\r\n";
+				capture.off_screen->push_back(drawToJPG(&mat, &points));
 			}
 		}
-
+		l.unlock();
 		} );
 
 		mythread::setScheduling(t1, SCHED_IDLE, 0);
@@ -1524,8 +1526,10 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 
 		std::vector<std::vector<cv::Point2f>> points;
 		std::unique_lock<std::mutex> l(m);
-		capture.manipulated.str("");
-		capture.manipulated.clear();
+
+		delete capture.off_screen;
+		capture.off_screen = new std::vector<std::stringstream>();
+
 		capture.openCap(CAP_FILE);
 		cv::Mat frame;
 		for (;;)
@@ -1533,14 +1537,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			frame = capture.captureFrame();
 			if (frame.empty()) break;
 			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&frame);
-			capture.manipulated << "Content-Type: image/jpeg\r\n\r\n" << drawToJPG(&frame, &points).str() << "\r\n--frame\r\n";
+			capture.off_screen->push_back(drawToJPG(&frame, &points));
 			capture.filePoints->push_back(points);
 		}
 		capture.closeCap();
 
 		/* remove frame with no detected faces */
 		//(*capture.fileMat).erase((*capture.fileMat).begin() + i);
-
+		l.unlock();
 		} );
 
 		mythread::setScheduling(t1, SCHED_IDLE, 0);
@@ -1552,6 +1556,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	}
 
 	std::stringstream ss;
+	std::stringstream tohead;
 
 	if(CivetServer::getParam(conn, "movie", dummy))
 	{
@@ -1581,14 +1586,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	else
 	/* initial page display */
 	{
-		//ss << "<script type=\"text/javascript\">";
-		   //ss << " $(document).ready(function(){";
-		   //ss << "  setInterval(function(){";
-		   //ss << "  $.get( \"" << capture.getUrl() << "?streaming=true\", function( data ) {";
-		   //ss << "  $( \"#capture\" ).html( data );";
-		  // ss << " });},5000)";
-		  // ss << "});";
-		//ss << "</script>";
+		//tohead << "<script type=\"text/javascript\">";
+		//tohead << " $(document).ready(function(){";
+		//tohead << "  setInterval(function(){";
+		//tohead << "  $.get( \"" << capture.getUrl() << "?streaming=true\", function( data ) {";
+		//tohead << "  $( \"#capture\" ).html( data );";
+		//tohead << " });},1000)";
+		//tohead << "});";
+		//tohead << "</script>";
 		ss << "<form action=\"" << capture.getUrl() << "\" method=\"POST\">";
 		ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">Naam:</label>"
@@ -1623,9 +1628,13 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss << "<div id=\"capture\">";
 	    ss << "<img src=\"" << capture.url << "/?streaming=true\">";
 	    ss << "</div>";
+	    ss << "<video width\"1024\" height=\"768\" controls>";
+	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4" << "\" type=\"video/mp4\">";
+	    ss << "Your browser does not support the video tag";
+		ss << "</video>";
 	}
 
-	ss = getHtml(meta, message, "capture", ss.str().c_str());
+	ss = getHtml(meta, message, "capture", ss.str().c_str(), tohead.str().c_str());
     mg_printf(conn, ss.str().c_str(), "%s");
 	return true;
 }

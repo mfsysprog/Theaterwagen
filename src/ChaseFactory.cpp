@@ -522,13 +522,11 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		return true;
 	}
 
-	std::stringstream ss;
-    std::stringstream tohead;
-
 	if(CivetServer::getParam(conn, "chosen", value))
 	{
 	   std::string::size_type pos = value.find("::");
 	   std::string action = value.substr(0,pos);
+       std::stringstream ss;
 
 	   if (action.compare("Aan/Uit") == 0)
 	    {
@@ -540,6 +538,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   }
 		   ss << "</select>";
 		}
+        else
 		if (action.compare("Capture") == 0)
 		{
 		   if (!(value.compare("Capture::clearScherm") == 0))
@@ -559,6 +558,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	     	  ss << "</select>";
 		   }
 		}
+		else
 		if (action.compare("Chase") == 0)
 		{
 		   ss << "<select id=\"target\" name=\"target\">";
@@ -569,6 +569,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   }
 		   ss << "</select>";
 		}
+		else
 		if (action.compare("Geluid") == 0)
 		{
 		   ss << "<select id=\"target\" name=\"target\">";
@@ -579,6 +580,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   }
 		   ss << "</select>";
 		}
+		else
 		if (action.compare("Motor") == 0)
 		{
 		   ss << "<select id=\"target\" name=\"target\">";
@@ -589,6 +591,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   }
 		   ss << "</select>";
 		}
+		else
 		if (action.compare("Muziek") == 0)
 		{
 		   ss << "<select id=\"target\" name=\"target\">";
@@ -599,12 +602,14 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   }
 		   ss << "</select>";
 		}
+		else
 		if (action.compare("Portret") == 0)
 		{
 		   ss << "<select id=\"target\" name=\"target\">";
 	       ss << "<option value=\"n.v.t.\">n.v.t.</option>";
            ss << "</select>";
 		}
+		else
 		if (action.compare("Scene") == 0)
 		{
 		   ss << "<select id=\"target\" name=\"target\">";
@@ -615,92 +620,28 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   }
 		   ss << "</select>";
 		}
-	    mg_printf(conn,  ss.str().c_str(), "%s");
-	}
-	else
-	if(CivetServer::getParam(conn, "add", value))
-	{
-	   tohead << "<script type=\"text/javascript\">";
-	   tohead << " $(document).ready(function(){";
-	   tohead << "  $(\"#tijd_div\").hide();";
-	   tohead << "  $(\"#action\").change(function(){";
-	   tohead << "  if ($(\"#action\").val() == 'Tijd::Wachten') { ";
-	   tohead << "    $(\"#target\").hide();";
-	   tohead << "    $(\"#tijd_div\").show();";
-	   tohead << "   } else if ($(\"#action\").val() == 'Capture::clearScherm') {";
-	   tohead << "    $(\"#target\").hide();";
-	   tohead << "   } else if ($(\"#action\").val() == 'Portret::Voor') {";
-	   tohead << "    $(\"#target\").hide();";
-	   tohead << "   } else if ($(\"#action\").val() == 'Portret::Na') {";
-	   tohead << "    $(\"#target\").hide();";
-	   tohead << "   } else {";
-	   tohead << "    $(\"#target\").show();";
-	   tohead << "    $(\"#tijd_div\").hide();";
-	   tohead << "  }";
-	   tohead << "  action_val = $(\"#action\").val();";
-	   tohead << "  $.get( \"" << chase.getUrl() << "?chosen=\"+action_val, function( data ) {";
-	   tohead << "  $( \"#target\" ).html( data );";
-	   tohead << "  if ($(\"#target\").val() != '') { ";
-	   tohead << "    $(\"#submit\").prop('disabled',false);";
-	   tohead << "   } else";
-	   tohead << "   {$(\"#submit\").prop('disabled',true);}";
-	   tohead << "  });";
-	   tohead << " });";
-	   tohead << "});";
-	   tohead << "</script>";
-	   tohead << "<script type=\"text/javascript\">";
-	   tohead << " $(document).ready(function(){";
-	   tohead << "  $(\"#target\").change(function(){";
-	   tohead << "  if ($(\"#target\").val() != '') { ";
-	   tohead << "    $(\"#submit\").prop('disabled',false);";
-	   tohead << "   } else {$(\"#submit\").prop('disabled',true);}";
-	   tohead << "  });";
-	   tohead << " });";
-	   tohead << "</script>";
+		else
+		if (action.compare("Tijd") == 0)
+		{
+		   ss << "<input id=\"tijd\" name=\"target\">";
+		}
+		else
+		{
+			   ss << "<select id=\"target\" name=\"target\">";
+		       ss << "<option value=\"\"></option>";
+	           ss << "</select>";
+		}
 
-	   ss << "<form action=\"" << chase.getUrl() << "\" method=\"POST\">";
-	   ss << " <input type=\"hidden\" name=\"iter\" value=\"" << value << "\">";
-	   ss << " <select id=\"action\" name=\"action\">";
-	   ss << "  <option>Aan/Uit::Aan</option>";
-	   ss << "  <option>Aan/Uit::Uit</option>";
-	   ss << "  <option>Capture::Foto</option>";
-	   ss << "  <option>Capture::opScherm</option>";
-	   ss << "  <option>Capture::clearScherm</option>";
-	   ss << "  <option>Chase::Play</option>";
-	   ss << "  <option>Chase::Stop</option>";
-	   ss << "  <option>Geluid::Play</option>";
-	   ss << "  <option>Geluid::Fade In</option>";
-	   ss << "  <option>Geluid::Stop</option>";
-	   ss << "  <option>Geluid::Fade Out</option>";
-	   ss << "  <option>Motor::Links</option>";
-	   ss << "  <option>Motor::Rechts</option>";
-	   ss << "  <option>Motor::Stop</option>";
-	   ss << "  <option>Motor::Wachten</option>";
-	   ss << "  <option>Muziek::Play</option>";
-	   ss << "  <option>Muziek::Fade In</option>";
-	   ss << "  <option>Muziek::Stop</option>";
-	   ss << "  <option>Muziek::Fade Out</option>";
-	   ss << "  <option>Portret::Voor</option>";
-	   ss << "  <option>Portret::Na</option>";
-	   ss << "  <option>Scene::Play</option>";
-	   ss << "  <option>Scene::Fade In</option>";
-	   ss << "  <option>Scene::Fade Out</option>";
-	   ss << "  <option>Tijd::Wachten</option>";
-	   ss << " </select>";
-	   ss << " <select id=\"target\" name=\"target\">";
-	   ss << "  <option></option>";
-	   ss << " </select>";
-	   ss << "<div id=\"tijd_div\"><label for=\"tijd\">Milliseconden (1000 = 1 seconde):</label>"
-	   		  "<input id=\"tijd\" type=\"text\" size=\"10\" name=\"target\"/>" << "</br></div>";
-	   ss << "<button type=\"submit\" name=\"submit_action\" value=\"submit_action\" id=\"submit\" disabled>Submit</button></br>";
-	   ss << "</br>";
-	   ss << "</form>";
+	    mg_printf(conn,  ss.str().c_str(), "%s");
+	    return true;
 	}
-	else
-   {
+
+	std::stringstream ss;
+    std::stringstream tohead;
+
 	/* if parameter submit_action is present we want to add an action */
 	if(CivetServer::getParam(conn, "submit_action", dummy))
-		{
+	{
 		   CivetServer::getParam(conn,"action", s[0]);
 		   CivetServer::getParam(conn,"target", s[1]);
 		   CivetServer::getParam(conn,"iter", s[2]);
@@ -795,6 +736,86 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   	message = "Verplaatsen!";
 	}
 
+	if(CivetServer::getParam(conn, "add", value))
+	{
+	   tohead << "<script type=\"text/javascript\">";
+	   tohead << " $(document).ready(function(){";
+	   tohead << "  $(\"#tijd_div\").hide();";
+	   tohead << "  $(\"#action\").change(function(){";
+	   tohead << "  if ($(\"#action\").val() == 'Tijd::Wachten') { ";
+	   tohead << "    $(\"#target\").hide();";
+	   tohead << "    $(\"#tijd_div\").show();";
+	   tohead << "   } else if ($(\"#action\").val() == 'Capture::clearScherm') {";
+	   tohead << "    $(\"#target\").hide();";
+	   tohead << "   } else if ($(\"#action\").val() == 'Portret::Voor') {";
+	   tohead << "    $(\"#target\").hide();";
+	   tohead << "   } else if ($(\"#action\").val() == 'Portret::Na') {";
+	   tohead << "    $(\"#target\").hide();";
+	   tohead << "   } else {";
+	   tohead << "    $(\"#target\").show();";
+	   tohead << "    $(\"#tijd_div\").hide();";
+	   tohead << "  }";
+	   tohead << "  action_val = $(\"#action\").val();";
+	   tohead << "  $.get( \"" << chase.getUrl() << "?chosen=\"+action_val, function( data ) {";
+	   tohead << "  $( \"#target\" ).html( data );";
+	   tohead << "  if ($(\"#target\").val() != '') { ";
+	   tohead << "    $(\"#submit\").prop('disabled',false);";
+	   tohead << "   } else";
+	   tohead << "   {$(\"#submit\").prop('disabled',true);}";
+	   tohead << "  });";
+	   tohead << " });";
+	   tohead << "});";
+	   tohead << "</script>";
+	   tohead << "<script type=\"text/javascript\">";
+	   tohead << " $(document).ready(function(){";
+	   tohead << "  $(\"#target\").change(function(){";
+	   tohead << "  if ($(\"#target\").val() != '') { ";
+	   tohead << "    $(\"#submit\").prop('disabled',false);";
+	   tohead << "   } else {$(\"#submit\").prop('disabled',true);}";
+	   tohead << "  });";
+	   tohead << " });";
+	   tohead << "</script>";
+
+	   ss << "<form action=\"" << chase.getUrl() << "\" method=\"POST\">";
+	   ss << " <input type=\"hidden\" name=\"iter\" value=\"" << value << "\">";
+	   ss << " <select id=\"action\" name=\"action\">";
+	   ss << "  <option></option>";
+	   ss << "  <option>Aan/Uit::Aan</option>";
+	   ss << "  <option>Aan/Uit::Uit</option>";
+	   ss << "  <option>Capture::Foto</option>";
+	   ss << "  <option>Capture::opScherm</option>";
+	   ss << "  <option>Capture::clearScherm</option>";
+	   ss << "  <option>Chase::Play</option>";
+	   ss << "  <option>Chase::Stop</option>";
+	   ss << "  <option>Geluid::Play</option>";
+	   ss << "  <option>Geluid::Fade In</option>";
+	   ss << "  <option>Geluid::Stop</option>";
+	   ss << "  <option>Geluid::Fade Out</option>";
+	   ss << "  <option>Motor::Links</option>";
+	   ss << "  <option>Motor::Rechts</option>";
+	   ss << "  <option>Motor::Stop</option>";
+	   ss << "  <option>Motor::Wachten</option>";
+	   ss << "  <option>Muziek::Play</option>";
+	   ss << "  <option>Muziek::Fade In</option>";
+	   ss << "  <option>Muziek::Stop</option>";
+	   ss << "  <option>Muziek::Fade Out</option>";
+	   ss << "  <option>Portret::Voor</option>";
+	   ss << "  <option>Portret::Na</option>";
+	   ss << "  <option>Scene::Play</option>";
+	   ss << "  <option>Scene::Fade In</option>";
+	   ss << "  <option>Scene::Fade Out</option>";
+	   ss << "  <option>Tijd::Wachten</option>";
+	   ss << " </select>";
+	   ss << " <select id=\"target\" name=\"target\">";
+	   ss << "  <option></option>";
+	   ss << " </select>";
+	   ss << "<div id=\"tijd_div\"><label for=\"tijd\">Milliseconden (1000 = 1 seconde):</label>"
+	   		  "<input id=\"tijd\" type=\"text\" size=\"10\" name=\"target\"/>" << "</br></div>";
+	   ss << "<button type=\"submit\" name=\"submit_action\" value=\"submit_action\" id=\"submit\" disabled>Submit</button></br>";
+	   ss << "</br>";
+	   ss << "</form>";
+	}
+	else
 	/* initial page display */
 	{
 		tohead << "<script type=\"text/javascript\">";
@@ -1024,7 +1045,6 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 
 	ss = getHtml(meta, message, "chase", ss.str().c_str(), tohead.str().c_str());
     mg_printf(conn,  ss.str().c_str(), "%s");
-   }
 	return true;
 }
 

@@ -109,7 +109,6 @@ class CaptureFactory {
 		std::string naam;
 		std::string omschrijving;
 		std::string filmpje = "";
-		std::stringstream manipulated;
 		std::vector<std::stringstream>* off_screen;
 		std::vector<cv::Mat>* camMat;
 		unsigned int mix_from = 100;
