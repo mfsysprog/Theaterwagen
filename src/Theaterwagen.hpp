@@ -2,7 +2,7 @@
 #define THEATERWAGEN_HPP_
 
 #define RESOURCES_DIR "resources/"
-#define DOCUMENT_ROOT "."
+#define DOCUMENT_ROOT "/home/theaterwagen/theaterwagen"
 #define PORT "8080"
 
 #include <string>

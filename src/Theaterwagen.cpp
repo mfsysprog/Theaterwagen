@@ -49,7 +49,7 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
 	ss << "	<li class=\"scene\"><a href=\"/scenefactory\">Scene's</a></li>";
 	ss << "	<li class=\"music\"><a href=\"/musicfactory\">Muziek</a></li>";
 	ss << "	<li class=\"sound\"><a href=\"/soundfactory\">Geluidseffecten</a></li>";
-	ss << "	<li class=\"upload\"><a href=\"/upload\">Upload</a></li>";
+	ss << "	<li class=\"files\"><a href=\"/files.html\">Bestanden</a></li>";
 	ss << "	<li class=\"portret\"><a href=\"/portret\">Portret</a></li>";
 	ss << "</ul>";
 	ss << "<br>";
@@ -64,7 +64,8 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
  */
 int main(int, char**){
 
-	const char *options[] = {
+	const char *options[] = {"cgi_interpreter", "/usr/bin/php-cgi",
+//			"access_log_file", "access.log",
 		    "document_root", DOCUMENT_ROOT, "listening_ports", PORT, 0};
 
 	    std::vector<std::string> cpp_options;
@@ -76,8 +77,8 @@ int main(int, char**){
 	CivetServer server_start(cpp_options); // <-- C++ style start
 	server = &server_start;
 
-	UploadHandler hu;
-	server->addHandler("/upload", hu);
+	//UploadHandler hu;
+	//server->addHandler("/upload", hu);
 
 	//const size_t num_faces = 2;
 	//FaceDetectorAndTracker detector("haarcascade_frontalface_default.xml", 0, num_faces);

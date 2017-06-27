@@ -3,6 +3,8 @@
 	font-size: 20px;
   }
 
+html, body, iframe { height: 100%; }
+
 label{
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-size: 20px;
@@ -59,7 +61,7 @@ body.scene li.scene a {background-color: #ff9900;}
 body.music li.music a {background-color: #ff9900;}
 body.motor li.motor a {background-color: #ff9900;}
 body.sound li.sound a {background-color: #ff9900;}
-body.upload li.upload a {background-color: #ff9900;}
+body.files li.files a {background-color: #ff9900;}
 body.portret li.portret a {background-color: #ff9900;}
 
 .container {
