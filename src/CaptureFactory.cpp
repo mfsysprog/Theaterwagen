@@ -1324,7 +1324,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		//l.unlock();
 		//ss.seekp(0, ios::end);
 		//stringstream::pos_type offset = ss.tellp();
-		//for(;;)
 		for (unsigned int i = 0; i < capture.off_screen->size(); ++i)
 		{
 			std::stringstream ss;
@@ -1365,6 +1364,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		std::unique_lock<std::mutex> l(m);
 		delete capture.off_screen;
 		capture.off_screen = new std::vector<std::stringstream>(capture.mergeFrames());
+		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = "Samengevoegd!";
@@ -1434,6 +1434,8 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			capture.off_screen->push_back(matToJPG(&mat));
 		}
 
+		l.unlock();
+
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = "Frame gefotografeerd!";
 	}
@@ -1460,6 +1462,8 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			capture.off_screen->push_back(matToJPG(&mat));
 		}
 
+		l.unlock();
+
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = "Nieuwe frames gefotografeerd!";
 	}
@@ -1479,6 +1483,8 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			/* add points of found faces */
 			capture.off_screen->push_back(matToJPG(&mat));
 		}
+
+		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = "Volgend frame gefotografeerd!";

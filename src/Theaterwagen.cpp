@@ -15,7 +15,8 @@
 #include <SFML/Audio.hpp>
 
 #include "ChaseFactory.hpp"
-#include "UploadHandler.hpp"
+#include "HomeHandler.hpp"
+#include "FileHandler.hpp"
 
 using namespace std;
 
@@ -40,7 +41,7 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
 	ss << "<label for=\"show-menu\" class=\"show-menu\">Toon Menu</label>";
 	ss << "<input type=\"checkbox\" id=\"show-menu\" role=\"button\">";
 	ss << "<ul id=\"menu\">";
-	ss << "	<li class=\"home\"><a href=\"/\">Home</a></li>";
+	ss << "	<li class=\"home\"><a href=\"/theaterwagen\">Home</a></li>";
 	ss << "	<li class=\"capture\"><a href=\"/capturefactory\">Foto's</a></li>";
 	ss << "	<li class=\"chase\"><a href=\"/chasefactory\">Acties</a></li>";
 	ss << "	<li class=\"motor\"><a href=\"/motorfactory\">Motoren</a></li>";
@@ -49,7 +50,7 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
 	ss << "	<li class=\"scene\"><a href=\"/scenefactory\">Scene's</a></li>";
 	ss << "	<li class=\"music\"><a href=\"/musicfactory\">Muziek</a></li>";
 	ss << "	<li class=\"sound\"><a href=\"/soundfactory\">Geluidseffecten</a></li>";
-	ss << "	<li class=\"files\"><a href=\"/files.html\">Bestanden</a></li>";
+	ss << "	<li class=\"files\"><a href=\"/files\">Bestanden</a></li>";
 	ss << "	<li class=\"portret\"><a href=\"/portret\">Portret</a></li>";
 	ss << "</ul>";
 	ss << "<br>";
@@ -91,6 +92,12 @@ int main(int, char**){
 	}
 
 	ChaseFactory* chase = new ChaseFactory();
+
+	FileHandler fh;
+	server->addHandler("/files", fh);
+
+	HomeHandler hh;
+	server->addHandler("/theaterwagen", hh);
 
 	do
 	{
