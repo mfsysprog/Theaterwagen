@@ -292,8 +292,8 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	   struct dirent *dp;
 	   message = "Geuploade bestanden:";
 	   ss << "<form action=\"/soundfactory\" method=\"POST\">";
-	   if ((dirp = opendir(RESOURCES_DIR)) == NULL) {
-	          fprintf(stderr,"couldn't open %s.\n",RESOURCES_DIR);
+	   if ((dirp = opendir(SOUND_DIR)) == NULL) {
+	          fprintf(stderr,"couldn't open %s.\n",SOUND_DIR);
 	   }
        do {
 	      errno = 0;
@@ -303,7 +303,7 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	    	  */
 	    	if (std::strcmp(dp->d_name, ".") == 0) continue;
 	    	if (std::strcmp(dp->d_name, "..") == 0) continue;
-	    	ss << "<button type=\"submit\" name=\"newselect\" value=\"" << RESOURCES_DIR << dp->d_name << "\" ";
+	    	ss << "<button type=\"submit\" name=\"newselect\" value=\"" << SOUND_DIR << dp->d_name << "\" ";
 	    	ss << "id=\"newselect\">Selecteren</button>&nbsp;";
 	    	ss << "&nbsp;" << dp->d_name << "</br>";
 	        }

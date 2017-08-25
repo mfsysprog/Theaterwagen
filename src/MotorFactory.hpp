@@ -23,7 +23,7 @@
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
 
-#define CONFIG_FILE_MOTOR "config/motorfactory.yaml"
+#define CONFIG_FILE_MOTOR CONFIG_DIR "motorfactory.yaml"
 
 extern CivetServer* server;
 

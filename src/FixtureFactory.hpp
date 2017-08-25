@@ -25,7 +25,7 @@
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
 
-#define CONFIG_FILE_FIXTURE "config/fixturefactory.yaml"
+#define CONFIG_FILE_FIXTURE CONFIG_DIR "fixturefactory.yaml"
 
 extern CivetServer* server;
 

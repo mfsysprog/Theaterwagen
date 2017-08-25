@@ -32,7 +32,7 @@
 #include "CaptureFactory.hpp"
 #include "WebHandler.hpp"
 
-#define CONFIG_FILE_CHASE "config/chasefactory.yaml"
+#define CONFIG_FILE_CHASE CONFIG_DIR "chasefactory.yaml"
 
 extern CivetServer* server;
 

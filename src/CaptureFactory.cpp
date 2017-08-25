@@ -400,9 +400,11 @@ CaptureFactory::CaptureFactory(){
     mfh = new CaptureFactory::CaptureFactoryHandler(*this);
     pose_model = new dlib::shape_predictor();
 	cout << "Reading in shape predictor..." << endl;
-    deserialize("shape_predictor_68_face_landmarks.dat") >> *pose_model;
+    deserialize("theaterwagen/shape_predictor_68_face_landmarks.dat") >> *pose_model;
     cout << "Done reading in shape predictor ..." << endl;
 	server->addHandler("/capturefactory", mfh);
+	camMat = new std::vector<cv::Mat>();
+	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 	load();
 	std::thread t1( [this] {
 		setenv("DISPLAY",":0.0",0);
@@ -413,7 +415,7 @@ CaptureFactory::CaptureFactory(){
 		this->window = new sf::RenderWindow(desktop, "Theaterwagen", sf::Style::None);
 	    window->setMouseCursorVisible(false);
 	    window->setVerticalSyncEnabled(true);
-	    window->setFramerateLimit(10);
+	    //window->setFramerateLimit(10);
 	    //window->setActive(false);
 		renderingThread(window); } );
 	//mythread::setScheduling(t1, SCHED_IDLE, 0);
@@ -424,6 +426,8 @@ CaptureFactory::CaptureFactory(){
 CaptureFactory::~CaptureFactory(){
 	delete mfh;
 	delete pose_model;
+	delete camMat;
+	delete camPoints;
 	std::map<std::string, CaptureFactory::Capture*>::iterator it = capturemap.begin();
 	if (it != capturemap.end())
 	{
@@ -455,8 +459,6 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 	this->cap = new cv::VideoCapture();
 	this->off_screen = new std::vector<std::stringstream>();
 
-	camMat = new std::vector<cv::Mat>();
-	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 	filePoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 
 	//cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
@@ -494,9 +496,6 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::s
 	this->mix_from = mix_from;
 	this->mix_to = mix_to;
 
-	camMat = new std::vector<cv::Mat>();
-	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
-
 	//cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
 	//cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
 	//std::unique_lock<std::mutex> l(m);
@@ -518,8 +517,6 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::s
 CaptureFactory::Capture::~Capture(){
 	delete mh;
 	delete cap;
-	delete camMat;
-	delete camPoints;
 	delete filePoints;
 	//delete detector;
 	delete off_screen;
@@ -576,6 +573,7 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
         	if (movie.getStatus() == sfe::Status::Stopped)
         		movie.play();
 			movie.update();
+			movie.fit(0,0,window->getSize().x,window->getSize().y, false);
 	   		window->draw(movie);
     	}
  		window->display();
@@ -776,7 +774,7 @@ void CaptureFactory::Capture::loadModel(){
 	//delete detector;
 	//this->detector = new dlib::frontal_face_detector(get_frontal_face_detector());
 	this->face_cascade = new CascadeClassifier();
-	if( !(*face_cascade).load("haarcascade_frontalface_default.xml") ){ printf("--(!)Error loading face cascade\n"); return; };
+	if( !(*face_cascade).load("theaterwagen/haarcascade_frontalface_default.xml") ){ printf("--(!)Error loading face cascade\n"); return; };
     model_loaded = true;
 }
 
@@ -787,8 +785,8 @@ void CaptureFactory::Capture::captureDetectAndMerge()
 	openCap(CAP_CAM);
 	cv::Mat captured;
 	std::unique_lock<std::mutex> l(m);
-	camPoints->clear();
-	camMat->clear();
+	cf.camPoints->clear();
+	cf.camMat->clear();
 	for (int i = 0; i < 6; i++)
 	{
 		captured = captureFrame();
@@ -801,13 +799,14 @@ void CaptureFactory::Capture::captureDetectAndMerge()
 		else
 		{
 			/* add points of found faces */
-			camMat->push_back(captured);
-			camPoints->push_back(points);
+			cf.camMat->push_back(captured);
+			cf.camPoints->push_back(points);
+			break;
 		}
 	}
 
 	closeCap();
-	if (camPoints->empty())
+	if (cf.camPoints->empty())
 	{
 		delete off_screen;
 		off_screen = new std::vector<std::stringstream>(loadFilmpje());
@@ -851,7 +850,7 @@ void CaptureFactory::Capture::onScreen()
 {
 	 delay(200);
 	 std::unique_lock<std::mutex> l(m_merging);
-	 cf.on_screen = "tmp/" + this->getUuid() + ".mp4";
+	 cf.on_screen = TMP_DIR + this->getUuid() + ".mp4";
 	 cf.loaded = false;
 	 cf.loadme = true;
 	 l.unlock();
@@ -971,7 +970,7 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
 std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 {
 	std::vector<std::stringstream> totaal;
-	std::string recordname = "tmp/" + this->getUuid() + ".mp4";
+	std::string recordname = TMP_DIR + this->getUuid() + ".mp4";
 	VideoWriter record(recordname, CV_FOURCC('H','2','6','4'),
 	    10, cv::Size(1024,768), true);
 
@@ -987,12 +986,12 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		//cv::resize(img_file,img_file,cv::Size(1024,768));
 		//remove frame to keep memory available
 		//(*fileMat).erase((*fileMat).begin() + frame);
-		cv::Mat img_cam = (*camMat)[frame % ((*camMat).size())].clone();
+		cv::Mat img_cam = (*cf.camMat)[frame % ((*cf.camMat).size())].clone();
 		cv::Mat resultaat = img_file.clone();
 		for (unsigned int gezicht = 0; gezicht < (*filePoints)[frame].size(); ++gezicht)
 		{
 			// if we have less faces in the capture than in the img_file for this frame we do nothing
-			if (gezicht >= (*camPoints)[frame % ((*camPoints).size())].size()) continue;
+			if (gezicht >= (*cf.camPoints)[frame % ((*cf.camPoints).size())].size()) continue;
 	        //convert Mat to float data type
 	        img_cam.convertTo(img_cam, CV_32F);
 	        resultaat.convertTo(resultaat, CV_32F);
@@ -1015,7 +1014,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 
 	        for(int i = 0; i < (int)hullIndex.size(); i++)
 	        {
-	            hull1.push_back((*camPoints)[frame % ((*camPoints).size())][gezicht % ((*camPoints)[frame % ((*camPoints).size())].size())][hullIndex[i]]);
+	            hull1.push_back((*cf.camPoints)[frame % ((*cf.camPoints).size())][gezicht % ((*cf.camPoints)[frame % ((*cf.camPoints).size())].size())][hullIndex[i]]);
 	            hull2.push_back((*filePoints)[frame][gezicht][hullIndex[i]]);
 	        }
 
@@ -1398,17 +1397,17 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	/* if parameter start is present start button was pushed */
 	else if(CivetServer::getParam(conn, "save_video", dummy))
 	{
-		Size S = Size((*capture.camMat)[0].cols,(*capture.camMat)[0].rows);
+		Size S = Size((*capture.cf.camMat)[0].cols,(*capture.cf.camMat)[0].rows);
 		int codec = CV_FOURCC('H', '2', '6', '4');
-		VideoWriter outputVideo("resources/capture.mp4", codec, 10.0, S, true);
+		VideoWriter outputVideo(MOVIES_DIR "capture.mp4", codec, 10.0, S, true);
 
-		if (outputVideo.open("resources/capture.mp4", codec, 10.0, S, true))
+		if (outputVideo.open(MOVIES_DIR "capture.mp4", codec, 10.0, S, true))
 			cout << "Video open success!" << endl;
 		else
 			cout << "Video open failure!" << endl;
-		for (unsigned int i = 0; i < (*capture.camMat).size(); ++i)
+		for (unsigned int i = 0; i < (*capture.cf.camMat).size(); ++i)
 		{
-			outputVideo << (*capture.camMat)[i];
+			outputVideo << (*capture.cf.camMat)[i];
 		}
 		outputVideo.release();
 
@@ -1419,18 +1418,18 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	else if(CivetServer::getParam(conn, "capture", dummy))
 	{
 		capture.openCap(CAP_CAM);
-		capture.camPoints->clear();
-		capture.camMat->clear();
-		capture.camMat->push_back(capture.captureFrame());
+		capture.cf.camPoints->clear();
+		capture.cf.camMat->clear();
+		capture.cf.camMat->push_back(capture.captureFrame());
 		capture.closeCap();
 		std::unique_lock<std::mutex> l(m);
 
 		delete capture.off_screen;
 		capture.off_screen = new std::vector<std::stringstream>();
 
-		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
+		for (unsigned int i = 0; i < capture.cf.camMat->size(); ++i)
 		{
-			cv::Mat mat  = (*capture.camMat)[i];
+			cv::Mat mat  = (*capture.cf.camMat)[i];
 			capture.off_screen->push_back(matToJPG(&mat));
 		}
 
@@ -1442,11 +1441,11 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	else if(CivetServer::getParam(conn, "capture_multi", value))
 	{
 		capture.openCap(CAP_CAM);
-		capture.camPoints->clear();
-		capture.camMat->clear();
+		capture.cf.camPoints->clear();
+		capture.cf.camMat->clear();
 		for (int i = 0; i < atoi(value.c_str()); ++i)
 		{
-			capture.camMat->push_back(capture.captureFrame());
+			capture.cf.camMat->push_back(capture.captureFrame());
 		}
 		capture.closeCap();
 		std::unique_lock<std::mutex> l(m);
@@ -1454,9 +1453,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		delete capture.off_screen;
 		capture.off_screen = new std::vector<std::stringstream>();
 
-		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
+		for (unsigned int i = 0; i < capture.cf.camMat->size(); ++i)
 		{
-			cv::Mat mat  = (*capture.camMat)[i];
+			cv::Mat mat  = (*capture.cf.camMat)[i];
 			/* add points of found faces */
 			cout << "adding frame " << i << endl;
 			capture.off_screen->push_back(matToJPG(&mat));
@@ -1470,16 +1469,16 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	else if(CivetServer::getParam(conn, "capture_next", dummy))
 	{
 		capture.openCap(CAP_CAM);
-		capture.camMat->push_back(capture.captureFrame());
+		capture.cf.camMat->push_back(capture.captureFrame());
 		capture.closeCap();
 		std::unique_lock<std::mutex> l(m);
 
 		delete capture.off_screen;
 		capture.off_screen = new std::vector<std::stringstream>();
 
-		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
+		for (unsigned int i = 0; i < capture.cf.camMat->size(); ++i)
 		{
-			cv::Mat mat  = (*capture.camMat)[i];
+			cv::Mat mat  = (*capture.cf.camMat)[i];
 			/* add points of found faces */
 			capture.off_screen->push_back(matToJPG(&mat));
 		}
@@ -1500,19 +1499,19 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		delete capture.off_screen;
 		capture.off_screen = new std::vector<std::stringstream>();
 
-		for (unsigned int i = 0; i < capture.camMat->size(); ++i)
+		for (unsigned int i = 0; i < capture.cf.camMat->size(); ++i)
 		{
-			cv::Mat mat  = (*capture.camMat)[i];
+			cv::Mat mat  = (*capture.cf.camMat)[i];
 			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&mat);
 			if (points.size() == 0)
 			{
 				/* remove frame with no detected faces */
-				(*capture.camMat).erase((*capture.camMat).begin() + i);
+				(*capture.cf.camMat).erase((*capture.cf.camMat).begin() + i);
 			}
 			else
 			{
 				/* add points of found faces */
-				capture.camPoints->push_back(points);
+				capture.cf.camPoints->push_back(points);
 				capture.off_screen->push_back(drawToJPG(&mat, &points));
 			}
 		}
@@ -1569,8 +1568,8 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	   DIR *dirp;
 	   struct dirent *dp;
 	   ss << "<form action=\"" << capture.getUrl() << "\" method=\"POST\">";
-	   if ((dirp = opendir(RESOURCES_DIR)) == NULL) {
-	          fprintf(stderr,"couldn't open %s.\n",RESOURCES_DIR);
+	   if ((dirp = opendir(MOVIES_DIR)) == NULL) {
+	          fprintf(stderr,"couldn't open %s.\n",MOVIES_DIR);
 	   }
        do {
 	      errno = 0;
@@ -1580,7 +1579,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    	  */
 	    	if (std::strcmp(dp->d_name, ".") == 0) continue;
 	    	if (std::strcmp(dp->d_name, "..") == 0) continue;
-	    	ss << "<button type=\"submit\" name=\"newmovie\" value=\"" << RESOURCES_DIR << dp->d_name << "\" ";
+	    	ss << "<button type=\"submit\" name=\"newmovie\" value=\"" << MOVIES_DIR << dp->d_name << "\" ";
 	    	ss << "id=\"newmovie\">Selecteren</button>&nbsp;";
 	    	ss << "&nbsp;" << dp->d_name << "<br>";
 	        }
@@ -1631,11 +1630,11 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"on_screen\" id=\"on_screen\">On Screen</button>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss <<  "</br>";
-	    ss << "<div id=\"capture\">";
+/*	    ss << "<div id=\"capture\">";
 	    ss << "<img src=\"" << capture.url << "/?streaming=true\">";
-	    ss << "</div>";
+	    ss << "</div>"; */
 	    ss << "<video width\"1024\" height=\"768\" controls>";
-	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4" << "\" type=\"video/mp4\">";
+	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4?t=" << std::time(0) << "\" type=\"video/mp4\">";
 	    ss << "Your browser does not support the video tag";
 		ss << "</video>";
 	}

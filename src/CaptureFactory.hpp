@@ -38,7 +38,7 @@
 #include <sfeMovie/Movie.hpp>
 #include "Theaterwagen.hpp"
 
-#define CONFIG_FILE_CAPTURE "config/capturefactory.yaml"
+#define CONFIG_FILE_CAPTURE CONFIG_DIR "capturefactory.yaml"
 #define FACE_DOWNSAMPLE_RATIO 2
 
 extern CivetServer* server;
@@ -110,10 +110,9 @@ class CaptureFactory {
 		std::string omschrijving;
 		std::string filmpje = "";
 		std::vector<std::stringstream>* off_screen;
-		std::vector<cv::Mat>* camMat;
+
 		unsigned int mix_from = 100;
 		unsigned int mix_to = 100;
-		std::vector<std::vector<std::vector<cv::Point2f>>>* camPoints;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints;
 		uuid_t uuid;
 		cv::VideoCapture* cap;
@@ -134,6 +133,8 @@ class CaptureFactory {
 	std::string on_screen;
 	volatile bool loadme = false, loaded = false;
 	sf::RenderWindow* window;
+	std::vector<cv::Mat>* camMat;
+	std::vector<std::vector<std::vector<cv::Point2f>>>* camPoints;
 	void renderingThread(sf::RenderWindow *window);
 	void save();
 	std::map<std::string, CaptureFactory::Capture*> capturemap;

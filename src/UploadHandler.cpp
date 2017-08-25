@@ -32,7 +32,7 @@ field_disp_read_on_the_fly(const char *key,
 {
 	struct tfiles_checksums *context = (struct tfiles_checksums *)user_data;
 
-	snprintf(path, pathlen, "/home/theaterwagen/resources/%s", filename);
+	snprintf(path, pathlen, "theaterwagen/resources/%s", filename);
 
 	fprintf(stderr,"Path is %s\n",path);
 	if (context->index < MAX_FILES) {

@@ -26,7 +26,7 @@
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
 
-#define CONFIG_FILE_MUSIC "config/musicfactory.yaml"
+#define CONFIG_FILE_MUSIC CONFIG_DIR "musicfactory.yaml"
 
 extern CivetServer* server;
 

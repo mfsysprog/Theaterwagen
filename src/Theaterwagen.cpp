@@ -65,9 +65,10 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
  */
 int main(int, char**){
 
+	std::string home = std::string(getenv("HOME")) + "/" + ROOT_DIR;
 	const char *options[] = {"cgi_interpreter", "/usr/bin/php-cgi",
 //			"access_log_file", "access.log",
-		    "document_root", DOCUMENT_ROOT, "listening_ports", PORT, 0};
+		    "document_root", home.c_str(), "listening_ports", PORT, 0};
 
 	    std::vector<std::string> cpp_options;
 	    for (unsigned int i=0; i<(sizeof(options)/sizeof(options[0])-1); i++) {

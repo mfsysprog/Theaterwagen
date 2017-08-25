@@ -285,8 +285,8 @@ bool MusicFactory::MusicFactoryHandler::handleAll(const char *method,
 	   struct dirent *dp;
 	   message = "Geuploade bestanden:";
 	   ss << "<form action=\"/musicfactory\" method=\"POST\">";
-	   if ((dirp = opendir(RESOURCES_DIR)) == NULL) {
-	          fprintf(stderr,"couldn't open %s.\n",RESOURCES_DIR);
+	   if ((dirp = opendir(MUSIC_DIR)) == NULL) {
+	          fprintf(stderr,"couldn't open %s.\n",MUSIC_DIR);
 	   }
        do {
 	      errno = 0;
@@ -296,7 +296,7 @@ bool MusicFactory::MusicFactoryHandler::handleAll(const char *method,
 	    	  */
 	    	if (std::strcmp(dp->d_name, ".") == 0) continue;
 	    	if (std::strcmp(dp->d_name, "..") == 0) continue;
-	    	ss << "<button type=\"submit\" name=\"newselect\" value=\"" << RESOURCES_DIR << dp->d_name << "\" ";
+	    	ss << "<button type=\"submit\" name=\"newselect\" value=\"" << MUSIC_DIR << dp->d_name << "\" ";
 	    	ss << "id=\"newselect\">Selecteren</button>&nbsp;";
 	    	ss << "&nbsp;" << dp->d_name << "<br>";
 	        }

@@ -1,8 +1,15 @@
 #ifndef THEATERWAGEN_HPP_
 #define THEATERWAGEN_HPP_
 
-#define RESOURCES_DIR "resources/"
-#define DOCUMENT_ROOT "/home/theaterwagen/theaterwagen"
+#define ROOT_DIR "theaterwagen/"
+#define RESOURCES_DIR ROOT_DIR "resources/"
+#define MOVIES_DIR ROOT_DIR "filmpjes/"
+#define CAPTURE_DIR ROOT_DIR "captures/"
+#define MUSIC_DIR ROOT_DIR "muziek/"
+#define SOUND_DIR ROOT_DIR "geluiden/"
+#define CONFIG_DIR ROOT_DIR "config/"
+#define TMP_DIR ROOT_DIR "tmp/"
+
 #define PORT "8080"
 
 #include <string>

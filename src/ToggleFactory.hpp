@@ -23,7 +23,7 @@
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
 
-#define CONFIG_FILE_TOGGLE "config/togglefactory.yaml"
+#define CONFIG_FILE_TOGGLE CONFIG_DIR "togglefactory.yaml"
 
 extern CivetServer* server;
 

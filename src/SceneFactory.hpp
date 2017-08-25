@@ -28,7 +28,7 @@
 #include "yaml-cpp/yaml.h"
 #include "FixtureFactory.hpp"
 
-#define CONFIG_FILE_SCENE "config/scenefactory.yaml"
+#define CONFIG_FILE_SCENE CONFIG_DIR "scenefactory.yaml"
 
 extern CivetServer* server;
 
