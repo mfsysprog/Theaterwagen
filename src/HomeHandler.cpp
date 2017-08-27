@@ -28,6 +28,9 @@ bool HomeHandler::handleAll(const char *method,
 	ss << "<form action=\"/chasefactory\" method=\"POST\">";
     ss << "<button type=\"submit\" name=\"saveall\" value=\"saveall\" id=\"saveall\">Alles opslaan</button>";
 	ss << "</form>";
+	ss << "<form action=\"/portret\" method=\"POST\">";
+    ss << "<button type=\"submit\" name=\"portret\" value=\"portret\" id=\"portret\">Portret</button>";
+	ss << "</form>";
 	ss = getHtml(meta, message, "home",  ss.str().c_str());
 	mg_printf(conn, "%s", ss.str().c_str());
 	return true;

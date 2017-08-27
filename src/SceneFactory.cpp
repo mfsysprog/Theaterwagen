@@ -345,6 +345,17 @@ void SceneFactory::Scene::fadeOut(){
 	t1.detach();
 }
 
+void SceneFactory::Scene::Stop(){
+	int nBytes;
+	unsigned char channels_tmp[512] = {0};
+
+	nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+		                                    cmd_SetChannelRange, 512, 0, (char *)channels_tmp, 512, 1000);
+	if (nBytes < 0)
+	    fprintf(stderr, "USB error: %s\n", usb_strerror());
+	delay(20);
+}
+
 void SceneFactory::Scene::Play(){
 	int nBytes;
 	unsigned char channels_tmp[512] = {0};

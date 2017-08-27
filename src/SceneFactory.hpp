@@ -53,6 +53,7 @@ class SceneFactory {
 		Scene(FixtureFactory* ff, std::string uuidstr, std::string naam, std::string omschrijving, unsigned int fadesteps, std::vector<std::vector<unsigned char>>* channels);
 		Scene(FixtureFactory* ff, std::string naam, std::string omschrijving);
 		~Scene();
+		void Stop();
 		void Play();
 		void fadeOut();
 		void fadeIn();

@@ -45,13 +45,13 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
 	ss << "	<li class=\"capture\"><a href=\"/capturefactory\">Foto's</a></li>";
 	ss << "	<li class=\"chase\"><a href=\"/chasefactory\">Acties</a></li>";
 	ss << "	<li class=\"motor\"><a href=\"/motorfactory\">Motoren</a></li>";
+	ss << "	<li class=\"button\"><a href=\"/buttonfactory\">Knoppen</a></li>";
 	ss << "	<li class=\"toggle\"><a href=\"/togglefactory\">Aan/Uit</a></li>";
 	ss << "	<li class=\"fixture\"><a href=\"/fixturefactory\">Lampen</a></li>";
 	ss << "	<li class=\"scene\"><a href=\"/scenefactory\">Scene's</a></li>";
 	ss << "	<li class=\"music\"><a href=\"/musicfactory\">Muziek</a></li>";
 	ss << "	<li class=\"sound\"><a href=\"/soundfactory\">Geluidseffecten</a></li>";
 	ss << "	<li class=\"files\"><a href=\"/files\">Bestanden</a></li>";
-	ss << "	<li class=\"portret\"><a href=\"/portret\">Portret</a></li>";
 	ss << "</ul>";
 	ss << "<br>";
 	ss << "<h2>" << message << "</h2>";

@@ -23,6 +23,7 @@
 #include <thread>
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
+#include "ButtonFactory.hpp"
 #include "FixtureFactory.hpp"
 #include "SceneFactory.hpp"
 #include "MusicFactory.hpp"
@@ -44,6 +45,8 @@ struct sequence_item {
 };
 
 class ChaseFactory {
+	public:
+	friend class ButtonFactory;
 	private:
 	class ChaseFactoryHandler : public CivetHandler
 	{
@@ -59,6 +62,7 @@ class ChaseFactory {
 	class Chase {
 	public:
 		friend class ChaseFactory;
+		friend class ButtonFactory;
 		Chase(ChaseFactory& cf, std::string naam, std::string omschrijving, bool autostart);
 		Chase(ChaseFactory& cf, std::string uuidstr, std::string naam, std::string omschrijving, bool autostart, std::list<sequence_item>* sequence_list);
 		~Chase();
@@ -103,6 +107,7 @@ class ChaseFactory {
 	private:
 	void save();
 
+	ButtonFactory* button;
 	CaptureFactory* capture;
 	FixtureFactory* fixture;
 	SceneFactory* scene;

@@ -17,6 +17,7 @@ ChaseFactory::ChaseFactory(){
 	server->addHandler("/chasefactory", mfh);
 	load();
 
+	button = new ButtonFactory(*this);
 	fixture = new FixtureFactory();
 	scene = new SceneFactory(fixture);
 	music = new MusicFactory();
@@ -159,6 +160,7 @@ void ChaseFactory::load(){
 }
 
 void ChaseFactory::saveAll(){
+	button->save();
 	fixture->save();
 	scene->save();
 	music->save();
@@ -234,7 +236,25 @@ void ChaseFactory::Chase::Stop(){
 	std::list<sequence_item>::iterator it;
 	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
 	{
-		(*it).active = false;
+		if ((*it).active == true)
+			{
+				(*it).active = false;
+				std::string::size_type pos = (*it).action.find("::");
+				std::string action = (*it).action.substr(0,pos);
+
+				if (action.compare("Aan/Uit") == 0)
+					cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Stop();
+				if (action.compare("Chase") == 0)
+                    cf.chasemap.find((*it).uuid_or_milliseconds)->second->Stop();
+				if (action.compare("Geluid") == 0)
+			        cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->stop();
+				if (action.compare("Motor") == 0)
+					cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Stop();
+				if (action.compare("Muziek") == 0)
+					cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->stop();
+				if (action.compare("Scene") == 0)
+					cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Stop();
+			}
 	}
 }
 
@@ -271,6 +291,11 @@ void ChaseFactory::Chase::Action()
 		      cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Start();
 			if (method.compare("Uit") == 0)
 		      cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Stop();
+		}
+		if (action.compare("Button") == 0)
+		{
+			if (method.compare("Activeren") == 0)
+		      cf.button->buttonmap.find((*it).uuid_or_milliseconds)->second->setActive();
 		}
 		if (action.compare("Capture") == 0)
 		{
@@ -539,6 +564,16 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   ss << "</select>";
 		}
         else
+    	if (action.compare("Button") == 0)
+   	    {
+   		   ss << "<select id=\"target\" name=\"target\">";
+   		   ss << "<option value=\"\"></option>";
+   		   for (std::pair<std::string, ButtonFactory::Button*> element  : chase.cf.button->buttonmap)
+   		   {
+  			   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+   		   }
+   		   ss << "</select>";
+   		}
 		if (action.compare("Capture") == 0)
 		{
 		   if (!(value.compare("Capture::clearScherm") == 0))
@@ -782,6 +817,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option></option>";
 	   ss << "  <option>Aan/Uit::Aan</option>";
 	   ss << "  <option>Aan/Uit::Uit</option>";
+	   ss << "  <option>Button::Activeren</option>";
 	   ss << "  <option>Capture::Foto</option>";
 	   ss << "  <option>Capture::opScherm</option>";
 	   ss << "  <option>Capture::clearScherm</option>";
@@ -911,6 +947,23 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				   ss << (*it_list).action << "</div></td>";
 				   ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 				   ss << chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
+				}
+			}
+			if (action.compare("Button") == 0)
+			{
+				if (chase.cf.button->buttonmap.find((*it_list).uuid_or_milliseconds) == chase.cf.button->buttonmap.end())
+				{
+				   (*it_list).invalid = true;
+				   ss << "<td bgcolor=\"red\"><div class=\"waarde\">";
+				   ss << (*it_list).action << "</div></td>";
+				   ss << "<td bgcolor=\"red\">Ongeldige Verwijzing! Opslaan vergeten of verwijderd?</div></td>";
+				}
+				else
+				{
+				   ss << "<td><div class=\"waarde\">";
+				   ss << (*it_list).action << "</div></td>";
+				   ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.button->buttonmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+				   ss << chase.cf.button->buttonmap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 				}
 			}
 			if (action.compare("Capture") == 0)
