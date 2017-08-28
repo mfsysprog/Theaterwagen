@@ -1007,14 +1007,31 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		cv::Mat img_file = captureFrame();
 		cv::Mat img_orig = img_file.clone();
 		if (img_file.empty()) break;
+
 		//cv::resize(img_file,img_file,cv::Size(1024,768));
 		//remove frame to keep memory available
 		//(*fileMat).erase((*fileMat).begin() + frame);
-		cv::Mat img_cam = (*cf.camMat)[frame % ((*cf.camMat).size())].clone();
+
 		cv::Mat resultaat = img_file.clone();
+		//if we have no faces at all we just copy the input
+		if ((*cf.camPoints).size() == 0) {
+			if ((*filePoints).size() == 1)
+				for (int i = 0; i < 10; i++)
+				{
+				  record.write(resultaat);
+				}
+				else
+				record.write(resultaat);
+			totaal.push_back(matToJPG(&resultaat));
+			continue;
+		}
+
+		cv::Mat img_cam = (*cf.camMat)[frame % ((*cf.camMat).size())].clone();
+
 		for (unsigned int gezicht = 0; (fileonly ? gezicht < (*cf.camPoints)[frame].size() : gezicht < (*filePoints)[frame].size()); ++gezicht)
 		{
 			// if we have less faces in the capture than in the img_file for this frame we do nothing
+
 			if (gezicht >= (*cf.camPoints)[frame % ((*cf.camPoints).size())].size()) continue;
 	        //convert Mat to float data type
 	        img_cam.convertTo(img_cam, CV_32F);
@@ -1408,7 +1425,10 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		message = "Samengevoegd!";
+		if (capture.off_screen->size() == 0)
+			message = "Niet gelukt!";
+		else
+			message = "Samengevoegd!";
 	}
 	else if(CivetServer::getParam(conn, "newmovie", value))
 	{
