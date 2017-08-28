@@ -482,6 +482,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::string naam,
 		                         std::string omschrijving, std::string filmpje,
 								 std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints,
+								 bool fileonly,
 								 unsigned int mix_from,
 								 unsigned int mix_to):cf(cf){
 	mh = new CaptureFactory::Capture::CaptureHandler(*this);
@@ -493,6 +494,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::s
 	this->off_screen = new std::vector<std::stringstream>();
 	this->filmpje = filmpje;
 	this->filePoints = filepoints;
+	this->fileonly = fileonly;
 	this->mix_from = mix_from;
 	this->mix_to = mix_to;
 
@@ -665,6 +667,7 @@ void CaptureFactory::load(){
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
 		std::string filmpje = node[i]["filmpje"].as<std::string>();
+		bool fileonly = node[i]["fileonly"].as<bool>();
 		unsigned int mix_from = (unsigned int) node[i]["mix_from"].as<int>();
 		unsigned int mix_to = (unsigned int) node[i]["mix_to"].as<int>();
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
@@ -685,7 +688,7 @@ void CaptureFactory::load(){
 		  }
 		  filepoints->push_back(faces);
 		}
-		CaptureFactory::Capture * capture = new CaptureFactory::Capture(*this, uuidstr, naam, omschrijving, filmpje, filepoints, mix_from, mix_to);
+		CaptureFactory::Capture * capture = new CaptureFactory::Capture(*this, uuidstr, naam, omschrijving, filmpje, filepoints, fileonly, mix_from, mix_to);
 		std::string uuid_str = capture->getUuid();
 		capturemap.insert(std::make_pair(uuid_str,capture));
 	}
@@ -708,6 +711,8 @@ void CaptureFactory::save(){
 		emitter << YAML::Value << element.second->omschrijving;
 		emitter << YAML::Key << "filmpje";
 		emitter << YAML::Value << element.second->filmpje;
+		emitter << YAML::Key << "fileonly";
+		emitter << YAML::Value << element.second->fileonly;
 		emitter << YAML::Key << "mix_from";
     	emitter << YAML::Value << (int) element.second->mix_from;
     	emitter << YAML::Key << "mix_to";
@@ -817,6 +822,25 @@ void CaptureFactory::Capture::captureDetectAndMerge()
 
 	delete off_screen;
 	off_screen = new std::vector<std::stringstream>(mergeFrames());
+
+	l.unlock();
+	l2.unlock();
+	return;
+	});
+	t1.detach();
+}
+
+void CaptureFactory::Capture::mergeToFile()
+{
+	std::thread t1( [this] {
+	std::unique_lock<std::mutex> l2(m_merging);
+	std::unique_lock<std::mutex> l(m);
+
+	if (fileonly)
+	{
+		delete off_screen;
+		off_screen = new std::vector<std::stringstream>(mergeFrames());
+	}
 
 	l.unlock();
 	l2.unlock();
@@ -988,7 +1012,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		//(*fileMat).erase((*fileMat).begin() + frame);
 		cv::Mat img_cam = (*cf.camMat)[frame % ((*cf.camMat).size())].clone();
 		cv::Mat resultaat = img_file.clone();
-		for (unsigned int gezicht = 0; gezicht < (*filePoints)[frame].size(); ++gezicht)
+		for (unsigned int gezicht = 0; (fileonly ? gezicht < (*cf.camPoints)[frame].size() : gezicht < (*filePoints)[frame].size()); ++gezicht)
 		{
 			// if we have less faces in the capture than in the img_file for this frame we do nothing
 			if (gezicht >= (*cf.camPoints)[frame % ((*cf.camPoints).size())].size()) continue;
@@ -1003,7 +1027,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 
 	        try
 	        {
-	         convexHull((*filePoints)[frame][gezicht], hullIndex, false, false);
+	         convexHull((*filePoints)[frame][(fileonly == true ? 0 : gezicht)], hullIndex, false, false);
 	        }
             catch( cv::Exception& e )
 	      	{
@@ -1015,7 +1039,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	        for(int i = 0; i < (int)hullIndex.size(); i++)
 	        {
 	            hull1.push_back((*cf.camPoints)[frame % ((*cf.camPoints).size())][gezicht % ((*cf.camPoints)[frame % ((*cf.camPoints).size())].size())][hullIndex[i]]);
-	            hull2.push_back((*filePoints)[frame][gezicht][hullIndex[i]]);
+	            hull2.push_back((*filePoints)[frame][(fileonly ? 0 : gezicht)][hullIndex[i]]);
 	        }
 
 	        // Find delaunay triangulation for points on the convex hull
@@ -1077,7 +1101,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
           	 return totaal;
 	      	}
 
-            feather_amount.width = feather_amount.height = (int)cv::norm((*filePoints)[frame][gezicht][0] - (*filePoints)[frame][gezicht][16]) / 8;
+            feather_amount.width = feather_amount.height = (int)cv::norm((*filePoints)[frame][(fileonly ? 0 : gezicht)][0] - (*filePoints)[frame][(fileonly ? 0 : gezicht)][16]) / 8;
             featherMask(mask);
 
 	        // Clone seamlessly.
@@ -1114,15 +1138,28 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	  float per_frame = ((float) mix_to - (float) mix_from) / (float)(*filePoints).size();
 	  float mix_frame = ((float) mix_from + (per_frame * (frame + 1))) / 100;
 	  addWeighted(resultaat, mix_frame, img_orig, 1 - mix_frame, 0.0, resultaat);
-      //we should fill out at least one 10 fps period
-      if ((*filePoints).size() == 1)
-      for (int i = 0; i < 10; i++)
-      {
-      	 record.write(resultaat);
-      }
-      else
-        record.write(resultaat);
-	  totaal.push_back(matToJPG(&resultaat));
+	  if (fileonly)
+	  {
+		  std::vector<int> compression_params;
+	      compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+	      compression_params.push_back(5);
+	      std::stringstream filename;
+	      filename << CAPTURE_DIR << std::time(0) << ".png";
+	      imwrite(filename.str().c_str(), resultaat, compression_params);
+		  totaal.push_back(matToJPG(&resultaat));
+	  }
+	  else
+	  {
+		  //we should fill out at least one 10 fps period
+		  if ((*filePoints).size() == 1)
+			  for (int i = 0; i < 10; i++)
+			  {
+				  record.write(resultaat);
+			  }
+		  else
+			  record.write(resultaat);
+		  totaal.push_back(matToJPG(&resultaat));
+	  }
 	  high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	  auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
       cout << "merging frame took: " << int_ms.count() << " milliseconds" << endl;
@@ -1347,6 +1384,11 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	   capture.mix_from = atoi(s[2].c_str());
        CivetServer::getParam(conn,"mix_to", s[3]);
 	   capture.mix_to = atoi(s[3].c_str());
+	   CivetServer::getParam(conn, "fileonly", s[4]);
+	   if (s[4].compare("ja") == 0)
+		   capture.fileonly = true;
+	   else
+	       capture.fileonly = false;
 
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 	   message = "Opgeslagen!";
@@ -1607,6 +1649,17 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
 					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
 					  capture.omschrijving << "\" name=\"omschrijving\"/>" << "<br>";
+		if (capture.fileonly)
+		{
+			ss << "<label for=\"fileonly\">Alleen bestand:</label>"
+			   	   	  "<input id=\"fileonly\" type=\"checkbox\" name=\"fileonly\" value=\"ja\" checked/>" << "</br>";
+		}
+		else
+		{
+			ss << "<label for=\"fileonly\">Alleen bestand:</label>"
+			   	   	  "<input id=\"fileonly\" type=\"checkbox\" name=\"fileonly\" value=\"ja\"/>" << "</br>";
+		}
+	    ss << "<br>";
 		ss << "<label for=\"mix_from\">Mix van:</label>";
 		ss << "<td><input class=\"inside\" id=\"mix_from\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
 			   capture.mix_from << "\"" << " name=\"mix_from\" /><br>";

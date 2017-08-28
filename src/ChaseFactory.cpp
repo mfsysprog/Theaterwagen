@@ -301,6 +301,8 @@ void ChaseFactory::Chase::Action()
 		{
 			if (method.compare("Foto") == 0)
 			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->captureDetectAndMerge();
+			if (method.compare("naarBestand") == 0)
+			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->mergeToFile();
 			if (method.compare("opScherm") == 0)
 			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->onScreen();
 			if (method.compare("clearScherm") == 0)
@@ -819,6 +821,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option>Aan/Uit::Uit</option>";
 	   ss << "  <option>Button::Activeren</option>";
 	   ss << "  <option>Capture::Foto</option>";
+	   ss << "  <option>Capture::naarBestand</option>";
 	   ss << "  <option>Capture::opScherm</option>";
 	   ss << "  <option>Capture::clearScherm</option>";
 	   ss << "  <option>Chase::Play</option>";

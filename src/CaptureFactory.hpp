@@ -70,10 +70,12 @@ class CaptureFactory {
 		Capture(CaptureFactory& cf, std::string uuidstr, std::string naam,
 				std::string omschrijving, std::string filmpje,
 				std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints,
+				bool fileonly,
 				unsigned int mix_from,
 				unsigned int mix_to);
 		~Capture();
 		void captureDetectAndMerge();
+		void mergeToFile();
 		void onScreen();
 		std::string getUuid();
 		std::string getNaam();
@@ -119,6 +121,7 @@ class CaptureFactory {
 		cv::CascadeClassifier* face_cascade;
 		//dlib::frontal_face_detector* detector;
 		bool model_loaded = false;
+		bool fileonly = false;
 	};
 	public:
 	CaptureFactory();
