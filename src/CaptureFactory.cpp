@@ -1032,7 +1032,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		{
 			// if we have less faces in the capture than in the img_file for this frame we do nothing
 
-			if (gezicht >= (*cf.camPoints)[frame % ((*cf.camPoints).size())].size()) continue;
+			if (!fileonly && gezicht >= (*cf.camPoints)[frame % ((*cf.camPoints).size())].size()) continue;
 	        //convert Mat to float data type
 	        img_cam.convertTo(img_cam, CV_32F);
 	        resultaat.convertTo(resultaat, CV_32F);
@@ -1058,6 +1058,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	            hull1.push_back((*cf.camPoints)[frame % ((*cf.camPoints).size())][gezicht % ((*cf.camPoints)[frame % ((*cf.camPoints).size())].size())][hullIndex[i]]);
 	            hull2.push_back((*filePoints)[frame][(fileonly ? 0 : gezicht)][hullIndex[i]]);
 	        }
+
 
 	        // Find delaunay triangulation for points on the convex hull
 	        std::vector< std::vector<int> > dt;
@@ -1096,6 +1097,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	       	}
 
 	        resultaat.convertTo(resultaat, CV_8UC3);
+
 
 	        // Calculate mask
 	        std::vector<Point> hull8U;
@@ -1150,23 +1152,29 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	         std::cout << "exception caught in seamlessClone: " << err_msg << std::endl;
 	     	 return totaal;
 	      	}
+      	    if (fileonly)
+      	    {
+      		  float per_frame = ((float) mix_to - (float) mix_from) / (float)(*filePoints).size();
+      		  float mix_frame = ((float) mix_from + (per_frame * (frame + 1))) / 100;
+      		  addWeighted(resultaat, mix_frame, img_orig, 1 - mix_frame, 0.0, resultaat);
+
+      		  std::vector<int> compression_params;
+      	      compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+      	      compression_params.push_back(95);
+      	      std::stringstream filename;
+      	      filename << CAPTURE_DIR << std::time(0) << gezicht << ".jpg";
+      	      cout << "writing file " << filename.str().c_str() << endl;
+      	      imwrite(filename.str().c_str(), resultaat, compression_params);
+      		  totaal.push_back(matToJPG(&resultaat));
+      	    }
 		}
 
-	  float per_frame = ((float) mix_to - (float) mix_from) / (float)(*filePoints).size();
-	  float mix_frame = ((float) mix_from + (per_frame * (frame + 1))) / 100;
-	  addWeighted(resultaat, mix_frame, img_orig, 1 - mix_frame, 0.0, resultaat);
-	  if (fileonly)
+	  if (!fileonly)
 	  {
-		  std::vector<int> compression_params;
-	      compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
-	      compression_params.push_back(5);
-	      std::stringstream filename;
-	      filename << CAPTURE_DIR << std::time(0) << ".png";
-	      imwrite(filename.str().c_str(), resultaat, compression_params);
-		  totaal.push_back(matToJPG(&resultaat));
-	  }
-	  else
-	  {
+	    float per_frame = ((float) mix_to - (float) mix_from) / (float)(*filePoints).size();
+	    float mix_frame = ((float) mix_from + (per_frame * (frame + 1))) / 100;
+	    addWeighted(resultaat, mix_frame, img_orig, 1 - mix_frame, 0.0, resultaat);
+	    {
 		  //we should fill out at least one 10 fps period
 		  if ((*filePoints).size() == 1)
 			  for (int i = 0; i < 10; i++)
@@ -1176,6 +1184,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		  else
 			  record.write(resultaat);
 		  totaal.push_back(matToJPG(&resultaat));
+	   }
 	  }
 	  high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	  auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
