@@ -296,6 +296,8 @@ void ChaseFactory::Chase::Action()
 		{
 			if (method.compare("Activeren") == 0)
 		      cf.button->buttonmap.find((*it).uuid_or_milliseconds)->second->setActive();
+			if (method.compare("Wachten") == 0)
+			  cf.button->buttonmap.find((*it).uuid_or_milliseconds)->second->Wait();
 		}
 		if (action.compare("Capture") == 0)
 		{
@@ -823,6 +825,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option>Schakelaar::Aan</option>";
 	   ss << "  <option>Schakelaar::Uit</option>";
 	   ss << "  <option>Button::Activeren</option>";
+	   ss << "  <option>Button::Wachten</option>";
 	   ss << "  <option>Capture::Foto</option>";
 	   ss << "  <option>Capture::naarBestand</option>";
 	   ss << "  <option>Capture::opScherm</option>";

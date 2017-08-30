@@ -423,8 +423,8 @@ void ButtonFactory::Button::Initialize(){
 	/*
 	 * set relay to output and full stop
 	 */
-	pinMode(led_gpio, OUTPUT);
-	digitalWrite(led_gpio, HIGH);
+	if(led_gpio > 0) pinMode(led_gpio, OUTPUT);
+	if(led_gpio > 0) digitalWrite(led_gpio, HIGH);
 	pinMode(button_gpio, INPUT);
 	pullUpDnControl(button_gpio, PUD_UP);
 
@@ -471,13 +471,17 @@ int ButtonFactory::Button::myWiringPiISR(int val, int mask)
 }
 
 void ButtonFactory::Button::setActive(){
-	digitalWrite(led_gpio, LOW);
-	cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Pushed,this);
+	if (digitalRead(button_gpio)){
+		if (led_gpio > 0) digitalWrite(led_gpio, LOW);
+		pushed=false;
+		cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Pushed,this);
+	}
+	else pushed=true;
 	delay(500);
 }
 
 void ButtonFactory::Button::Pushed(){
-	digitalWrite(led_gpio, HIGH);
+	if (led_gpio > 0) digitalWrite(led_gpio, HIGH);
 	try
 	{
 		bf.cf.chasemap.find(this->action)->second->Start();
@@ -489,6 +493,13 @@ void ButtonFactory::Button::Pushed(){
     }
 	cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Dummy,this);
 	delay(500);
+}
+
+void ButtonFactory::Button::Wait(){
+	while (!(pushed))
+	{
+		delay(200);
+	}
 }
 
 void ButtonFactory::Button::Dummy(){
@@ -581,7 +592,7 @@ bool ButtonFactory::ButtonFactoryHandler::handleAll(const char *method,
 	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "<label for=\"button\">Button GPIO:</label>"
 	   	     "<input class=\"inside\" id=\"button\" type=\"text\" size=\"3\" name=\"button\"/>" << "</br>";
-	   ss << "<label for=\"led\">Led GPIO:</label>"
+	   ss << "<label for=\"led\">Led GPIO (0 bij geen gebruik):</label>"
 	   	     "<input class=\"inside\" id=\"led\" type=\"text\" size=\"3\" name=\"led\"/>" << "</br>";
 	   ss << "</div>";
 	   ss << "<label for=\"action\">Actie:</label></br>";
@@ -684,7 +695,10 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 					  button.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
 		ss << "<br>";
 	    ss << "Huidige status button:&nbsp;" << digitalRead(button.button_gpio) << "<br>";
-	    ss << "Huidige status led:&nbsp;" << (digitalRead(button.led_gpio) ? "1 (knop inactief)" : "0 (knop actief)") << "<br>";
+	    if (button.led_gpio > 0)
+	    	ss << "Huidige status led:&nbsp;" << (digitalRead(button.led_gpio) ? "1 (knop inactief)" : "0 (knop actief)") << "<br>";
+	    else
+	    	ss << "Huidige status led: Led niet in gebruik." << "<br>";
 	    ss << "</div>";
 	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
@@ -692,10 +706,10 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 	    ss <<  "<br>";
 		ss << "<h2>GPIO pins:</h2>";
 		ss << "<div class=\"container\">";
-		ss << "<label for=\"button\">Button GPIO pin:</label>"
+		ss << "<label for=\"button\">Button GPIO:</label>"
 			  "<input class=\"inside\" id=\"button\" type=\"text\" size=\"4\" value=\"" <<
 			  button.button_gpio << "\" name=\"button\"/>" << "</br>";
-	    ss << "<label for=\"led\">Led GPIO pin:</label>"
+	    ss << "<label for=\"led\">Led GPIO (0 bij geen gebruik):</label>"
 	          "<input class=\"inside\" id=\"led\" type=\"text\" size=\"4\" value=\"" <<
 	    	  button.led_gpio << "\" name=\"led\"/>" << "</br>";
 	    ss << "</div>";

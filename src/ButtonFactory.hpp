@@ -80,6 +80,7 @@ class ButtonFactory {
 		void Initialize();
 		void Pushed();
 		void Dummy();
+		void Wait();
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
@@ -87,6 +88,7 @@ class ButtonFactory {
 		int button_gpio;
 		int led_gpio;
 		std::string action;
+		bool pushed=false;
 	};
 	public:
 	ButtonFactory(ChaseFactory& cf);
