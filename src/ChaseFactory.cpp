@@ -242,7 +242,7 @@ void ChaseFactory::Chase::Stop(){
 				std::string::size_type pos = (*it).action.find("::");
 				std::string action = (*it).action.substr(0,pos);
 
-				if (action.compare("Aan/Uit") == 0)
+				if (action.compare("Schakelaar") == 0)
 					cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Stop();
 				if (action.compare("Chase") == 0)
                     cf.chasemap.find((*it).uuid_or_milliseconds)->second->Stop();
@@ -285,7 +285,7 @@ void ChaseFactory::Chase::Action()
 		if ((*it).invalid) continue;
 
 		(*it).active = true;
-		if (action.compare("Aan/Uit") == 0)
+		if (action.compare("Schakelaar") == 0)
 		{
 			if (method.compare("Aan") == 0)
 		      cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Start();
@@ -463,8 +463,7 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 			autostart = false;
 
 		ChaseFactory::Chase* chase = chasefactory.addChase(naam, omschrijving, autostart);
-	    mg_printf(conn, "</body></html>");
-		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + chase->getUrl() + "\"/>";
+	    meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + chase->getUrl() + "\"/>";
 	}
 
 	std::stringstream ss;
@@ -480,7 +479,7 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 	   ss << "<label for=\"autostart\">Automatisch starten:</label>"
 	         "<input id=\"autostart\" type=\"checkbox\" name=\"autostart\" value=\"ja\"/>" << "</br>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
-   	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
+   	   ss << "id=\"newselect\">Toevoegen</button>";
    	   ss << "</div>";
    	   ss << "</form>";
 	}
@@ -555,7 +554,10 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   std::string action = value.substr(0,pos);
        std::stringstream ss;
 
-	   if (action.compare("Aan/Uit") == 0)
+       ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+       ss << "text/html\r\nConnection: close\r\n\r\n";
+
+	   if (action.compare("Schakelaar") == 0)
 	    {
 		   ss << "<select id=\"target\" name=\"target\">";
 		   ss << "<option value=\"\"></option>";
@@ -818,8 +820,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << " <input type=\"hidden\" name=\"iter\" value=\"" << value << "\">";
 	   ss << " <select id=\"action\" name=\"action\">";
 	   ss << "  <option></option>";
-	   ss << "  <option>Aan/Uit::Aan</option>";
-	   ss << "  <option>Aan/Uit::Uit</option>";
+	   ss << "  <option>Schakelaar::Aan</option>";
+	   ss << "  <option>Schakelaar::Uit</option>";
 	   ss << "  <option>Button::Activeren</option>";
 	   ss << "  <option>Capture::Foto</option>";
 	   ss << "  <option>Capture::naarBestand</option>";
@@ -936,7 +938,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"up\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"up\">&uarr;</button>";
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"down\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"down\">&darr;</button>";
 
-			if (action.compare("Aan/Uit") == 0)
+			if (action.compare("Schakelaar") == 0)
 			{
 				if (chase.cf.toggle->togglemap.find((*it_list).uuid_or_milliseconds) == chase.cf.toggle->togglemap.end())
 				{
