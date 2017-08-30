@@ -576,6 +576,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
    		   }
    		   ss << "</select>";
    		}
+    	else
 		if (action.compare("Capture") == 0)
 		{
 		   if (!(value.compare("Capture::clearScherm") == 0))

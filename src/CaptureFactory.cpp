@@ -1719,6 +1719,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4?t=" << std::time(0) << "\" type=\"video/mp4\">";
 	    ss << "Your browser does not support the video tag";
 		ss << "</video>";
+		ss << "<br>";
+		if (!((*capture.cf.camPoints).size() == 0))
+		for (unsigned int i = 0; i < (*capture.cf.camPoints).size(); i++)
+		{
+			ss << "Aantal gezichten in frame " << i+1 << ":&nbsp;" << (*capture.cf.camPoints)[i].size() << "<br>";
+		}
+		else
+			ss << "Geen gezichten gevonden.<br>";
 	}
 
 	ss = getHtml(meta, message, "capture", ss.str().c_str(), tohead.str().c_str());
