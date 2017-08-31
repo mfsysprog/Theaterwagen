@@ -686,10 +686,10 @@ void MotorFactory::Motor::Initialize(){
 	 */
 	cbfunc_motor[getPosition(LEFT,this->left_sensor)] = std::bind(&Motor::Dummy,this);
 	cbfunc_motor[getPosition(RIGHT,this->right_sensor)] = std::bind(&Motor::Dummy,this);
-	if ( myWiringPiISR (left_sensor, INT_EDGE_BOTH, LEFT) < 0 ) {
+	if ( myWiringPiISR (left_sensor, INT_EDGE_FALLING, LEFT) < 0 ) {
 		 std::cerr << "Error setting interrupt for left GPIO sensor " << std::endl;
 	 }
-	if ( myWiringPiISR (right_sensor, INT_EDGE_BOTH, RIGHT) < 0 ) {
+	if ( myWiringPiISR (right_sensor, INT_EDGE_FALLING, RIGHT) < 0 ) {
 	     std::cerr << "Error setting interrupt for right GPIO sensor " << std::endl;
 	}
 }

@@ -432,7 +432,7 @@ void ButtonFactory::Button::Initialize(){
 	 * Initialize callback functions to Dummy
 	 */
 	cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Dummy,this);
-	if ( myWiringPiISR (button_gpio, INT_EDGE_BOTH) < 0 ) {
+	if ( myWiringPiISR (button_gpio, INT_EDGE_FALLING) < 0 ) {
 		 std::cerr << "Error setting interrupt for left GPIO sensor " << std::endl;
 	 }
 }
@@ -471,20 +471,23 @@ int ButtonFactory::Button::myWiringPiISR(int val, int mask)
 }
 
 void ButtonFactory::Button::setActive(){
-	if (digitalRead(button_gpio)){
-		if (led_gpio > 0) digitalWrite(led_gpio, LOW);
-		pushed=false;
-		cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Pushed,this);
+	// we keep waiting until button is released before we allow it to reactivate.
+	while (!(digitalRead(button_gpio)))
+	{
+		pushed=true;
+		delay(500);
 	}
-	else pushed=true;
-	delay(500);
+	if (led_gpio > 0) digitalWrite(led_gpio, LOW);
+	pushed=false;
+	cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Pushed,this);
 }
 
 void ButtonFactory::Button::Pushed(){
 	if (led_gpio > 0) digitalWrite(led_gpio, HIGH);
 	try
 	{
-		bf.cf.chasemap.find(this->action)->second->Start();
+		if (!action.empty())
+			bf.cf.chasemap.find(this->action)->second->Start();
 	}
     catch( cv::Exception& e )
     {
@@ -595,7 +598,7 @@ bool ButtonFactory::ButtonFactoryHandler::handleAll(const char *method,
 	   ss << "<label for=\"led\">Led GPIO (0 bij geen gebruik):</label>"
 	   	     "<input class=\"inside\" id=\"led\" type=\"text\" size=\"3\" name=\"led\"/>" << "</br>";
 	   ss << "</div>";
-	   ss << "<label for=\"action\">Actie:</label></br>";
+	   ss << "<label for=\"action\">Actie: (leeg bij geen gebruik)</label></br>";
 	   ss << "<select id=\"action\" name=\"action\">";
 	   ss << "<option value=\"\"></option>";
 	 	for (std::pair<std::string, ChaseFactory::Chase*> element  : buttonfactory.cf.chasemap)
@@ -713,7 +716,7 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 	          "<input class=\"inside\" id=\"led\" type=\"text\" size=\"4\" value=\"" <<
 	    	  button.led_gpio << "\" name=\"led\"/>" << "</br>";
 	    ss << "</div>";
-		ss << "<label for=\"action\">Actie:</label></br>";
+		ss << "<label for=\"action\">Actie (leeg bij geen gebruik):</label></br>";
 	    ss << "<select id=\"action\" name=\"action\">";
 		ss << "<option value=\"\"></option>";
 	 	for (std::pair<std::string, ChaseFactory::Chase*> element  : button.bf.cf.chasemap)
