@@ -6,4 +6,10 @@ sudo apt install lxsession
 
 https://ubuntu-mate.community/t/tutorial-activate-opengl-driver-for-ubuntu-mate-16-04/7094
 
+sudo apt-get install libgphoto2-dev:armhf tbv uitzoeken https://github.com/opencv/opencv/blob/master/samples/cpp/autofocus.cpp
+cd ~/opencv-3.2.0
+mkdir build
+cd build
+cmake -DCMAKE_C_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_CXX_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_BUILD_TYPE=RELEASE -DWITH_JPEG=ON -DWITH_OPENCL=ON -DWITH-GPHOTO2=ON -DENABLE_VFPV3=ON -DENABLE_NEON=ON -DWITH_FFMPEG=ON ..
+make -j3
 

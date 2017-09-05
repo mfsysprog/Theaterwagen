@@ -1,3 +1,4 @@
+
 /*
  * CaptureFactory.cpp
  *
@@ -753,11 +754,12 @@ void CaptureFactory::Capture::openCap(captureType type)
 {
 	if (type == CAP_CAM)
 	{
-		if(!cap->isOpened()){   // connect to the camera
-			cap->open(0);
+		if(!cap->isOpened()){
+			cap->open(CAP_GPHOTO2); // connect to the camera
+			if(!cap->isOpened()) cap->open(0); //if no camera, try webcam on usb0
 			cap->set(CAP_PROP_FOURCC ,CV_FOURCC('M', 'J', 'P', 'G') );
-			cap->set(CAP_PROP_FRAME_WIDTH,1920);   // width pixels
-			cap->set(CAP_PROP_FRAME_HEIGHT,1080);   // height pixels
+			cap->set(CAP_PROP_FRAME_WIDTH,2304);   // width pixels 2304
+			cap->set(CAP_PROP_FRAME_HEIGHT,1296);   // height pixels 1296
 		}
 	}
 	else
@@ -906,8 +908,14 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
 	try
 	{
 		*cap >> input;
+		cout << "img size is " << input.cols << " x " << input.rows << endl;
 		if (!input.empty())
 			cv::resize(input,input,cv::Size(1024,768));
+		std::string photo = TMP_DIR + this->getUuid() + ".jpg";
+		std::vector<int> compression_params;
+		compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+	    compression_params.push_back(95);
+	    imwrite(photo.c_str(), input, compression_params);
 	}
 	catch( cv::Exception& e )
 	{
@@ -1175,12 +1183,21 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	    float mix_frame = ((float) mix_from + (per_frame * (frame + 1))) / 100;
 	    addWeighted(resultaat, mix_frame, img_orig, 1 - mix_frame, 0.0, resultaat);
 	    {
-		  //we should fill out at least one 10 fps period
+		  //we fill out 40 frames by default
 		  if ((*filePoints).size() == 1)
-			  for (int i = 0; i < 10; i++)
+		  {
+			  float per_frame = ((float) mix_to - (float) mix_from) / 40;
+			  for (int i = 0; i < 40; i++)
+			  {
+				  float mix_frame = ((float) mix_from + (per_frame * (frame + 1 + i))) / 100;
+                  addWeighted(img_file, mix_frame, img_orig, 1 - mix_frame, 0.0, resultaat);
+				  record.write(resultaat);
+			  }
+			  for (int i = 0;i < 60; i++)
 			  {
 				  record.write(resultaat);
 			  }
+		  }
 		  else
 			  record.write(resultaat);
 		  totaal.push_back(matToJPG(&resultaat));
@@ -1715,6 +1732,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 /*	    ss << "<div id=\"capture\">";
 	    ss << "<img src=\"" << capture.url << "/?streaming=true\">";
 	    ss << "</div>"; */
+	    ss << "<img src=\"" << "tmp/" << capture.getUuid() << ".jpg?t=" << std::time(0) << "\"></img>";
 	    ss << "<video width\"1024\" height=\"768\" controls>";
 	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4?t=" << std::time(0) << "\" type=\"video/mp4\">";
 	    ss << "Your browser does not support the video tag";

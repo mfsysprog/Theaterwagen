@@ -3,7 +3,12 @@
 // Author      : Erik Janssen
 // Version     :
 // Copyright   : MIT License
-// Description : Hello World in C++, Ansi-style
+// Description : Control for theater performances.
+//               Sensors should be connected from pin to ground, on the
+//               normally closed pin. (i.e.: if the button is NOT pressed, it
+//               should be conducting. This way the button is always pulled to
+//               ground (value 0) and only becomes 1 when the button is pressed
+//               (and the circuit opened) because of the pull up.
 //============================================================================
 
 #include "Theaterwagen.hpp"

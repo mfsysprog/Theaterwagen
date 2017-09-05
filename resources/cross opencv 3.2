@@ -1,7 +1,7 @@
 export CC=/usr/bin/arm-linux-gnueabihf-gcc
 export CXX=/usr/bin/arm-linux-gnueabihf-g++
 
-cmake -DCMAKE_C_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_CXX_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_BUILD_TYPE=RELEASE -DWITH_JPEG=ON -DWITH_OPENGL=ON -DENABLE_VFPV3=ON -DENABLE_NEON=ON -DWITH_FFMPEG=ON /home/erik/opencv-3.2.0
+cmake -DCMAKE_C_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_CXX_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_BUILD_TYPE=RELEASE -DWITH_JPEG=ON -DWITH_OPENCL=ON -DWITH-GPHOTO2=ON -DENABLE_VFPV3=ON -DENABLE_NEON=ON -DWITH_FFMPEG=ON /home/erik/opencv-3.2.0
 
 zconf.h: No such file or directory
 sudo apt install zlib1g-dev:armhf

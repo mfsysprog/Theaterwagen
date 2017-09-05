@@ -686,10 +686,10 @@ void MotorFactory::Motor::Initialize(){
 	 */
 	cbfunc_motor[getPosition(LEFT,this->left_sensor)] = std::bind(&Motor::Dummy,this);
 	cbfunc_motor[getPosition(RIGHT,this->right_sensor)] = std::bind(&Motor::Dummy,this);
-	if ( myWiringPiISR (left_sensor, INT_EDGE_FALLING, LEFT) < 0 ) {
+	if ( myWiringPiISR (left_sensor, INT_EDGE_RISING, LEFT) < 0 ) {
 		 std::cerr << "Error setting interrupt for left GPIO sensor " << std::endl;
 	 }
-	if ( myWiringPiISR (right_sensor, INT_EDGE_FALLING, RIGHT) < 0 ) {
+	if ( myWiringPiISR (right_sensor, INT_EDGE_RISING, RIGHT) < 0 ) {
 	     std::cerr << "Error setting interrupt for right GPIO sensor " << std::endl;
 	}
 }
@@ -770,7 +770,7 @@ void MotorFactory::Motor::Stop(direction dir){
 			    * motor is NOT at the left sensor! This is unexpected! Error message!
 			    */
      			//Stop();
-				std::cerr << "Motor should be at the left, but it is not!!!" << std::endl;
+				//std::cerr << "Motor should be at the left, but it is not!!!" << std::endl;
 			}
 			else {
 				digitalWrite(left_relay, HIGH);
@@ -785,7 +785,7 @@ void MotorFactory::Motor::Stop(direction dir){
 			    * motor is NOT at the right sensor! This is unexpected! Error message!
 			    */
 			    //Stop();
-				std::cerr << "Motor should be at the right, but it is not!!!" << std::endl;
+				//std::cerr << "Motor should be at the right, but it is not!!!" << std::endl;
 			}
 			else {
 				digitalWrite(right_relay, HIGH);

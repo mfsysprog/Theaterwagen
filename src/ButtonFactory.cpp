@@ -432,7 +432,7 @@ void ButtonFactory::Button::Initialize(){
 	 * Initialize callback functions to Dummy
 	 */
 	cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Dummy,this);
-	if ( myWiringPiISR (button_gpio, INT_EDGE_FALLING) < 0 ) {
+	if ( myWiringPiISR (button_gpio, INT_EDGE_RISING) < 0 ) {
 		 std::cerr << "Error setting interrupt for left GPIO sensor " << std::endl;
 	 }
 }
@@ -472,7 +472,7 @@ int ButtonFactory::Button::myWiringPiISR(int val, int mask)
 
 void ButtonFactory::Button::setActive(){
 	// we keep waiting until button is released before we allow it to reactivate.
-	while (!(digitalRead(button_gpio)))
+	while (digitalRead(button_gpio))
 	{
 		pushed=true;
 		delay(500);
@@ -480,9 +480,14 @@ void ButtonFactory::Button::setActive(){
 	if (led_gpio > 0) digitalWrite(led_gpio, LOW);
 	pushed=false;
 	cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Pushed,this);
+	delay(500);
 }
 
 void ButtonFactory::Button::Pushed(){
+	//if we received a push but button is not still pushed we probably just got
+	//interference.
+	if (!(digitalRead(button_gpio))) return;
+	cout << "Pushed called " << endl;
 	if (led_gpio > 0) digitalWrite(led_gpio, HIGH);
 	try
 	{
@@ -494,6 +499,7 @@ void ButtonFactory::Button::Pushed(){
         const char* err_msg = e.what();
         std::cout << "Cannot execute button action: " << err_msg << std::endl;
     }
+    pushed = true;
 	cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Dummy,this);
 	delay(500);
 }
