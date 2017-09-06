@@ -757,6 +757,9 @@ void CaptureFactory::Capture::openCap(captureType type)
 		if(!cap->isOpened()){
 			cap->open(CAP_GPHOTO2); // connect to the camera
 			if(!cap->isOpened()) cap->open(0); //if no camera, try webcam on usb0
+			else
+			// if camera found output all of its options
+			cout << (const char*)((intptr_t)cap->get(CV_CAP_PROP_GPHOTO2_WIDGET_ENUMERATE)) << endl;
 			cap->set(CAP_PROP_FOURCC ,CV_FOURCC('M', 'J', 'P', 'G') );
 			cap->set(CAP_PROP_FRAME_WIDTH,2304);   // width pixels 2304
 			cap->set(CAP_PROP_FRAME_HEIGHT,1296);   // height pixels 1296
@@ -910,7 +913,9 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
 		*cap >> input;
 		cout << "img size is " << input.cols << " x " << input.rows << endl;
 		if (!input.empty())
+		{
 			cv::resize(input,input,cv::Size(1024,768));
+		}
 		std::string photo = TMP_DIR + this->getUuid() + ".jpg";
 		std::vector<int> compression_params;
 		compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
@@ -955,7 +960,7 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        cv::UMat reeds;
        cvtColor( *input, reeds, CV_BGR2GRAY);
        equalizeHist( reeds, reeds );
-       (*face_cascade).detectMultiScale( reeds, faces, 1.3, 6, 0|CV_HAAR_SCALE_IMAGE, Size(60, 60) );
+       (*face_cascade).detectMultiScale( reeds, faces, 1.1, 4, 0|CV_HAAR_SCALE_IMAGE, Size(20, 20) );
        if (faces.size() == 0)
        {
     	 cout << "No faces detected." << endl;
@@ -1728,16 +1733,20 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"merge\" id=\"merge\">Merge</button>";
 	    ss << "<button type=\"submit\" name=\"on_screen\" id=\"on_screen\">On Screen</button>";
 	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
-	    ss <<  "</br>";
-/*	    ss << "<div id=\"capture\">";
+	    ss << "</br>";
+	    /*
+	    ss << "<div id=\"capture\">";
 	    ss << "<img src=\"" << capture.url << "/?streaming=true\">";
 	    ss << "</div>"; */
+	    ss << "<h2>Foto:</h2>";
 	    ss << "<img src=\"" << "tmp/" << capture.getUuid() << ".jpg?t=" << std::time(0) << "\"></img>";
+	    ss << "<h2>Video:</h2>";
 	    ss << "<video width\"1024\" height=\"768\" controls>";
 	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4?t=" << std::time(0) << "\" type=\"video/mp4\">";
 	    ss << "Your browser does not support the video tag";
 		ss << "</video>";
 		ss << "<br>";
+		ss << "<h2>";
 		if (!((*capture.cf.camPoints).size() == 0))
 		for (unsigned int i = 0; i < (*capture.cf.camPoints).size(); i++)
 		{
@@ -1745,6 +1754,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		}
 		else
 			ss << "Geen gezichten gevonden.<br>";
+		ss << "</h2>";
 	}
 
 	ss = getHtml(meta, message, "capture", ss.str().c_str(), tohead.str().c_str());

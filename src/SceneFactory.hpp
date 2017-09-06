@@ -50,8 +50,8 @@ class SceneFactory {
 		friend class SceneFactory;
 		friend class ChaseFactory;
 		public:
-		Scene(FixtureFactory* ff, std::string uuidstr, std::string naam, std::string omschrijving, unsigned int fadesteps, std::vector<std::vector<unsigned char>>* channels);
-		Scene(FixtureFactory* ff, std::string naam, std::string omschrijving);
+		Scene(SceneFactory& sf, FixtureFactory* ff, std::string uuidstr, std::string naam, std::string omschrijving, unsigned int fadesteps, std::vector<std::vector<unsigned char>>* channels);
+		Scene(SceneFactory& sf, FixtureFactory* ff, std::string naam, std::string omschrijving);
 		~Scene();
 		void Stop();
 		void Play();
@@ -74,6 +74,7 @@ class SceneFactory {
 			bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
 			Scene& scene;
 		};
+		SceneFactory& sf;
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
@@ -93,6 +94,7 @@ class SceneFactory {
 
 	private:
 	void save();
+	unsigned char main_channel[512] = {0};
 	std::map<std::string, SceneFactory::Scene*> scenemap;
 	SceneFactoryHandler* mfh;
 	FixtureFactory* ff;

@@ -387,7 +387,7 @@ bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">STOP</button>";
 		ss << "<h2>GPIO pin:</h2>";
 		ss << "<div class=\"container\">";
-		ss << "<label for=\"relay\">Right Relay GPIO pin:</label>"
+		ss << "<label for=\"relay\">Relay GPIO pin:</label>"
 	    	  "<input class=\"inside\" id=\"relay\" type=\"text\" size=\"4\" value=\"" <<
 	    	  toggle.relay << "\" name=\"relay\"/>" << "</br>";
 	    ss << "<br>";
