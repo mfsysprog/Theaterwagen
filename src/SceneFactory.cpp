@@ -578,9 +578,6 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		scene.naam = value.c_str();
-		//cout << "Scene naam: " << value << endl;
-		//cout << "Slide channel : " << channel << endl;
-		//cout << "Slide value : " << value << endl;
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -592,8 +589,6 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		scene.omschrijving = value.c_str();
-		//cout << "Slide channel : " << channel << endl;
-		//cout << "Slide value : " << value << endl;
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -605,8 +600,6 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		scene.fadesteps = atoi(value.c_str());
-		//cout << "Slide channel : " << channel << endl;
-		//cout << "Slide value : " << value << endl;
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -619,8 +612,6 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		int channel = atoi(value.c_str());
 		CivetServer::getParam(conn,"value", value);
 		(*scene.channels)[channel-1][0] = atoi(value.c_str());
-		//cout << "Slide channel : " << channel << endl;
-		//cout << "Slide value : " << value << endl;
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -637,8 +628,6 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 			(*scene.channels)[channel-1][1] = '1';
 		else
 			(*scene.channels)[channel-1][1] = '0';
-		//cout << "Slide channel : " << channel << endl;
-		//cout << "Slide value : " << value << endl;
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -654,8 +643,6 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 			(*scene.channels)[channel-1][2] = '1';
 		else
 			(*scene.channels)[channel-1][2] = '0';
-		//cout << "Selected Channel : " << channel << endl;
-		//cout << "Value : " << value << endl;
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -666,111 +653,18 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 
 	if(CivetServer::getParam(conn, "play", dummy))
 	{
-		if(CivetServer::getParam(conn,"naam", value))
-		  		scene.naam = value;
-		if(CivetServer::getParam(conn,"omschrijving", value))
-		  		scene.omschrijving = value;
-		if(CivetServer::getParam(conn,"fadesteps", value))
-		  		scene.fadesteps = atoi(value.c_str());
-		//std::stringstream ss;
-		for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
-			for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
-			{
-				std::stringstream channel;
-				channel << "chan" << i;
-				CivetServer::getParam(conn,channel.str().c_str(), value);
-				(*scene.channels)[i-1][0] = atoi(value.c_str());
-				std::stringstream exclude;
-				exclude << "exclude" << i;
-				CivetServer::getParam(conn,exclude.str().c_str(), value);
-				if (value.compare("ja") == 0)
-					(*scene.channels)[i-1][1] = '1';
-				else
-					(*scene.channels)[i-1][1] = '0';
-
-				std::stringstream selected;
-				selected << "selected" << i;
-				CivetServer::getParam(conn,selected.str().c_str(), value);
-				if (value.compare("ja") == 0)
-					(*scene.channels)[i-1][2] = '1';
-				else
-					(*scene.channels)[i-1][2] = '0';
-		  	}
-		}
 		scene.Play();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
 		message = _("Playing!");
 	}
 	if(CivetServer::getParam(conn, "fadein", dummy))
 	{
-		if(CivetServer::getParam(conn,"naam", value))
-		  		scene.naam = value;
-		if(CivetServer::getParam(conn,"omschrijving", value))
-		  		scene.omschrijving = value;
-		if(CivetServer::getParam(conn,"fadesteps", value))
-		  		scene.fadesteps = atoi(value.c_str());
-		//std::stringstream ss;
-		for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
-			for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
-			{
-				std::stringstream channel;
-				channel << "chan" << i;
-				CivetServer::getParam(conn,channel.str().c_str(), value);
-				(*scene.channels)[i-1][0] = atoi(value.c_str());
-				std::stringstream exclude;
-				exclude << "exclude" << i;
-				CivetServer::getParam(conn,exclude.str().c_str(), value);
-				if (value.compare("ja") == 0)
-					(*scene.channels)[i-1][1] = '1';
-				else
-					(*scene.channels)[i-1][1] = '0';
-
-				std::stringstream selected;
-				selected << "selected" << i;
-				CivetServer::getParam(conn,selected.str().c_str(), value);
-				if (value.compare("ja") == 0)
-					(*scene.channels)[i-1][2] = '1';
-				else
-					(*scene.channels)[i-1][2] = '0';
-		  	}
-		}
 		scene.fadeIn();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
 		message = _("Fading in!");
 	}
 	if(CivetServer::getParam(conn, "fadeout", dummy))
 	{
-		if(CivetServer::getParam(conn,"naam", value))
-		  		scene.naam = value;
-		if(CivetServer::getParam(conn,"omschrijving", value))
-		  		scene.omschrijving = value;
-		if(CivetServer::getParam(conn,"fadesteps", value))
-		  		scene.fadesteps = atoi(value.c_str());
-		//std::stringstream ss;
-		for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
-			for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
-			{
-				std::stringstream channel;
-				channel << "chan" << i;
-				CivetServer::getParam(conn,channel.str().c_str(), value);
-				(*scene.channels)[i-1][0] = atoi(value.c_str());
-				std::stringstream exclude;
-				exclude << "exclude" << i;
-				CivetServer::getParam(conn,exclude.str().c_str(), value);
-				if (value.compare("ja") == 0)
-					(*scene.channels)[i-1][1] = '1';
-				else
-					(*scene.channels)[i-1][1] = '0';
-
-				std::stringstream selected;
-				selected << "selected" << i;
-				CivetServer::getParam(conn,selected.str().c_str(), value);
-				if (value.compare("ja") == 0)
-					(*scene.channels)[i-1][2] = '1';
-				else
-					(*scene.channels)[i-1][2] = '0';
-		  	}
-		}
 		scene.fadeOut();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
 		message = _("Fading out!");

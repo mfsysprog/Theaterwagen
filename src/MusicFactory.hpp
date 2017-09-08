@@ -49,13 +49,15 @@ class MusicFactory {
 		friend class MusicFactory;
 		friend class ChaseFactory;
 		public:
-        Music(std::string uuidstr, std::string fn, bool loop, float volume, float pitch, unsigned int fadesteps);
-		Music(std::string fn);
+        Music(std::string uuidstr, std::string naam, std::string omschrijving, std::string fn, bool loop, float volume, float pitch, unsigned int fadesteps);
+		Music(std::string naam, std::string omschrijving, std::string fn);
 		~Music();
 		void fadeOut();
 		void fadeIn();
 		unsigned int getFadeSteps();
 		std::string getUuid();
+		std::string getNaam();
+		std::string getOmschrijving();
 		std::string getFilename();
 		std::string getUrl();
 		private:
@@ -73,6 +75,8 @@ class MusicFactory {
 		void setFadeSteps(unsigned int fadesteps);
 		unsigned int fadesteps = 1;
 		std::string filename;
+		std::string naam;
+		std::string omschrijving;
 		std::string url;
 		uuid_t uuid;
 	    MusicHandler* mh;
@@ -80,7 +84,7 @@ class MusicFactory {
 	public:
 	MusicFactory();
 	~MusicFactory();
-	MusicFactory::Music* addMusic(std::string fn);
+	MusicFactory::Music* addMusic(std::string naam, std::string omschrijving, std::string fn);
 	void deleteMusic(std::string uuid);
 	void load();
 

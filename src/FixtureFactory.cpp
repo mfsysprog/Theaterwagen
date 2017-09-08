@@ -352,7 +352,10 @@ bool FixtureFactory::Fixture::FixtureHandler::handleAll(const char *method,
 	    tohead << "});";
 	    tohead << "});";
 		tohead << "</script>";
-		ss << "&nbsp;";
+		ss << "<form action=\"" << fixture.getUrl() << "\" method=\"POST\">";
+	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">" << _("Refresh") << "</button><br>";
+	    ss <<  "<br>";
+	    ss << "</form>";
 		ss << "<h2>";
 		ss << "&nbsp;";
 		ss << "</h2>";

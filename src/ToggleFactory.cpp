@@ -410,9 +410,10 @@ bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
 		tohead << "});";
 		tohead << "</script>";
 		ss << "<form action=\"" << toggle.getUrl() << "\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"start\" value=\"start\" id=\"start\">" << _("On") << "</button>";
+		ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">" << _("Refresh") << "</button><br>";
+		ss << "<br>";
+		ss << "<button type=\"submit\" name=\"start\" value=\"start\" id=\"start\">" << _("On") << "</button>";
 	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">" << _("Off") << "</button>";
-	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">" << _("Refresh") << "</button><br>";
 	    ss << "</form>";
 	    ss << "<h2>";
 	    ss << _("Current State") << ":<br>";

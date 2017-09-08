@@ -6,6 +6,8 @@
  */
 
 #include "SoundFactory.hpp"
+#include <libintl.h>
+#define _(String) gettext (String)
 
 std::mutex m_sound;
 
@@ -42,13 +44,15 @@ SoundFactory::SoundFactoryHandler::~SoundFactoryHandler(){
 /*
  * Sound Constructor en Destructor
  */
-SoundFactory::Sound::Sound(std::string fn){
+SoundFactory::Sound::Sound(std::string naam, std::string omschrijving, std::string fn){
 	mh = new SoundFactory::Sound::SoundHandler(*this);
 	sfmbuffer = new sf::SoundBuffer();
 	sfmbuffer->loadFromFile(fn);
 	this->setBuffer(*sfmbuffer);
 	uuid_generate( (unsigned char *)&uuid );
 	this->filename = fn;
+	this->naam = naam;
+	this->omschrijving = omschrijving;
 
 	std::stringstream ss;
 	ss << "/sound-" << this->getUuid();
@@ -56,13 +60,15 @@ SoundFactory::Sound::Sound(std::string fn){
 	server->addHandler(url, mh);
 }
 
-SoundFactory::Sound::Sound(std::string uuidstr, std::string fn, bool loop, float volume, float pitch, unsigned int fadesteps){
+SoundFactory::Sound::Sound(std::string uuidstr, std::string naam, std::string omschrijving, std::string fn, bool loop, float volume, float pitch, unsigned int fadesteps){
 	mh = new SoundFactory::Sound::SoundHandler(*this);
 	sfmbuffer = new sf::SoundBuffer();
 	sfmbuffer->loadFromFile(fn);
 	this->setBuffer(*sfmbuffer);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 	this->filename = fn;
+	this->naam = naam;
+	this->omschrijving = omschrijving;
 
 	std::stringstream ss;
 	ss << "/sound-" << this->getUuid();
@@ -115,12 +121,14 @@ void SoundFactory::load(){
 	YAML::Node node = YAML::LoadFile(CONFIG_FILE_SOUND);
 	for (std::size_t i=0;i<node.size();i++) {
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
+		std::string naam = node[i]["naam"].as<std::string>();
+		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
 		std::string fn = node[i]["filename"].as<std::string>();
 		bool loop = node[i]["loop"].as<bool>();
 		float volume = node[i]["volume"].as<float>();
 		float pitch = node[i]["pitch"].as<float>();
 		unsigned int fadesteps = (unsigned int) node[i]["fadesteps"].as<int>();
-		SoundFactory::Sound * sound = new SoundFactory::Sound(uuidstr, fn, loop, volume, pitch, fadesteps);
+		SoundFactory::Sound * sound = new SoundFactory::Sound(uuidstr, naam, omschrijving, fn, loop, volume, pitch, fadesteps);
 		std::string uuid_str = sound->getUuid();
 		soundmap.insert(std::make_pair(uuid_str,sound));
 	}
@@ -137,6 +145,10 @@ void SoundFactory::save(){
 		emitter << YAML::BeginMap;
 		emitter << YAML::Key << "uuid";
 		emitter << YAML::Value << element.first;
+		emitter << YAML::Key << "naam";
+		emitter << YAML::Value << element.second->naam;
+		emitter << YAML::Key << "omschrijving";
+		emitter << YAML::Value << element.second->omschrijving;
 		emitter << YAML::Key << "filename";
 		emitter << YAML::Value << element.second->filename;
 		emitter << YAML::Key << "loop";
@@ -158,6 +170,14 @@ std::string SoundFactory::Sound::getUuid(){
 	char uuid_str[37];
 	uuid_unparse(uuid,uuid_str);
 	return uuid_str;
+}
+
+std::string SoundFactory::Sound::getNaam(){
+	return naam;
+}
+
+std::string SoundFactory::Sound::getOmschrijving(){
+	return omschrijving;
 }
 
 std::string SoundFactory::Sound::getFilename(){
@@ -210,8 +230,8 @@ void SoundFactory::Sound::fadeIn(){
 }
 
 
-SoundFactory::Sound* SoundFactory::addSound(std::string fn){
-	SoundFactory::Sound * sound = new SoundFactory::Sound(fn);
+SoundFactory::Sound* SoundFactory::addSound(std::string naam, std::string omschrijving, std::string fn){
+	SoundFactory::Sound * sound = new SoundFactory::Sound(naam, omschrijving, fn);
 	std::string uuid_str = sound->getUuid();
 	soundmap.insert(std::make_pair(uuid_str,sound));
 	return sound;
@@ -268,7 +288,7 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/soundfactory\">";
-		message = "Opgeslagen!";
+		message = _("Saved!");
 		this->soundfactory.save();
 	}
 	else
@@ -276,12 +296,17 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/soundfactory\"/>";
-		message = "Ingeladen!";
+		message = _("Loaded!");
 		this->soundfactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", value))
 	{
-		SoundFactory::Sound* sound = soundfactory.addSound(value);
+		std::string filename = value;
+		CivetServer::getParam(conn, "naam", value);
+		std::string naam = value;
+		CivetServer::getParam(conn, "omschrijving", value);
+		std::string omschrijving = value;
+		SoundFactory::Sound* sound = soundfactory.addSound(naam, omschrijving, filename);
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + sound->getUrl() + "\"/>";
 	}
@@ -290,8 +315,13 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	{
 	   DIR *dirp;
 	   struct dirent *dp;
-	   message = "Geuploade bestanden:";
 	   ss << "<form action=\"/soundfactory\" method=\"POST\">";
+	   ss << "<div class=\"container\">";
+	   ss << "<label for=\"naam\">" << _("Name") << ":</label>"
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+	   ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	   ss << "<h2>" << _("Select File:") << "</h2>";
 	   if ((dirp = opendir(SOUND_DIR)) == NULL) {
 	          fprintf(stderr,"couldn't open %s.\n",SOUND_DIR);
 	   }
@@ -304,7 +334,7 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	    	if (std::strcmp(dp->d_name, ".") == 0) continue;
 	    	if (std::strcmp(dp->d_name, "..") == 0) continue;
 	    	ss << "<button type=\"submit\" name=\"newselect\" value=\"" << SOUND_DIR << dp->d_name << "\" ";
-	    	ss << "id=\"newselect\">Selecteren</button>&nbsp;";
+	    	ss << "id=\"newselect\">" << _("Select") << "</button>&nbsp;";
 	    	ss << "&nbsp;" << dp->d_name << "</br>";
 	        }
 	   } while (dp != NULL);
@@ -318,26 +348,27 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	    for (std::pair<std::string, SoundFactory::Sound*> element : soundfactory.soundmap) {
 			ss << "<br style=\"clear:both\">";
 			ss << "<div class=\"row\">";
-			ss << "Filename:&nbsp;" << element.second->getFilename();
+			ss << _("Name") << ":&nbsp;" << element.second->getNaam() << " &nbsp;";
+			ss << _("Comment") << ":&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
 			ss << "<br style=\"clear:both\">";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
-	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">" << _("Select") << "</button>&nbsp;";
 	    	ss << "</form>";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/soundfactory\" method=\"POST\">";
-	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.second->getUuid() << "\" id=\"delete\">Verwijderen</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.second->getUuid() << "\" id=\"delete\">" << _("Remove") << "</button>&nbsp;";
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
 			ss << "</div>";
 	    }
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/soundfactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Nieuw</button>";
+	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">" << _("New") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/soundfactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">Opslaan</button>";
+	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">" << _("Save") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/soundfactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
+	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">" << _("Load") << "</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	}
@@ -356,115 +387,213 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 	std::string message="&nbsp;";
 	std::string meta="";
 	std::stringstream ss;
+	std::stringstream tohead;
 
-	if(CivetServer::getParam(conn,"volume", value))
-		sound.setVolume(std::stof(value));
-
-	if(CivetServer::getParam(conn,"pitch", value))
-		sound.setPitch(std::stof(value));
-
-	if(CivetServer::getParam(conn,"fade", value))
-		sound.setFadeSteps(std::stof(value));
-
-	if(CivetServer::getParam(conn, "submit", dummy))
+	if(CivetServer::getParam(conn, "naam", value))
 	{
-		if(CivetServer::getParam(conn,"loop", dummy))
-		  		sound.setLoop(true);
-		   	else
-		   		sound.setLoop(false);
-		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + sound.getUrl() + "\"/>";
-		message = "Wijzigingen opgeslagen!";
-	} else
+		CivetServer::getParam(conn,"value", value);
+		sound.naam = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "omschrijving", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		sound.omschrijving = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "filename", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		sound.filename = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "volume", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		cout << "volume value:" << value << "stof:" << std::stof(value) << endl;
+		sound.setVolume(std::stof(value));
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "pitch", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		sound.setPitch(std::stof(value) / 100);
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "fade", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		cout << "fade value:" << value << "stof:" << std::stof(value) << endl;
+		sound.setFadeSteps(std::stof(value));
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "loop", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		if (value.compare("true") == 0)
+			sound.setLoop(true);
+		else
+			sound.setLoop(false);
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+
 	if(CivetServer::getParam(conn, "play", dummy))
 	{
-		if(CivetServer::getParam(conn,"loop", dummy))
-		  		sound.setLoop(true);
-		   	else
-		   		sound.setLoop(false);
 		sound.play();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + sound.getUrl() + "\"/>";
-		message = "Afspelen!";
-	} else
+		message = _("Play!");
+	}
 	if(CivetServer::getParam(conn, "fadein", dummy))
 	{
-		if(CivetServer::getParam(conn,"loop", dummy))
-		  		sound.setLoop(true);
-		   	else
-		   		sound.setLoop(false);
 		sound.fadeIn();
+		//give fade in thread time to start
 		delay(20);
+		//wait until fade lock is released
 		std::unique_lock<std::mutex> l(m_sound);
 		l.unlock();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + sound.getUrl() + "\"/>";
-		message = "Fade in!";
-	} else
+		message = _("Fade In!");
+	}
 	if(CivetServer::getParam(conn, "stop", dummy))
 	{
-		if(CivetServer::getParam(conn,"loop", dummy))
-		  		sound.setLoop(true);
-		   	else
-		   		sound.setLoop(false);
 		sound.stop();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + sound.getUrl() + "\"/>";
-		message = "Stoppen!";
-	} else
+		message = _("Stop!");
+	}
 	if(CivetServer::getParam(conn, "fadeout", dummy))
 	{
-		if(CivetServer::getParam(conn,"loop", dummy))
-		  		sound.setLoop(true);
-		   	else
-		   		sound.setLoop(false);
 		sound.fadeOut();
+		//give fade out thread time to start
 		delay(20);
+		//wait until fade lock is released
 		std::unique_lock<std::mutex> l(m_sound);
 		l.unlock();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + sound.getUrl() + "\"/>";
-		message = "Fade out!";
-	} else
+		message = _("Fade Out!");
+	}
 	if(CivetServer::getParam(conn, "pause", dummy))
 	{
-		if(CivetServer::getParam(conn,"loop", dummy))
-		  		sound.setLoop(true);
-		   	else
-		   		sound.setLoop(false);
 		sound.pause();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + sound.getUrl() + "\"/>";
-		message = "Pauze!";
+		message = _("Pause!");
 	}
 
 	{
-		ss << "Bestandsnaam: " << sound.filename << "</br>";
-		ss << "</br>";
+		tohead << "<script type=\"text/javascript\">";
+		tohead << " $(document).ready(function(){";
+		tohead << " $('#naam').on('change', function() {";
+		tohead << " $.get( \"" << sound.getUrl() << "\", { naam: 'true', value: $('#naam').val() }, function( data ) {";
+		tohead << "  $( \"#naam\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#omschrijving').on('change', function() {";
+		tohead << " $.get( \"" << sound.getUrl() << "\", { omschrijving: 'true', value: $('#omschrijving').val() }, function( data ) {";
+		tohead << "  $( \"#omschrijving\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#filename').on('change', function() {";
+		tohead << " $.get( \"" << sound.getUrl() << "\", { filename: 'true', value: $('#filename').val() }, function( data ) {";
+		tohead << "  $( \"#filename\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#volume').on('change', function() {";
+		tohead << " $.get( \"" << sound.getUrl() << "\", { volume: 'true', value: $('#volume').val() }, function( data ) {";
+		tohead << "  $( \"#volume\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#pitch').on('change', function() {";
+		tohead << " $.get( \"" << sound.getUrl() << "\", { pitch: 'true', value: $('#pitch').val() }, function( data ) {";
+		tohead << "  $( \"#pitch\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#fade').on('change', function() {";
+		tohead << " $.get( \"" << sound.getUrl() << "\", { fade: 'true', value: $('#fade').val() }, function( data ) {";
+		tohead << "  $( \"#fade\" ).html( data );})";
+	    tohead << "});";
+	    tohead << " $('#loop').on('change', function() {";
+   		tohead << " $.get( \"" << sound.getUrl() << "\", { loop: 'true', value: $('#loop').is(':checked') }, function( data ) {";
+   		tohead << "  $( \"#loop\" ).html( data );})";
+  	    tohead << "});";
+  	    tohead << "});";
+		tohead << "</script>";
 		ss << "<form action=\"" << sound.getUrl() << "\" method=\"POST\">";
+	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">" << _("Refresh") << "</button><br>";
+	    ss <<  "<br>";
+	    ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">" << _("Play") << "</button>";
+	    ss << "<button type=\"submit\" name=\"fadein\" value=\"fadein\" id=\"fadein\">" << _("Fade In") << "</button>";
+		ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">" << _("Stop") << "</button>";
+		ss << "<button type=\"submit\" name=\"fadeout\" value=\"fadeout\" id=\"fadeout\">" << _("Fade Out") << "</button>";
+		ss << "<button type=\"submit\" name=\"pause\" value=\"pause\" id=\"pause\">" << _("Pause") << "</button>";
+		ss << "</form>";
+	    ss << "<h2>";
+	    ss << _("Current State") << ":<br>";
+	    if (sound.getStatus() == sound.Stopped)
+	    	ss << _("Stopped");
+	    if (sound.getStatus() == sound.Playing)
+	    	ss << _("Playing");
+	    if (sound.getStatus() == sound.Paused)
+	   	    ss << _("Paused");
+	    ss << "</h2>";
 		ss << "<div class=\"container\">";
-		ss << "<label for=\"volume\">Volume</label>"
+		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
+					  sound.naam << "\" name=\"naam\"/>" << "</br>";
+		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
+					  sound.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
+		ss << "<label for=\"filename\">" << _("Filename") << ":</label>"
+					  "<input class=\"inside\" id=\"filename\" type=\"text\" size=\"50\" value=\"" <<
+					  sound.filename << "\" name=\"filename\"/>" << "</br>";
+		ss << "<label for=\"volume\">" << _("Volume") << "</label>"
 			  "<input class=\"inside\" id=\"volume\" type=\"range\" min=\"0\" max=\"100\" step=\"1\" value=\"" <<
 			  sound.getVolume() << "\"" << " name=\"volume\"/>" << "</br>";
-		ss << "<label for=\"pitch\">Pitch</label>"
-			  "<input class=\"inside\" id=\"pitch\" type=\"range\" min=\"0.8\" max=\"1.2\" step=\"0.02\" value=\"" <<
-			  sound.getPitch() << "\"" << " name=\"pitch\"/>" << "</br>";
-		ss << "<label for=\"fade\">Fade Steps</label>"
+		ss << "<label for=\"pitch\">" << _("Pitch") << "</label>"
+			  "<input class=\"inside\" id=\"pitch\" type=\"range\" min=\"80\" max=\"120\" step=\"2\" value=\"" <<
+			  sound.getPitch() * 100 << "\"" << " name=\"pitch\"/>" << "</br>";
+		ss << "<label for=\"fade\">" << _("Fade Steps") << "</label>"
 			  "<input class=\"inside\" id=\"fade\" type=\"range\" min=\"1\" max=\"200\" step=\"1\" value=\"" <<
 			  sound.getFadeSteps() << "\"" << " name=\"fade\"/>" << "<br>";
-		ss << "<label for=\"loop\">Loop</label>";
+		ss << "<label for=\"loop\">" << _("Loop") << "</label>";
 		if (sound.getLoop())
 			ss << "<input type=\"checkbox\" name=\"loop\" id=\"loop\" checked=\"checked\">";
 		else
 			ss << "<input type=\"checkbox\" name=\"loop\" id=\"loop\">";
 		ss << "</div>";
-		ss << "</br>";
-		ss << "</br>";
-		ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
-		ss <<  "</br>";
-	    ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">Play</button>";
-	    ss << "<button type=\"submit\" name=\"fadein\" value=\"fadein\" id=\"fadein\">Fade In</button>";
-		ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">Stop</button>";
-		ss << "<button type=\"submit\" name=\"fadeout\" value=\"fadeout\" id=\"fadeout\">Fade Out</button>";
-		ss << "<button type=\"submit\" name=\"pause\" value=\"pause\" id=\"pause\">Pause</button>";
-		ss << "</form>";
+		ss << "<br>";
+		ss << "<br>";
 	}
 
-	ss = getHtml(meta, message, "sound", ss.str().c_str());
+	ss = getHtml(meta, message, "sound", ss.str().c_str(), tohead.str().c_str());
 	mg_printf(conn,  ss.str().c_str(), "%s");
 	return true;
 }

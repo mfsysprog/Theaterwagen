@@ -772,8 +772,9 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 	    tohead << "});";
 		tohead << "</script>";
 		ss << "<form action=\"" << button.getUrl() << "\" method=\"POST\">";
+		ss << "<button type=\"submit\" name=\"refresh\" value=\"true\" id=\"refresh\">" << _("Refresh") << "</button><br>";
+		ss << "<br>";
 		ss << "<button type=\"submit\" name=\"activate\" value=\"true\" id=\"activate\">" << _("Activate") << "</button>";
-	    ss << "<button type=\"submit\" name=\"refresh\" value=\"true\" id=\"refresh\">" << _("Refresh") << "</button><br>";
 	    ss << "</form>";
 	    ss << "<h2>";
 	    ss << _("Current State") << ":<br>";

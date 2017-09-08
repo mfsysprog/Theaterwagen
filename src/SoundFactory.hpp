@@ -48,13 +48,15 @@ class SoundFactory {
 		friend class SoundFactory;
 		friend class ChaseFactory;
 		public:
-		Sound(std::string uuidstr, std::string fn, bool loop, float volume, float pitch, unsigned int fadesteps);
-		Sound(std::string fn);
+		Sound(std::string uuidstr, std::string naam, std::string omschrijving, std::string fn, bool loop, float volume, float pitch, unsigned int fadesteps);
+		Sound(std::string naam, std::string omschrijving, std::string fn);
 		~Sound();
 		void fadeOut();
 		void fadeIn();
 		unsigned int getFadeSteps();
 		std::string getUuid();
+		std::string getNaam();
+		std::string getOmschrijving();
 		std::string getFilename();
 		std::string getUrl();
 		private:
@@ -72,6 +74,8 @@ class SoundFactory {
 		void setFadeSteps(unsigned int fadesteps);
 		unsigned int fadesteps = 1;
 		std::string filename;
+		std::string naam;
+		std::string omschrijving;
 		std::string url;
 		uuid_t uuid;
 		sf::SoundBuffer* sfmbuffer;
@@ -80,7 +84,7 @@ class SoundFactory {
 	public:
 	SoundFactory();
 	~SoundFactory();
-	SoundFactory::Sound* addSound(std::string fn);
+	SoundFactory::Sound* addSound(std::string naam, std::string omschrijving, std::string fn);
 	void deleteSound(std::string uuid);
 	void load();
 
