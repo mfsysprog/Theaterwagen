@@ -10,6 +10,9 @@ x * SceneFactory.cpp
 #include "usb.h"
 #include "uDMX_cmds.h"
 
+#include <libintl.h>
+#define _(String) gettext (String)
+
 #define USBDEV_SHARED_VENDOR 0x16C0  /* Obdev's free shared VID */
 #define USBDEV_SHARED_PRODUCT 0x05DC /* Obdev's free shared PID */
 /* Use obdev's generic shared VID/PID pair and follow the rules outlined
@@ -130,6 +133,7 @@ SceneFactory::SceneFactory(FixtureFactory* ff){
                 USBDEV_SHARED_VENDOR, USBDEV_SHARED_PRODUCT);
         //exit(1);
     }
+    else uDMX_found = true;
 }
 
 SceneFactory::~SceneFactory(){
@@ -309,10 +313,13 @@ void SceneFactory::Scene::fadeIn(){
 			  sf.main_channel[k] =  (int)((float)(*channels)[k][0] / (float)fadesteps) * i;
 	  }
       std::unique_lock<std::mutex> l(m_scene);
-	  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-		                                    cmd_SetChannelRange, 512, 0, (char *)sf.main_channel, 512, 1000);
-	  if (nBytes < 0)
-	     fprintf(stderr, "USB error: %s\n", usb_strerror());
+      if (sf.uDMX_found)
+      {
+		  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+												cmd_SetChannelRange, 512, 0, (char *)sf.main_channel, 512, 1000);
+		  if (nBytes < 0)
+			 fprintf(stderr, "USB error: %s\n", usb_strerror());
+      }
 	  l.unlock();
 	  delay(20);
 	}
@@ -339,10 +346,13 @@ void SceneFactory::Scene::fadeOut(){
 			sf.main_channel[k] = (int)(float)(*channels)[k][0] - (((float)(*channels)[k][0] / (float)fadesteps) * i);
 	  }
       std::unique_lock<std::mutex> l(m_scene);
-	  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-		                                    cmd_SetChannelRange, 512, 0, (char *)sf.main_channel, 512, 1000);
-	  if (nBytes < 0)
-	     fprintf(stderr, "USB error: %s\n", usb_strerror());
+      if (sf.uDMX_found)
+      {
+		  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+												cmd_SetChannelRange, 512, 0, (char *)sf.main_channel, 512, 1000);
+		  if (nBytes < 0)
+			 fprintf(stderr, "USB error: %s\n", usb_strerror());
+      }
 	  l.unlock();
 	  delay(20);
 	}
@@ -354,10 +364,13 @@ void SceneFactory::Scene::Stop(){
 	int nBytes;
 	unsigned char channels_tmp[512] = {0};
 
-	nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-		                                    cmd_SetChannelRange, 512, 0, (char *)channels_tmp, 512, 1000);
-	if (nBytes < 0)
-	    fprintf(stderr, "USB error: %s\n", usb_strerror());
+    if (sf.uDMX_found)
+    {
+		nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+												cmd_SetChannelRange, 512, 0, (char *)channels_tmp, 512, 1000);
+		if (nBytes < 0)
+			fprintf(stderr, "USB error: %s\n", usb_strerror());
+    }
 	delay(20);
 }
 
@@ -372,10 +385,13 @@ void SceneFactory::Scene::Play(){
 	  }
 
       std::unique_lock<std::mutex> l(m_scene);
-	  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-		                                    cmd_SetChannelRange, 512, 0, (char *)sf.main_channel, 512, 1000);
-	  if (nBytes < 0)
-	     fprintf(stderr, "USB error: %s\n", usb_strerror());
+      if (sf.uDMX_found)
+      {
+		  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+												cmd_SetChannelRange, 512, 0, (char *)sf.main_channel, 512, 1000);
+		  if (nBytes < 0)
+			 fprintf(stderr, "USB error: %s\n", usb_strerror());
+      }
       l.unlock();
 	  delay(20);
 }
@@ -459,7 +475,7 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/scenefactory\">";
-		message = "Opgeslagen!";
+		   message = _("Saved!");
         this->scenefactory.save();
 	}
 	else
@@ -467,7 +483,7 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/scenefactory\">";
-		message = "Ingeladen!";
+		   message = _("Loaded!");
 		this->scenefactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", value))
@@ -501,13 +517,13 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 	{
 	   ss << "<form action=\"/scenefactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
-	   ss << "<label for=\"naam\">Naam:</label>"
+	   ss << "<label for=\"naam\">" << _("Name") << ":</label>"
   			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
-	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
+	   ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
 	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"" << value << "\" ";
-   	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
+   	   ss << "id=\"newselect\">" << _("Add") << "</button>&nbsp;";
    	   ss << "</form>";
 	}
 	else
@@ -517,27 +533,27 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 		for (std::pair<std::string, SceneFactory::Scene*> element : scenefactory.scenemap) {
 			ss << "<br style=\"clear:both\">";
 			ss << "<div class=\"row\">";
-			ss << "Naam:&nbsp;" << element.second->getNaam() << "&nbsp;";
-			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving();
+			ss << _("Name") << ":&nbsp;" << element.second->getNaam() << "&nbsp;";
+			ss << _("Comment") << ":&nbsp;" << element.second->getOmschrijving();
 			ss << "<br style=\"clear:both\">";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
-	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">" << _("Select") << "</button>&nbsp;";
 	    	ss << "</form>";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
-	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.second->getUuid() << "\" id=\"delete\">Verwijderen</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.second->getUuid() << "\" id=\"delete\">" << _("Remove") << "</button>&nbsp;";
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
 			ss << "</div>";
 	    }
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"new\" value=\"-1\" id=\"new\">Nieuw</button>";
+	    ss << "<button type=\"submit\" name=\"new\" value=\"-1\" id=\"new\">" << _("New") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">Opslaan</button>";
+	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">" << _("Save") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
+	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">" << _("Load") << "</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	}
@@ -648,42 +664,6 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		return true;
 	}
 
-	if(CivetServer::getParam(conn, "submit", dummy))
-	{
-		if(CivetServer::getParam(conn,"naam", value))
-		  		scene.naam = value;
-		if(CivetServer::getParam(conn,"omschrijving", value))
-		  		scene.omschrijving = value;
-		if(CivetServer::getParam(conn,"fadesteps", value))
-		  		scene.fadesteps = atoi(value.c_str());
-		std::stringstream ss;
-		for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
-			for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
-			{
-				std::stringstream channel;
-				channel << "chan" << i;
-				CivetServer::getParam(conn,channel.str().c_str(), value);
-				(*scene.channels)[i-1][0] = atoi(value.c_str());
-				std::stringstream exclude;
-				exclude << "exclude" << i;
-				CivetServer::getParam(conn,exclude.str().c_str(), value);
-				if (value.compare("ja") == 0)
-					(*scene.channels)[i-1][1] = '1';
-				else
-					(*scene.channels)[i-1][1] = '0';
-
-				std::stringstream selected;
-				selected << "selected" << i;
-				CivetServer::getParam(conn,selected.str().c_str(), value);
-				if (value.compare("ja") == 0)
-					(*scene.channels)[i-1][2] = '1';
-				else
-					(*scene.channels)[i-1][2] = '0';
-		  	}
-		}
-		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
-		message = "Wijzigingen opgeslagen!";
-	} else
 	if(CivetServer::getParam(conn, "play", dummy))
 	{
 		if(CivetServer::getParam(conn,"naam", value))
@@ -719,9 +699,8 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		}
 		scene.Play();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
-		message = "Afspelen!";
+		message = _("Playing!");
 	}
-	else
 	if(CivetServer::getParam(conn, "fadein", dummy))
 	{
 		if(CivetServer::getParam(conn,"naam", value))
@@ -757,8 +736,8 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		}
 		scene.fadeIn();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
-		message = "Fadein!";
-	} else
+		message = _("Fading in!");
+	}
 	if(CivetServer::getParam(conn, "fadeout", dummy))
 	{
 		if(CivetServer::getParam(conn,"naam", value))
@@ -794,20 +773,32 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		}
 		scene.fadeOut();
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
-		message = "Fadeout!";
+		message = _("Fading out!");
 	}
 
+	/* initial page display */
 	{
 		ss << "<form action=\"" << scene.getUrl() << "\" method=\"POST\">";
+		ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">" << _("Play") << "</button>";
+		ss << "<button type=\"submit\" name=\"fadein\" value=\"fadein\" id=\"fadein\">" << _("Fade In") << "</button>";
+		ss << "<button type=\"submit\" name=\"fadeout\" value=\"fadeout\" id=\"fadeout\">" << _("Fade Out") << "</button>";
+	    ss << "</form>";
+	    ss << "<form style ='float: left; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
+	    ss << "<button type=\"submit\" name=\"new\" value=\"" << scene.getUuid() <<"\" id=\"new\">" << _("New Like") << "</button>";
+	    ss << "</form>";
+	    ss << "<div style=\"clear:both\">";
+	    ss << "<h2>";
+	    ss << "&nbsp;";
+	    ss << "</h2>";
 		ss << "<div class=\"container\">";
-		ss << "<label for=\"naam\">Naam:</label>"
+		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
 					  "<input class=\"inside\" id=\"naam\" type=\"text\" value=\"" <<
 					  scene.getNaam() << "\"" << " name=\"naam\"/>" << "</br>";
-		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
+		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
 					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" value=\"" <<
 					  scene.getOmschrijving() << "\"" << " name=\"omschrijving\"/>" << "</br>";
 		ss << "<br>";
-		ss << "<label for=\"fadesteps\">Fade Stappen</label>";
+		ss << "<label for=\"fadesteps\">" << _("Fade Steps") << ":</label>";
 		ss << "<td><input class=\"inside\" id=\"fadesteps\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
 			  scene.getFadeSteps() << "\"" << " name=\"fadesteps\" />";
 		ss << "</tr>";
@@ -832,10 +823,10 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 
 	    for (std::pair<int, FixtureFactory::Fixture*> element : scene.ff->fixturemap) {
 	    	ss << "<a href=\"" << element.second->getUrl() << "\">" << element.second->naam << "</a><br>";
-	    	ss << "Base adres: &nbsp;" << element.second->base_channel << "<br>";
-	    	ss << "Omschrijving: &nbsp;" << element.second->omschrijving << "<br>";
-	    	ss << "Kanalen:" << "<br>";
-	    	ss << "<table class=\"container\"><th>Kanaal</th><th>Selected</><th>Exclude (fade)</th><th>Waarde</th>";
+	    	ss << _("Base address") << ": &nbsp;" << element.second->base_channel << "<br>";
+	    	ss << _("Comment") << ": &nbsp;" << element.second->omschrijving << "<br>";
+	    	ss << _("Channels") << ":<br>";
+	    	ss << "<table class=\"container\"><th>" << _("Channel") << "</th><th>" << _("Selected") << "</><th>" << _("Exclude from Fade") << "</th><th>" << _("Value") << "</th>";
 	    	for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
 	    	{
 	    		tohead << " $('#chan" << i <<"').on('change', function() {";
@@ -852,18 +843,18 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
       		    tohead << "});";
 
 	    		ss << "<tr>";
-	    		ss << "<td><label for=\"chan" << i << "\">" << i << "</label></td>";
+	    		ss << "<td style=\"text-align:center;\"><label for=\"chan" << i << "\">" << i << "</label></td>";
 	    		if ((*scene.channels)[i-1][2] == '1')
-	    			ss << "<td><input id=\"selected" << i << "\"" <<
+	    			ss << "<td style=\"text-align:center;\"><input id=\"selected" << i << "\"" <<
 						" type=\"checkbox\" value=\"ja\" name=\"selected" << i << "\" checked/>" << "</td>";
 	    		else
-	    			ss << "<td><input id=\"selected" << i << "\"" <<
+	    			ss << "<td style=\"text-align:center;\"><input id=\"selected" << i << "\"" <<
 						" type=\"checkbox\" value=\"ja\" name=\"selected" << i << "\"/>" << "</td>";
 	    		if ((*scene.channels)[i-1][1] == '1')
-	    			ss << "<td><input id=\"exclude" << i << "\"" <<
+	    			ss << "<td style=\"text-align:center;\"><input id=\"exclude" << i << "\"" <<
 						" type=\"checkbox\" value=\"ja\" name=\"exclude" << i << "\" checked/>" << "</td>";
 	    		else
-	    			ss << "<td><input id=\"exclude" << i << "\"" <<
+	    			ss << "<td style=\"text-align:center;\"><input id=\"exclude" << i << "\"" <<
 						" type=\"checkbox\" value=\"ja\" name=\"exclude" << i << "\"/>" << "</td>";
 	    		ss << "<td><input id=\"chan" << i << "\"" <<
 					  " type=\"range\" min=\"0\" max=\"255\" step=\"1\" value=\"" <<
@@ -876,15 +867,6 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		tohead << "</script>";
 
 	    ss << "<br>";
-		ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
-		ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">Play</button>";
-		ss << "<button type=\"submit\" name=\"fadein\" value=\"fadein\" id=\"fadein\">Fade In</button>";
-		ss << "<button type=\"submit\" name=\"fadeout\" value=\"fadeout\" id=\"fadeout\">Fade Out</button>";
-	    ss << "</form>";
-	    ss << "<form style ='float: left; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"new\" value=\"" << scene.getUuid() <<"\" id=\"new\">Nieuw Als</button>";
-	    ss << "</form>";
-	    ss << "<br style=\"clear:both\">";
 	}
 
 	ss = getHtml(meta, message, "scene", ss.str().c_str(), tohead.str().c_str());

@@ -1,0 +1,338 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-09-08 08:37-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ButtonFactory.cpp:605 ButtonFactory.cpp:794
+msgid "(0 if not in use)"
+msgstr ""
+
+#: ButtonFactory.cpp:608 ButtonFactory.cpp:797
+msgid "(empty if not in use)"
+msgstr ""
+
+#: ButtonFactory.cpp:780
+msgid "0 - Button active"
+msgstr ""
+
+#: ButtonFactory.cpp:780
+msgid "1 - Button inactive"
+msgstr ""
+
+#: ButtonFactory.cpp:608 ButtonFactory.cpp:797
+msgid "Action"
+msgstr ""
+
+#: Theaterwagen.cpp:57
+msgid "Actions"
+msgstr ""
+
+#: ButtonFactory.cpp:773
+msgid "Activate"
+msgstr ""
+
+#: ButtonFactory.cpp:617 CaptureFactory.cpp:1347 SceneFactory.cpp:513
+#: ToggleFactory.cpp:289
+msgid "Add"
+msgstr ""
+
+#: SceneFactory.cpp:812
+msgid "Base address"
+msgstr ""
+
+#: ButtonFactory.cpp:603 ButtonFactory.cpp:778 ButtonFactory.cpp:791
+msgid "Button"
+msgstr ""
+
+#: ButtonFactory.cpp:743
+msgid "Button activated!"
+msgstr ""
+
+#: Theaterwagen.cpp:59
+msgid "Buttons"
+msgstr ""
+
+#: CaptureFactory.cpp:1717
+msgid "Cancel"
+msgstr ""
+
+#: Theaterwagen.cpp:56
+msgid "Captures"
+msgstr ""
+
+#: SceneFactory.cpp:815
+msgid "Channel"
+msgstr ""
+
+#: SceneFactory.cpp:814
+msgid "Channels"
+msgstr ""
+
+#: CaptureFactory.cpp:1381
+msgid "Clear Screen"
+msgstr ""
+
+#: ButtonFactory.cpp:601 ButtonFactory.cpp:629 ButtonFactory.cpp:788
+#: CaptureFactory.cpp:1343 CaptureFactory.cpp:1359 CaptureFactory.cpp:1781
+#: SceneFactory.cpp:509 SceneFactory.cpp:524 SceneFactory.cpp:783
+#: SceneFactory.cpp:813 ToggleFactory.cpp:283 ToggleFactory.cpp:302
+#: ToggleFactory.cpp:424
+msgid "Comment"
+msgstr ""
+
+#: ButtonFactory.cpp:777 ButtonFactory.cpp:778 ButtonFactory.cpp:780
+#: ButtonFactory.cpp:782 ToggleFactory.cpp:417 ToggleFactory.cpp:418
+msgid "Current State"
+msgstr ""
+
+#: CaptureFactory.cpp:1761
+msgid "Detect"
+msgstr ""
+
+#: CaptureFactory.cpp:1764
+msgid "Detect File"
+msgstr ""
+
+#: SceneFactory.cpp:815
+msgid "Exclude from Fade"
+msgstr ""
+
+#: CaptureFactory.cpp:1657 CaptureFactory.cpp:1691
+msgid "Facedetection running in background!"
+msgstr ""
+
+#: SceneFactory.cpp:787
+msgid "Fade Steps"
+msgstr ""
+
+#: SceneFactory.cpp:726
+msgid "Fading in!"
+msgstr ""
+
+#: SceneFactory.cpp:763
+msgid "Fading out!"
+msgstr ""
+
+#: CaptureFactory.cpp:1786 CaptureFactory.cpp:1791
+msgid "File Only"
+msgstr ""
+
+#: Theaterwagen.cpp:65
+msgid "Files"
+msgstr ""
+
+#: CaptureFactory.cpp:1571
+msgid "Frame Captured!"
+msgstr ""
+
+#: CaptureFactory.cpp:1599
+msgid "Frames Captured!"
+msgstr ""
+
+#: Theaterwagen.cpp:55
+msgid "Home"
+msgstr ""
+
+#: CaptureFactory.cpp:1759
+msgid "Input Cam"
+msgstr ""
+
+#: CaptureFactory.cpp:1763
+msgid "Input File"
+msgstr ""
+
+#: ButtonFactory.cpp:780 ButtonFactory.cpp:782
+msgid "Led"
+msgstr ""
+
+#: Theaterwagen.cpp:61
+msgid "Lights"
+msgstr ""
+
+#: ButtonFactory.cpp:648 CaptureFactory.cpp:1378 SceneFactory.cpp:543
+#: ToggleFactory.cpp:321
+msgid "Load"
+msgstr ""
+
+#: ButtonFactory.cpp:574 CaptureFactory.cpp:1312 SceneFactory.cpp:473
+#: ToggleFactory.cpp:260
+msgid "Loaded!"
+msgstr ""
+
+#: CaptureFactory.cpp:1765
+msgid "Merge"
+msgstr ""
+
+#: CaptureFactory.cpp:1501
+msgid "Merge failed!"
+msgstr ""
+
+#: CaptureFactory.cpp:1503
+msgid "Merged!"
+msgstr ""
+
+#: CaptureFactory.cpp:1795
+msgid "Mix from"
+msgstr ""
+
+#: CaptureFactory.cpp:1798
+msgid "Mix to"
+msgstr ""
+
+#: Theaterwagen.cpp:58
+msgid "Motors"
+msgstr ""
+
+#: Theaterwagen.cpp:63
+msgid "Music"
+msgstr ""
+
+#: ButtonFactory.cpp:599 ButtonFactory.cpp:628 ButtonFactory.cpp:785
+#: CaptureFactory.cpp:1341 CaptureFactory.cpp:1358 CaptureFactory.cpp:1778
+#: SceneFactory.cpp:507 SceneFactory.cpp:523 SceneFactory.cpp:780
+#: ToggleFactory.cpp:281 ToggleFactory.cpp:301 ToggleFactory.cpp:421
+msgid "Name"
+msgstr ""
+
+#: ButtonFactory.cpp:642 CaptureFactory.cpp:1372 SceneFactory.cpp:537
+#: ToggleFactory.cpp:315
+msgid "New"
+msgstr ""
+
+#: CaptureFactory.cpp:1760
+msgid "Next Frame"
+msgstr ""
+
+#: CaptureFactory.cpp:1621
+msgid "Next Frame Captured!"
+msgstr ""
+
+#: CaptureFactory.cpp:1775
+msgid "No faces found."
+msgstr ""
+
+#: CaptureFactory.cpp:1772
+msgid "Number of faces in frame "
+msgstr ""
+
+#: ToggleFactory.cpp:413
+msgid "Off"
+msgstr ""
+
+#: ToggleFactory.cpp:412
+msgid "On"
+msgstr ""
+
+#: CaptureFactory.cpp:1766
+msgid "On Screen"
+msgstr ""
+
+#: CaptureFactory.cpp:1490
+msgid "On Screen!"
+msgstr ""
+
+#.
+#. ss << "<div id=\"capture\">";
+#. ss << "<img src=\"" << capture.url << "/?streaming=true\">";
+#. ss << "</div>";
+#: CaptureFactory.cpp:1808
+msgid "Photo"
+msgstr ""
+
+#: SceneFactory.cpp:689
+msgid "Playing!"
+msgstr ""
+
+#: ButtonFactory.cpp:774 CaptureFactory.cpp:1757 ToggleFactory.cpp:414
+msgid "Refresh"
+msgstr ""
+
+#: ButtonFactory.cpp:635 CaptureFactory.cpp:1365 SceneFactory.cpp:530
+#: ToggleFactory.cpp:308
+msgid "Remove"
+msgstr ""
+
+#: ButtonFactory.cpp:645 CaptureFactory.cpp:1375 SceneFactory.cpp:540
+#: ToggleFactory.cpp:318
+msgid "Save"
+msgstr ""
+
+#: CaptureFactory.cpp:1762
+msgid "Save as Video"
+msgstr ""
+
+#: ButtonFactory.cpp:566 CaptureFactory.cpp:1305 SceneFactory.cpp:465
+#: ToggleFactory.cpp:252
+msgid "Saved!"
+msgstr ""
+
+#: Theaterwagen.cpp:62
+msgid "Scenes"
+msgstr ""
+
+#: CaptureFactory.cpp:1320
+msgid "Screen empty!"
+msgstr ""
+
+#: ButtonFactory.cpp:632 CaptureFactory.cpp:1362 CaptureFactory.cpp:1713
+#: SceneFactory.cpp:527 ToggleFactory.cpp:305
+msgid "Select"
+msgstr ""
+
+#: SceneFactory.cpp:815
+msgid "Selected"
+msgstr ""
+
+#: Theaterwagen.cpp:52
+msgid "Show Menu"
+msgstr ""
+
+#: Theaterwagen.cpp:64
+msgid "Sounds"
+msgstr ""
+
+#: ToggleFactory.cpp:285 ToggleFactory.cpp:418 ToggleFactory.cpp:427
+msgid "Toggle"
+msgstr ""
+
+#: ToggleFactory.cpp:390
+msgid "Toggle off!"
+msgstr ""
+
+#: ToggleFactory.cpp:383
+msgid "Toggle on!"
+msgstr ""
+
+#: Theaterwagen.cpp:60
+msgid "Toggles"
+msgstr ""
+
+#: SceneFactory.cpp:815
+msgid "Value"
+msgstr ""
+
+#: CaptureFactory.cpp:1810
+msgid "Video"
+msgstr ""
+
+#: CaptureFactory.cpp:1548
+msgid "Video saved!"
+msgstr ""
+
+#: ButtonFactory.cpp:782
+msgid "not in use."
+msgstr ""

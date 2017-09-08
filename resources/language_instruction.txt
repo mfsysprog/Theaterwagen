@@ -1,0 +1,14 @@
+Initieel vanuit workspace/Theaterwagen/src:
+
+xgettext --keyword=_ --language=c++ --add-comments --sort-output -o po/theaterwagen.pot *.cpp
+msginit --input=po/theaterwagen.pot --locale=nl --output=po/nl/theaterwagen.po
+vertalen...
+msgfmt --output-file=po/nl/theaterwagen.mo po/nl/theaterwagen.po
+
+scp po/nl/theaterwagen.mo naar /home/theaterwagen/languages/nl/LC_MESSAGES/
+
+Na aanpassen zelfde stappen, maar dan ipv msginit:
+msgmerge --output-file=po/nl/theaterwagen.po po/nl/theaterwagen.po po/theaterwagen.pot
+
+starten met:
+LANGUAGE=nl ./theaterwagen/Theaterwagen 

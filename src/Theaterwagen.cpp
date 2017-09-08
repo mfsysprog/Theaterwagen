@@ -23,6 +23,12 @@
 #include "HomeHandler.hpp"
 #include "FileHandler.hpp"
 
+#include <libintl.h>
+#include <locale.h>
+
+#include <libintl.h>
+#define _(String) gettext (String)
+
 using namespace std;
 
 CivetServer* server = nullptr;
@@ -43,20 +49,20 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
 	ss << tohead;
 	ss << "</head>";
 	ss << "<body class=\"" << bodyclass << "\" >";
-	ss << "<label for=\"show-menu\" class=\"show-menu\">Toon Menu</label>";
+	ss << "<label for=\"show-menu\" class=\"show-menu\">" << _("Show Menu") << "</label>";
 	ss << "<input type=\"checkbox\" id=\"show-menu\" role=\"button\">";
 	ss << "<ul id=\"menu\">";
-	ss << "	<li class=\"home\"><a href=\"/theaterwagen\">Home</a></li>";
-	ss << "	<li class=\"capture\"><a href=\"/capturefactory\">Foto's</a></li>";
-	ss << "	<li class=\"chase\"><a href=\"/chasefactory\">Acties</a></li>";
-	ss << "	<li class=\"motor\"><a href=\"/motorfactory\">Motoren</a></li>";
-	ss << "	<li class=\"button\"><a href=\"/buttonfactory\">Knoppen</a></li>";
-	ss << "	<li class=\"toggle\"><a href=\"/togglefactory\">Schakelaar</a></li>";
-	ss << "	<li class=\"fixture\"><a href=\"/fixturefactory\">Lampen</a></li>";
-	ss << "	<li class=\"scene\"><a href=\"/scenefactory\">Scene's</a></li>";
-	ss << "	<li class=\"music\"><a href=\"/musicfactory\">Muziek</a></li>";
-	ss << "	<li class=\"sound\"><a href=\"/soundfactory\">Geluidseffecten</a></li>";
-	ss << "	<li class=\"files\"><a href=\"/files\">Bestanden</a></li>";
+	ss << "	<li class=\"home\"><a href=\"/theaterwagen\">" << _("Home") << "</a></li>";
+	ss << "	<li class=\"capture\"><a href=\"/capturefactory\">" << _("Captures") << "</a></li>";
+	ss << "	<li class=\"chase\"><a href=\"/chasefactory\">" << _("Actions") << "</a></li>";
+	ss << "	<li class=\"motor\"><a href=\"/motorfactory\">" << _("Motors") << "</a></li>";
+	ss << "	<li class=\"button\"><a href=\"/buttonfactory\">" << _("Buttons") << "</a></li>";
+	ss << "	<li class=\"toggle\"><a href=\"/togglefactory\">" << _("Toggles") << "</a></li>";
+	ss << "	<li class=\"fixture\"><a href=\"/fixturefactory\">" << _("Lights") << "</a></li>";
+	ss << "	<li class=\"scene\"><a href=\"/scenefactory\">" << _("Scenes") << "</a></li>";
+	ss << "	<li class=\"music\"><a href=\"/musicfactory\">" << _("Music") << "</a></li>";
+	ss << "	<li class=\"sound\"><a href=\"/soundfactory\">" << _("Sounds") << "</a></li>";
+	ss << "	<li class=\"files\"><a href=\"/files\">" << _("Files") << "</a></li>";
 	ss << "</ul>";
 	ss << "<br>";
 	ss << "<h2>" << message << "</h2>";
@@ -71,6 +77,12 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
 int main(int, char**){
 
 	std::string home = std::string(getenv("HOME")) + "/" + ROOT_DIR;
+
+	/* Setting the i18n environment */
+	setlocale (LC_ALL, "");
+	bindtextdomain ("theaterwagen", (home + "languages/").c_str());
+	textdomain ("theaterwagen");
+
 	const char *options[] = {"cgi_interpreter", "/usr/bin/php-cgi",
 //			"access_log_file", "access.log",
 		    "document_root", home.c_str(), "listening_ports", PORT, 0};

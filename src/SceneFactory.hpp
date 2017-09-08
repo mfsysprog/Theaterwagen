@@ -94,6 +94,7 @@ class SceneFactory {
 
 	private:
 	void save();
+	bool uDMX_found = false;
 	unsigned char main_channel[512] = {0};
 	std::map<std::string, SceneFactory::Scene*> scenemap;
 	SceneFactoryHandler* mfh;

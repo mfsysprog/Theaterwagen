@@ -822,8 +822,6 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << " <input type=\"hidden\" name=\"iter\" value=\"" << value << "\">";
 	   ss << " <select id=\"action\" name=\"action\">";
 	   ss << "  <option></option>";
-	   ss << "  <option>Schakelaar::Aan</option>";
-	   ss << "  <option>Schakelaar::Uit</option>";
 	   ss << "  <option>Button::Activeren</option>";
 	   ss << "  <option>Button::Wachten</option>";
 	   ss << "  <option>Capture::Foto</option>";
@@ -849,6 +847,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option>Scene::Play</option>";
 	   ss << "  <option>Scene::Fade In</option>";
 	   ss << "  <option>Scene::Fade Out</option>";
+	   ss << "  <option>Schakelaar::Aan</option>";
+	   ss << "  <option>Schakelaar::Uit</option>";
 	   ss << "  <option>Tijd::Wachten</option>";
 	   ss << " </select>";
 	   ss << " <select id=\"target\" name=\"target\">";

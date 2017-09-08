@@ -8,6 +8,8 @@
  */
 
 #include "ButtonFactory.hpp"
+#include <libintl.h>
+#define _(String) gettext (String)
 
 static std::function<void()> cbfunc_button[40];
 
@@ -433,7 +435,7 @@ void ButtonFactory::Button::Initialize(){
 	 */
 	cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Dummy,this);
 	if ( myWiringPiISR (button_gpio, INT_EDGE_RISING) < 0 ) {
-		 std::cerr << "Error setting interrupt for left GPIO sensor " << std::endl;
+		 std::cerr << "Error setting interrupt for GPIO sensor " << std::endl;
 	 }
 }
 
@@ -487,7 +489,6 @@ void ButtonFactory::Button::Pushed(){
 	//if we received a push but button is not still pushed we probably just got
 	//interference.
 	if (!(digitalRead(button_gpio))) return;
-	cout << "Pushed called " << endl;
 	if (led_gpio > 0) digitalWrite(led_gpio, HIGH);
 	try
 	{
@@ -562,7 +563,7 @@ bool ButtonFactory::ButtonFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/buttonfactory\">";
-	   message = "Opgeslagen!";
+	   message = _("Saved!");
        this->buttonfactory.save();
 	}
 	else
@@ -570,7 +571,7 @@ bool ButtonFactory::ButtonFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/buttonfactory\">";
-		message = "Ingeladen!";
+		message = _("Loaded!");
 		this->buttonfactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", dummy))
@@ -595,16 +596,16 @@ bool ButtonFactory::ButtonFactoryHandler::handleAll(const char *method,
 	{
 	   ss << "<form action=\"/buttonfactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
-	   ss << "<label for=\"naam\">Naam:</label>"
+	   ss << "<label for=\"naam\">" << _("Name") << ":</label>"
   			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
-	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
+	   ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
 	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
-	   ss << "<label for=\"button\">Button GPIO:</label>"
+	   ss << "<label for=\"button\">" << _("Button") << " GPIO:</label>"
 	   	     "<input class=\"inside\" id=\"button\" type=\"text\" size=\"3\" name=\"button\"/>" << "</br>";
-	   ss << "<label for=\"led\">Led GPIO (0 bij geen gebruik):</label>"
+	   ss << "<label for=\"led\">Led GPIO:" << _("(0 if not in use)") << ":</label>"
 	   	     "<input class=\"inside\" id=\"led\" type=\"text\" size=\"3\" name=\"led\"/>" << "</br>";
 	   ss << "</div>";
-	   ss << "<label for=\"action\">Actie: (leeg bij geen gebruik)</label></br>";
+	   ss << "<label for=\"action\">" << _("Action") << _("(empty if not in use)") << ":</label></br>";
 	   ss << "<select id=\"action\" name=\"action\">";
 	   ss << "<option value=\"\"></option>";
 	 	for (std::pair<std::string, ChaseFactory::Chase*> element  : buttonfactory.cf.chasemap)
@@ -613,7 +614,7 @@ bool ButtonFactory::ButtonFactoryHandler::handleAll(const char *method,
 		}
        ss << "</select></br>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
-   	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
+   	   ss << "id=\"newselect\">" << _("Add") << "</button>&nbsp;";
    	   ss << "</form>";
    	   ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
 	}
@@ -624,27 +625,27 @@ bool ButtonFactory::ButtonFactoryHandler::handleAll(const char *method,
 		for (std::pair<std::string, ButtonFactory::Button*> element : buttonfactory.buttonmap) {
 			ss << "<br style=\"clear:both\">";
 			ss << "<div class=\"row\">";
-			ss << "Naam:&nbsp;" << element.second->getNaam() << " &nbsp;";
-			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
+			ss << _("Name") << ":&nbsp;" << element.second->getNaam() << " &nbsp;";
+			ss << _("Comment") << ":&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
 			ss << "<br style=\"clear:both\">";
 			ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
-	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">" << _("Select") << "</button>&nbsp;";
 	    	ss << "</form>";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/buttonfactory\" method=\"POST\">";
-	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.first << "\" id=\"delete\">Verwijderen</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.first << "\" id=\"delete\">" << _("Remove") << "</button>&nbsp;";
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
 			ss << "</div>";
 	    }
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/buttonfactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Nieuw</button>";
+	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">" << _("New") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/buttonfactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">Opslaan</button>";
+	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">" << _("Save") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/buttonfactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
+	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">" << _("Load") << "</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	}
@@ -664,65 +665,136 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 	std::string message="&nbsp;";
 	std::string meta="";
 	std::stringstream ss;
+	std::string value;
+	std::stringstream tohead;
 
+	if(CivetServer::getParam(conn, "naam", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		button.naam = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "omschrijving", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		button.omschrijving = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "button", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		button.button_gpio = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "led", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		button.led_gpio = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "action", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		button.action = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		if (value.empty())
+		{
+			ss << "<option selected=\"selected\" value=\"\"></option>";
+		}
+		else
+			ss << "<option value=\"\"></option>";
+	 	for (std::pair<std::string, ChaseFactory::Chase*> element  : button.bf.cf.chasemap)
+		{
+	 	   if (element.first.compare(value) == 0)
+	 		   ss << "<option selected=\"selected\" value=\"" << element.first << "\">" << element.second->naam << "</option>";
+	 	   else
+	 		   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+		}
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
 	if(CivetServer::getParam(conn, "activate", dummy))
 	{
 	   button.setActive();
 
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + button.getUrl() + "\"/>";
-	   message = "Button geactiveerd!";
-	}
-	/* if parameter submit is present the submit button was pushed */
-	if(CivetServer::getParam(conn, "submit", dummy))
-	{
-	   CivetServer::getParam(conn,"button", s[0]);
-	   button.button_gpio = atoi(s[0].c_str());
-	   CivetServer::getParam(conn,"led", s[1]);
-	   button.led_gpio = atoi(s[1].c_str());
-	   CivetServer::getParam(conn,"naam", s[2]);
-	   button.naam = s[2].c_str();
-	   CivetServer::getParam(conn,"omschrijving", s[3]);
-	   button.omschrijving = s[3].c_str();
-	   CivetServer::getParam(conn,"action", s[4]);
-	   button.action = s[4].c_str();
-
-	   button.Initialize();
-
-	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + button.getUrl() + "\"/>";
-	   message = "Wijzigingen opgeslagen!";
+	   message = _("Button activated!");
 	}
 
 	/* initial page display */
 	{
+		tohead << "<script type=\"text/javascript\">";
+		tohead << " $(document).ready(function(){";
+		tohead << " $('#naam').on('change', function() {";
+		tohead << " $.get( \"" << button.getUrl() << "\", { naam: 'true', value: $('#naam').val() }, function( data ) {";
+		tohead << "  $( \"#naam\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#omschrijving').on('change', function() {";
+		tohead << " $.get( \"" << button.getUrl() << "\", { omschrijving: 'true', value: $('#omschrijving').val() }, function( data ) {";
+		tohead << "  $( \"#omschrijving\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#button').on('change', function() {";
+		tohead << " $.get( \"" << button.getUrl() << "\", { button: 'true', value: $('#button').val() }, function( data ) {";
+		tohead << "  $( \"#button\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#led').on('change', function() {";
+		tohead << " $.get( \"" << button.getUrl() << "\", { led: 'true', value: $('#led').val() }, function( data ) {";
+		tohead << "  $( \"#led\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#action').on('change', function() {";
+		tohead << " $.get( \"" << button.getUrl() << "\", { action: 'true', value: $('#action').val() }, function( data ) {";
+		tohead << "  $( \"#action\" ).html( data );})";
+	    tohead << "});";
+	    tohead << "});";
+		tohead << "</script>";
 		ss << "<form action=\"" << button.getUrl() << "\" method=\"POST\">";
+		ss << "<button type=\"submit\" name=\"activate\" value=\"true\" id=\"activate\">" << _("Activate") << "</button>";
+	    ss << "<button type=\"submit\" name=\"refresh\" value=\"true\" id=\"refresh\">" << _("Refresh") << "</button><br>";
+	    ss << "</form>";
+	    ss << "<h2>";
+	    ss << _("Current State") << ":<br>";
+	    ss << _("Current State") << " " << _("Button") << ":&nbsp;" << digitalRead(button.button_gpio) << "<br>";
+	    if (button.led_gpio > 0)
+	    	ss << _("Current State") << " " << _("Led") << ":&nbsp;" << (digitalRead(button.led_gpio) ? _("1 - Button inactive") : _("0 - Button active")) << "<br>";
+	    else
+	    	ss << _("Current State") << " " << _("Led") << ":&nbsp;" << _("not in use.") << "<br>";
+	    ss << "</h2>";
 		ss << "<div class=\"container\">";
-		ss << "<label for=\"naam\">Naam:</label>"
+		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
 					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
 					  button.naam << "\" name=\"naam\"/>" << "</br>";
-		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
+		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
 					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
 					  button.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
-		ss << "<br>";
-	    ss << "Huidige status button:&nbsp;" << digitalRead(button.button_gpio) << "<br>";
-	    if (button.led_gpio > 0)
-	    	ss << "Huidige status led:&nbsp;" << (digitalRead(button.led_gpio) ? "1 (knop inactief)" : "0 (knop actief)") << "<br>";
-	    else
-	    	ss << "Huidige status led: Led niet in gebruik." << "<br>";
-	    ss << "</div>";
-	    ss <<  "<br>";
-	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
-	    ss << "<button type=\"submit\" name=\"activate\" value=\"activate\" id=\"activate\">Activate</button><br>";
-	    ss <<  "<br>";
-		ss << "<h2>GPIO pins:</h2>";
-		ss << "<div class=\"container\">";
-		ss << "<label for=\"button\">Button GPIO:</label>"
+		ss << "<label for=\"button\">" << _("Button") << " GPIO:</label>"
 			  "<input class=\"inside\" id=\"button\" type=\"text\" size=\"4\" value=\"" <<
 			  button.button_gpio << "\" name=\"button\"/>" << "</br>";
-	    ss << "<label for=\"led\">Led GPIO (0 bij geen gebruik):</label>"
+	    ss << "<label for=\"led\">Led GPIO " << _("(0 if not in use)") << ":</label>"
 	          "<input class=\"inside\" id=\"led\" type=\"text\" size=\"4\" value=\"" <<
 	    	  button.led_gpio << "\" name=\"led\"/>" << "</br>";
-	    ss << "</div>";
-		ss << "<label for=\"action\">Actie (leeg bij geen gebruik):</label></br>";
+		ss << "<label for=\"action\">" << _("Action") << _("(empty if not in use)") << ":</label></br>";
 	    ss << "<select id=\"action\" name=\"action\">";
 		ss << "<option value=\"\"></option>";
 	 	for (std::pair<std::string, ChaseFactory::Chase*> element  : button.bf.cf.chasemap)
@@ -733,13 +805,12 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 	 		   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
 		}
         ss << "</select></br>";
-	    ss << "<br>";
-	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
+	    ss << "</div>";
 	    ss << "<br>";
 	    ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
 	}
 
-	ss = getHtml(meta, message, "button", ss.str().c_str());
+	ss = getHtml(meta, message, "button", ss.str().c_str(), tohead.str().c_str());
     mg_printf(conn,  ss.str().c_str(), "%s");
 	return true;
 }

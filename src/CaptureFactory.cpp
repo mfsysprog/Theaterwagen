@@ -19,6 +19,9 @@ using namespace sfe;
 #include <iostream>
 using namespace std::chrono;
 
+#include <libintl.h>
+#define _(String) gettext (String)
+
 cv::Size feather_amount;
 uint8_t LUTJE[3][256];
 int source_hist_int[3][256];
@@ -1292,22 +1295,21 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 
 	if(CivetServer::getParam(conn, "delete", value))
 	{
-	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/capturefactory\" />";
-	   message = "Verwijderd!";
+	   meta = "<meta http-equiv=\"refresh\" content=\"0;url=/capturefactory\" />";
 	   this->capturefactory.deleteCapture(value);
 	}
 	else
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/capturefactory\" />";
-	   message = "Opgeslagen!";
+	   message = _("Saved!");
        this->capturefactory.save();
 	}
 	else
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/capturefactory\" />";
-	   message = "Geladen!";
+	   message = _("Loaded!");
 	   this->capturefactory.load();
 	}
 	else
@@ -1315,7 +1317,7 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "clear", dummy))
 	{
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/capturefactory\" />";
-       message = "Scherm leeg gemaakt!";
+	   message = _("Screen empty!");
        this->capturefactory.clearScreen();
 	}
 	else if(CivetServer::getParam(conn, "newselect", dummy))
@@ -1328,7 +1330,6 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
       CaptureFactory::Capture* capture = capturefactory.addCapture(naam, omschrijving);
 
       meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + capture->getUrl() + "\" />";
-	  message = "Aangemaakt!";
 	}
 
 	std::stringstream ss;
@@ -1337,13 +1338,13 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	{
 	   ss << "<form action=\"/capturefactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
-	   ss << "<label for=\"naam\">Naam:</label>"
+	   ss << "<label for=\"naam\">" << _("Name") << "</label>"
   			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
-	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
+	   ss << "<label for=\"omschrijving\">" << _("Comment") << "</label>"
 	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
-   	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
+   	   ss << "id=\"newselect\">" << _("Add") << "</button>&nbsp;";
    	   ss << "</form>";
 
 	}
@@ -1354,30 +1355,30 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 		for (std::pair<std::string, CaptureFactory::Capture*> element : capturefactory.capturemap) {
 			ss << "<br style=\"clear:both\">";
 			ss << "<div class=\"row\">";
-			ss << "Naam:&nbsp;" << element.second->getNaam() << " &nbsp;";
-			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
+			ss << _("Name") << ":&nbsp;" << element.second->getNaam() << " &nbsp;";
+			ss << _("Comment") << ":&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
 			ss << "<br style=\"clear:both\">";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
-	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">" << _("Select") << "</button>&nbsp;";
 	    	ss << "</form>";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/capturefactory\" method=\"POST\">";
-	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.first << "\" id=\"delete\">Verwijderen</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.first << "\" id=\"delete\">" << _("Remove") << "</button>&nbsp;";
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
 			ss << "</div>";
 	    }
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/capturefactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Nieuw</button>";
+	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">" << _("New") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/capturefactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">Opslaan</button>";
+	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">" << _("Save") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/capturefactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
+	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">" << _("Load") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/capturefactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"clear\" id=\"clear\">Clear Screen</button>";
+	    ss << "<button type=\"submit\" name=\"clear\" id=\"clear\">" << _("Clear Screen") << "</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	}
@@ -1397,6 +1398,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	std::string value;
 	std::string message="&nbsp;";
 	std::string meta="";
+	std::stringstream tohead;
 
 	if(CivetServer::getParam(conn, "streaming", dummy))
 	{
@@ -1421,34 +1423,73 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		return true;
 	}
 
-	/* if parameter submit is present the submit button was pushed */
-	if(CivetServer::getParam(conn, "submit", dummy))
+	if(CivetServer::getParam(conn, "naam", value))
 	{
-	   CivetServer::getParam(conn,"naam", s[0]);
-	   capture.naam = s[0].c_str();
-	   CivetServer::getParam(conn,"omschrijving", s[1]);
-	   capture.omschrijving = s[1].c_str();
-       CivetServer::getParam(conn,"mix_from", s[2]);
-	   capture.mix_from = atoi(s[2].c_str());
-       CivetServer::getParam(conn,"mix_to", s[3]);
-	   capture.mix_to = atoi(s[3].c_str());
-	   CivetServer::getParam(conn, "fileonly", s[4]);
-	   if (s[4].compare("ja") == 0)
-		   capture.fileonly = true;
-	   else
-	       capture.fileonly = false;
-
-	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-	   message = "Opgeslagen!";
+		CivetServer::getParam(conn,"value", value);
+		capture.naam = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
 	}
-	else if(CivetServer::getParam(conn, "on_screen", dummy))
+	if(CivetServer::getParam(conn, "omschrijving", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.omschrijving = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "mix_from", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.mix_from = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "mix_to", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.mix_to = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "fileonly", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		if (value.compare("true") == 0)
+			capture.fileonly = true;
+		else
+			capture.fileonly = false;
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+
+	if(CivetServer::getParam(conn, "on_screen", dummy))
 	{
 		capture.onScreen();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		message = "Op het scherm!";
+		message = _("On Screen!");
 	}
-	else if(CivetServer::getParam(conn, "merge", dummy))
+    if(CivetServer::getParam(conn, "merge", dummy))
 	{
 		std::unique_lock<std::mutex> l(m);
 		delete capture.off_screen;
@@ -1457,11 +1498,11 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		if (capture.off_screen->size() == 0)
-			message = "Niet gelukt!";
+			message = _("Merge failed!");
 		else
-			message = "Samengevoegd!";
+			message = _("Merged!");
 	}
-	else if(CivetServer::getParam(conn, "newmovie", value))
+	if(CivetServer::getParam(conn, "newmovie", value))
 	{
 		//capture.fileMat->clear();
 		//capture.filePoints->clear();
@@ -1487,8 +1528,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + capture.getUrl() + "\"/>";
 	}
-	/* if parameter start is present start button was pushed */
-	else if(CivetServer::getParam(conn, "save_video", dummy))
+	if(CivetServer::getParam(conn, "save_video", dummy))
 	{
 		Size S = Size((*capture.cf.camMat)[0].cols,(*capture.cf.camMat)[0].rows);
 		int codec = CV_FOURCC('H', '2', '6', '4');
@@ -1505,10 +1545,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		outputVideo.release();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		message = "Video opgeslagen!";
+		message = _("Video saved!");
 	}
-	/* if parameter start is present start button was pushed */
-	else if(CivetServer::getParam(conn, "capture", dummy))
+	if(CivetServer::getParam(conn, "capture", dummy))
 	{
 		capture.openCap(CAP_CAM);
 		capture.cf.camPoints->clear();
@@ -1529,9 +1568,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		message = "Frame gefotografeerd!";
+		message = _("Frame Captured!");
 	}
-	else if(CivetServer::getParam(conn, "capture_multi", value))
+	if(CivetServer::getParam(conn, "capture_multi", value))
 	{
 		capture.openCap(CAP_CAM);
 		capture.cf.camPoints->clear();
@@ -1557,9 +1596,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		message = "Nieuwe frames gefotografeerd!";
+		message = _("Frames Captured!");
 	}
-	else if(CivetServer::getParam(conn, "capture_next", dummy))
+	if(CivetServer::getParam(conn, "capture_next", dummy))
 	{
 		capture.openCap(CAP_CAM);
 		capture.cf.camMat->push_back(capture.captureFrame());
@@ -1579,10 +1618,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		message = "Volgend frame gefotografeerd!";
+		message = _("Next Frame Captured!");
 	}
-	/* if parameter stop is present stop button was pushed */
-	else if(CivetServer::getParam(conn, "detect", dummy))
+	if(CivetServer::getParam(conn, "detect", dummy))
 	{
 		std::thread t1( [this] {
 
@@ -1616,9 +1654,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		t1.detach();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		message = "Gezichtsdetectie wordt op de achtergrond uitgevoerd!";
+		message = _("Facedetection running in background!");
 	}
-	else if(CivetServer::getParam(conn, "detect_file", dummy))
+	if(CivetServer::getParam(conn, "detect_file", dummy))
 	{
 		std::thread t1( [this] {
 
@@ -1650,11 +1688,10 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		t1.detach();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		message = "Gezichtsdetectie wordt op de achtergrond uitgevoerd!";
+		message = _("Facedetection running in background!");
 	}
 
 	std::stringstream ss;
-	std::stringstream tohead;
 
 	if(CivetServer::getParam(conn, "movie", dummy))
 	{
@@ -1673,11 +1710,11 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    	if (std::strcmp(dp->d_name, ".") == 0) continue;
 	    	if (std::strcmp(dp->d_name, "..") == 0) continue;
 	    	ss << "<button type=\"submit\" name=\"newmovie\" value=\"" << MOVIES_DIR << dp->d_name << "\" ";
-	    	ss << "id=\"newmovie\">Selecteren</button>&nbsp;";
+	    	ss << "id=\"newmovie\">" << _("Select") << "</button>&nbsp;";
 	    	ss << "&nbsp;" << dp->d_name << "<br>";
 	        }
 	   } while (dp != NULL);
-       ss << "<button type=\"submit\" name=\"annuleren\" value=\"annuleren\" id=\"annuleren\">Annuleren</button>&nbsp;";
+       ss << "<button type=\"submit\" name=\"annuleren\" value=\"annuleren\" id=\"annuleren\">" << _("Cancel") << "</button>&nbsp;";
        ss << "</form>";
        (void) closedir(dirp);
 	}
@@ -1692,69 +1729,90 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		//tohead << " });},1000)";
 		//tohead << "});";
 		//tohead << "</script>";
+		tohead << "<script type=\"text/javascript\">";
+		tohead << " $(document).ready(function(){";
+		tohead << " $('#naam').on('change', function() {";
+		tohead << " $.get( \"" << capture.getUrl() << "\", { naam: 'true', value: $('#naam').val() }, function( data ) {";
+		tohead << "  $( \"#naam\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#omschrijving').on('change', function() {";
+		tohead << " $.get( \"" << capture.getUrl() << "\", { omschrijving: 'true', value: $('#omschrijving').val() }, function( data ) {";
+		tohead << "  $( \"#omschrijving\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#mix_from').on('change', function() {";
+		tohead << " $.get( \"" << capture.getUrl() << "\", { mix_from: 'true', value: $('#mix_from').val() }, function( data ) {";
+		tohead << "  $( \"#mix_from\" ).html( data );})";
+	    tohead << "});";
+	    tohead << " $('#mix_to').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { mix_to: 'true', value: $('#mix_to').val() }, function( data ) {";
+   		tohead << "  $( \"#mix_to\" ).html( data );})";
+  	    tohead << "});";
+	    tohead << " $('#fileonly').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { fileonly: 'true', value: $('#fileonly').is(':checked') }, function( data ) {";
+   		tohead << "  $( \"#fileonly\" ).html( data );})";
+  	    tohead << "});";
+		tohead << "});";
+		tohead << "</script>";
 		ss << "<form action=\"" << capture.getUrl() << "\" method=\"POST\">";
+	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">" << _("Refresh") << "</button><br>";
+	    ss <<  "<br>";
+	    ss << "<button type=\"submit\" name=\"capture\" value=\"capture\" id=\"capture_button\">" << _("Input Cam") << "</button>";
+	    ss << "<button type=\"submit\" name=\"capture_next\" value=\"capture_next\" id=\"capture_button_next\">" << _("Next Frame") << "</button>";
+	    ss << "<button type=\"submit\" name=\"detect\" value=\"detect\" id=\"detect_button\">" << _("Detect") << "</button>";
+	    ss << "<button type=\"submit\" name=\"save_video\" value=\"save_video\" id=\"save_video\">" << _("Save as Video") << "</button></br>";
+	    ss << "<button type=\"submit\" name=\"movie\" id=\"movie\">" << _("Input File") << "</button>";
+	    ss << "<button type=\"submit\" name=\"detect_file\" value=\"detect_file\" id=\"detect__file_button\">" << _("Detect File") << "</button><br>";
+	    ss << "<button type=\"submit\" name=\"merge\" id=\"merge\">" << _("Merge") << "</button>";
+	    ss << "<button type=\"submit\" name=\"on_screen\" id=\"on_screen\">" << _("On Screen") << "</button>";
+	    ss << "</form>";
+	    ss << "<h2>";
+		if (!((*capture.cf.camPoints).size() == 0))
+		for (unsigned int i = 0; i < (*capture.cf.camPoints).size(); i++)
+		{
+			ss << _("Number of faces in frame ") << i+1 << ":&nbsp;" << (*capture.cf.camPoints)[i].size() << "<br>";
+		}
+		else
+			ss << _("No faces found.") << "<br>";
+		ss << "</h2>";
 		ss << "<div class=\"container\">";
-		ss << "<label for=\"naam\">Naam:</label>"
+		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
 					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
 					  capture.naam << "\" name=\"naam\"/>" << "<br>";
-		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
+		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
 					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
 					  capture.omschrijving << "\" name=\"omschrijving\"/>" << "<br>";
 		if (capture.fileonly)
 		{
-			ss << "<label for=\"fileonly\">Alleen bestand:</label>"
+			ss << "<label for=\"fileonly\">" << _("File Only") << ":</label>"
 			   	   	  "<input id=\"fileonly\" type=\"checkbox\" name=\"fileonly\" value=\"ja\" checked/>" << "</br>";
 		}
 		else
 		{
-			ss << "<label for=\"fileonly\">Alleen bestand:</label>"
+			ss << "<label for=\"fileonly\">" << _("File Only") << ":</label>"
 			   	   	  "<input id=\"fileonly\" type=\"checkbox\" name=\"fileonly\" value=\"ja\"/>" << "</br>";
 		}
 	    ss << "<br>";
-		ss << "<label for=\"mix_from\">Mix van:</label>";
+		ss << "<label for=\"mix_from\">" << _("Mix from") << ":</label>";
 		ss << "<td><input class=\"inside\" id=\"mix_from\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
 			   capture.mix_from << "\"" << " name=\"mix_from\" /><br>";
-		ss << "<label for=\"mix_to\">Mix tot:</label>";
+		ss << "<label for=\"mix_to\">" << _("Mix to") << ":</label>";
 		ss << "<td><input class=\"inside\" id=\"mix_to\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
 			  capture.mix_to << "\"" << " name=\"mix_to\" /><br>";
 		ss << "</div>";
 		ss << "<br>";
-	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
-	    ss <<  "<br>";
-	    ss << "<button type=\"submit\" name=\"capture\" value=\"capture\" id=\"capture_button\">Capture</button>";
-	    ss << "<button type=\"submit\" name=\"capture_next\" value=\"capture_next\" id=\"capture_button_next\">Volgende Frame</button><br>";
-	    ss << "<button type=\"submit\" name=\"capture_multi\" value=\"30\" id=\"capture_button_30\">Capture 30</button>";
-	    ss << "<button type=\"submit\" name=\"capture_multi\" value=\"60\" id=\"capture_button_60\">Capture 60</button>";
-	    ss << "<button type=\"submit\" name=\"capture_multi\" value=\"120\" id=\"capture_button_120\">Capture 120</button></br>";
-	    ss << "<button type=\"submit\" name=\"save_video\" value=\"save_video\" id=\"save_video\">Save as Video</button></br>";
-	    ss << "<button type=\"submit\" name=\"detect\" value=\"detect\" id=\"detect_button\">Detect</button>";
-	    ss << "<button type=\"submit\" name=\"detect_file\" value=\"detect_file\" id=\"detect__file_button\">Detect File</button>";
-	    ss << "<button type=\"submit\" name=\"movie\" id=\"movie\">Filmpje</button>";
-	    ss << "<button type=\"submit\" name=\"merge\" id=\"merge\">Merge</button>";
-	    ss << "<button type=\"submit\" name=\"on_screen\" id=\"on_screen\">On Screen</button>";
-	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss << "</br>";
 	    /*
 	    ss << "<div id=\"capture\">";
 	    ss << "<img src=\"" << capture.url << "/?streaming=true\">";
 	    ss << "</div>"; */
-	    ss << "<h2>Foto:</h2>";
+	    ss << "<h2>" << _("Photo") << ":</h2>";
 	    ss << "<img src=\"" << "tmp/" << capture.getUuid() << ".jpg?t=" << std::time(0) << "\"></img>";
-	    ss << "<h2>Video:</h2>";
+	    ss << "<h2>" << _("Video") << ":</h2>";
 	    ss << "<video width\"1024\" height=\"768\" controls>";
 	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4?t=" << std::time(0) << "\" type=\"video/mp4\">";
 	    ss << "Your browser does not support the video tag";
 		ss << "</video>";
 		ss << "<br>";
-		ss << "<h2>";
-		if (!((*capture.cf.camPoints).size() == 0))
-		for (unsigned int i = 0; i < (*capture.cf.camPoints).size(); i++)
-		{
-			ss << "Aantal gezichten in frame " << i+1 << ":&nbsp;" << (*capture.cf.camPoints)[i].size() << "<br>";
-		}
-		else
-			ss << "Geen gezichten gevonden.<br>";
-		ss << "</h2>";
 	}
 
 	ss = getHtml(meta, message, "capture", ss.str().c_str(), tohead.str().c_str());
