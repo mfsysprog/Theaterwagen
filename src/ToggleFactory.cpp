@@ -367,6 +367,7 @@ bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		toggle.relay = atoi(value.c_str());
+		toggle.Initialize();
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";

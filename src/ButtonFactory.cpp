@@ -694,6 +694,7 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		button.button_gpio = atoi(value.c_str());
+		button.Initialize();
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -705,6 +706,7 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		button.led_gpio = atoi(value.c_str());
+		button.Initialize();
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -712,7 +714,7 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 		mg_printf(conn, ss.str().c_str(), "%s");
 		return true;
 	}
-	if(CivetServer::getParam(conn, "action", value))
+	if(CivetServer::getParam(conn, "action", dummy))
 	{
 		CivetServer::getParam(conn,"value", value);
 		button.action = value.c_str();

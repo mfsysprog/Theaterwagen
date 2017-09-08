@@ -6,6 +6,8 @@
  */
 
 #include "HomeHandler.hpp"
+#include <libintl.h>
+#define _(String) gettext (String)
 
 bool HomeHandler::handleGet(CivetServer *server, struct mg_connection *conn)
 	{
@@ -25,40 +27,51 @@ bool HomeHandler::handleAll(const char *method,
 	std::string meta="";
 	std::stringstream ss;
 	std::string dummy;
+	std::string value;
+	std::stringstream tohead;
 
-	if(CivetServer::getParam(conn, "language", dummy))
+	if(CivetServer::getParam(conn, "save", dummy))
 		{
+		  CivetServer::getParam(conn,"taal", value);
+
 		  /* Change language.  */
-		  if (std::string(getenv("LANGUAGE")).compare("nl") == 0)
-			  setenv ("LANGUAGE", "en", 1);
-		  else
-			  setenv ("LANGUAGE", "nl", 1);
+		  setenv ("LANGUAGE", value.c_str() , 1);
 
 		  /* Make change known.  */
 		  {
 		    extern int  _nl_msg_cat_cntr;
 		    ++_nl_msg_cat_cntr;
 		  }
-
-		   meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"/theaterwagen\"/>";
-		   message = "Taal gewijzigd!";
 		}
 
+	ss << "<h2>" << _("Language") << ":";
 	ss << "<form action=\"/theaterwagen\" method=\"POST\">";
-    ss << "<button type=\"submit\" name=\"language\" value=\"language\" id=\"language\">Taal wisselen</button>";
+    ss << "<select id=\"taal\" name=\"taal\">";
+    if (std::string(getenv("LANGUAGE")).compare("en") == 0)
+    	ss << "<option selected=\"selected\" value=\"en\">English</option>";
+    else
+    	ss << "<option value=\"en\">English</option>";
+    if (std::string(getenv("LANGUAGE")).compare("nl") == 0)
+    	ss << "<option selected=\"selected\" value=\"nl\">Nederlands</option>";
+    else
+    	ss << "<option value=\"nl\">Nederlands</option>";
+    ss << "</select><br>";
+    ss << "<button type=\"submit\" name=\"save\" value=\"save\" id=\"save\">" << _("Change Language") << "</button>";
 	ss << "</form>";
+	ss << "</h2>";
 	ss << "<form action=\"/chasefactory\" method=\"POST\">";
-    ss << "<button type=\"submit\" name=\"saveall\" value=\"saveall\" id=\"saveall\">Alles opslaan</button>";
+    ss << "<button type=\"submit\" name=\"saveall\" value=\"saveall\" id=\"saveall\">" << _("Save All") << "</button>";
 	ss << "</form>";
 	ss << "<form action=\"/portret\" method=\"POST\">";
-    ss << "<button type=\"submit\" name=\"portret\" value=\"portret\" id=\"portret\">Portret</button>";
+    ss << "<button type=\"submit\" name=\"portret\" value=\"portret\" id=\"portret\">" << _("Portret") << "</button>";
 	ss << "</form>";
-	ss = getHtml(meta, message, "home",  ss.str().c_str());
+	ss = getHtml(meta, message, "home",  ss.str().c_str(), tohead.str().c_str());
 	mg_printf(conn, "%s", ss.str().c_str());
 	return true;
 }
 
 HomeHandler::HomeHandler() {
+	if (getenv("LANGUAGE") == NULL) setenv("LANGUAGE", "en" , 1);
 }
 
 HomeHandler::~HomeHandler() {

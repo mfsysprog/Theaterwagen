@@ -8,6 +8,8 @@
  */
 
 #include "MotorFactory.hpp"
+#include <libintl.h>
+#define _(String) gettext (String)
 
 static std::function<void()> cbfunc_motor[80];
 
@@ -886,7 +888,7 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "save", dummy))
 	{
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/motorfactory\">";
-	   message = "Opgeslagen!";
+	   message = _("Saved!");
        this->motorfactory.save();
 	}
 	else
@@ -894,7 +896,7 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "load", dummy))
 	{
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/motorfactory\">";
-		message = "Ingeladen!";
+		message = _("Loaded!");
 		this->motorfactory.load();
 	}
 	else if(CivetServer::getParam(conn, "newselect", dummy))
@@ -921,21 +923,21 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 	{
 	   ss << "<form action=\"/motorfactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
-	   ss << "<label for=\"naam\">Naam:</label>"
+	   ss << "<label for=\"naam\">" << _("Name") << ":</label>"
   			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
-	   ss << "<label for=\"omschrijving\">Omschrijving:</label>"
+	   ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
 	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
-	   ss << "<label for=\"left_sensor\">Linker sensor GPIO:</label>"
+	   ss << "<label for=\"left_sensor\">" << _("Left Button") << " GPIO:</label>"
 	   	     "<input class=\"inside\" id=\"left_sensor\" type=\"text\" size=\"3\" name=\"left_sensor\"/>" << "</br>";
-	   ss << "<label for=\"right_sensor\">Rechter sensor GPIO:</label>"
+	   ss << "<label for=\"right_sensor\">" << _("Right Button") << " GPIO:</label>"
 	   	     "<input class=\"inside\" id=\"right_sensor\" type=\"text\" size=\"3\" name=\"right_sensor\"/>" << "</br>";
-	   ss << "<label for=\"left_relay\">Linker relais GPIO:</label>"
+	   ss << "<label for=\"left_relay\">" << _("Left Toggle") << " GPIO:</label>"
 	   	     "<input class=\"inside\" id=\"left_relay\" type=\"text\" size=\"3\" name=\"left_relay\"/>" << "</br>";
-	   ss << "<label for=\"right_relay\">Rechter relais GPIO:</label>"
+	   ss << "<label for=\"right_relay\">" << _("Right Toggle") << " GPIO:</label>"
 	   	     "<input class=\"inside\" id=\"right_relay\" type=\"text\" size=\"3\" name=\"right_relay\"/>" << "</br>";
 	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
-   	   ss << "id=\"newselect\">Toevoegen</button>&nbsp;";
+   	   ss << "id=\"newselect\">" << _("Add") << "</button>&nbsp;";
    	   ss << "</form>";
    	   ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
 	}
@@ -946,27 +948,27 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 		for (std::pair<std::string, MotorFactory::Motor*> element : motorfactory.motormap) {
 			ss << "<br style=\"clear:both\">";
 			ss << "<div class=\"row\">";
-			ss << "Naam:&nbsp;" << element.second->getNaam() << " &nbsp;";
-			ss << "Omschrijving:&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
+			ss << _("Name") << ":&nbsp;" << element.second->getNaam() << " &nbsp;";
+			ss << _("Comment") << ":&nbsp;" << element.second->getOmschrijving() << " &nbsp;";
 			ss << "<br style=\"clear:both\">";
 			ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"" << element.second->getUrl() << "\" method=\"POST\">";
-	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">Selecteren</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"select\" id=\"select\">" << _("Select") << "</button>&nbsp;";
 	    	ss << "</form>";
 	    	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/motorfactory\" method=\"POST\">";
-	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.first << "\" id=\"delete\">Verwijderen</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"delete\" value=\"" << element.first << "\" id=\"delete\">" << _("Remove") << "</button>&nbsp;";
 			ss << "</form>";
 			ss << "<br style=\"clear:both\">";
 			ss << "</div>";
 	    }
 	    ss << "<br>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/motorfactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">Nieuw</button>";
+	    ss << "<button type=\"submit\" name=\"new\" id=\"new\">" << _("New") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/motorfactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">Opslaan</button>";
+	    ss << "<button type=\"submit\" name=\"save\" id=\"save\">" << _("Save") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/motorfactory\" method=\"POST\">";
-	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">Laden</button>";
+	    ss << "<button type=\"submit\" name=\"load\" id=\"load\">" << _("Load") << "</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	}
@@ -986,94 +988,170 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 	std::string message="&nbsp;";
 	std::string meta="";
 	std::stringstream ss;
+	std::string value;
+	std::stringstream tohead;
 
-	/* if parameter submit is present the submit button was pushed */
-	if(CivetServer::getParam(conn, "submit", dummy))
+	if(CivetServer::getParam(conn, "naam", value))
 	{
-	   CivetServer::getParam(conn,"left-sensor", s[0]);
-	   motor.left_sensor = atoi(s[0].c_str());
-	   CivetServer::getParam(conn,"right-sensor", s[1]);
-	   motor.right_sensor = atoi(s[1].c_str());
-	   CivetServer::getParam(conn,"left-relay", s[2]);
-	   motor.left_relay = atoi(s[2].c_str());
-	   CivetServer::getParam(conn,"right-relay", s[3]);
-	   motor.right_relay = atoi(s[3].c_str());
-	   CivetServer::getParam(conn,"naam", s[4]);
-	   motor.naam = s[4].c_str();
-	   CivetServer::getParam(conn,"omschrijving", s[5]);
-	   motor.omschrijving = s[5].c_str();
-
-	   motor.Initialize();
-
-	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + motor.getUrl() + "\"/>";
-	   message = "Wijzigingen opgeslagen!";
+		CivetServer::getParam(conn,"value", value);
+		motor.naam = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "omschrijving", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		motor.omschrijving = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "leftsensor", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		motor.left_sensor = atoi(value.c_str());
+		motor.Initialize();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "rightsensor", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		motor.right_sensor = atoi(value.c_str());
+		motor.Initialize();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "leftrelay", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		motor.left_relay = atoi(value.c_str());
+		motor.Initialize();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "rightrelay", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		motor.right_relay = atoi(value.c_str());
+		motor.Initialize();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
 	}
 	/* if parameter left is present left button was pushed */
-	else if(CivetServer::getParam(conn, "left", dummy))
+	if(CivetServer::getParam(conn, "left", dummy))
 	{
 		motor.Start(LEFT);
         meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + motor.getUrl() + "\"/>";
-		message = "Naar links!";
+		message = _("To Left!");
 	}
 	/* if parameter stop is present stop button was pushed */
-	else if(CivetServer::getParam(conn, "stop", dummy))
+	if(CivetServer::getParam(conn, "stop", dummy))
 	{
 		motor.Stop();
         meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + motor.getUrl() + "\"/>";
-		message = "Stoppen!";
+		message = _("Stop!");
 	}
 	/* if parameter right is present right button was pushed */
-	else if(CivetServer::getParam(conn, "right", dummy))
+	if(CivetServer::getParam(conn, "right", dummy))
 	{
 		motor.Start(RIGHT);
         meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + motor.getUrl() + "\"/>";
-		message = "Naar rechts!";
+        message = _("To Right!");
 	}
 
 	/* initial page display */
 	{
+		tohead << "<script type=\"text/javascript\">";
+		tohead << " $(document).ready(function(){";
+		tohead << " $('#naam').on('change', function() {";
+		tohead << " $.get( \"" << motor.getUrl() << "\", { naam: 'true', value: $('#naam').val() }, function( data ) {";
+		tohead << "  $( \"#naam\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#omschrijving').on('change', function() {";
+		tohead << " $.get( \"" << motor.getUrl() << "\", { omschrijving: 'true', value: $('#omschrijving').val() }, function( data ) {";
+		tohead << "  $( \"#omschrijving\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#leftsensor').on('change', function() {";
+		tohead << " $.get( \"" << motor.getUrl() << "\", { leftsensor: 'true', value: $('#leftsensor').val() }, function( data ) {";
+		tohead << "  $( \"#leftsensor\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#rightsensor').on('change', function() {";
+		tohead << " $.get( \"" << motor.getUrl() << "\", { rightsensor: 'true', value: $('#rightsensor').val() }, function( data ) {";
+		tohead << "  $( \"#rightsensor\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#leftrelay').on('change', function() {";
+		tohead << " $.get( \"" << motor.getUrl() << "\", { leftrelay: 'true', value: $('#leftrelay').val() }, function( data ) {";
+		tohead << "  $( \"#leftrelay\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#rightrelay').on('change', function() {";
+		tohead << " $.get( \"" << motor.getUrl() << "\", { rightrelay: 'true', value: $('#rightrelay').val() }, function( data ) {";
+		tohead << "  $( \"#rightrelay\" ).html( data );})";
+	    tohead << "});";
+	    tohead << "});";
+		tohead << "</script>";
 		ss << "<form action=\"" << motor.getUrl() << "\" method=\"POST\">";
+	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">" << _("Refresh") << "</button><br>";
+	    ss << "<br>";
+	    ss << "<button type=\"submit\" name=\"left\" value=\"left\" id=\"left\">" << _("Left") << "</button>";
+	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">" << _("Stop") << "</button>";
+	    ss << "<button type=\"submit\" name=\"right\" value=\"right\" id=\"right\">" << _("Right") << "</button></br>";
+	    ss << "</form>";
+	    ss << "<h2>";
+	    ss << _("Current State") << ":<br>";
+	    ss << _("Current State") << " " << _("Button Left") << ":&nbsp;" << digitalRead(motor.left_sensor) << "<br>";
+	    ss << _("Current State") << " " << _("Button Right") << ":&nbsp;" << digitalRead(motor.right_sensor) << "<br>";
+	    ss << _("Current State") << " " << _("Toggle Left") << ":&nbsp;" << digitalRead(motor.left_relay) << "<br>";
+	    ss << _("Current State") << " " << _("Toggle Right") << ":&nbsp;" << digitalRead(motor.right_relay) << "<br>";
+	    ss << "</h2>";
 		ss << "<div class=\"container\">";
-		ss << "<label for=\"naam\">Naam:</label>"
+		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
 					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
 					  motor.naam << "\" name=\"naam\"/>" << "</br>";
-		ss << "<label for=\"omschrijving\">Omschrijving:</label>"
+		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
 					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
 					  motor.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
-		ss << "<br>";
-	    ss << "Huidige status sensor links:&nbsp;" << digitalRead(motor.left_sensor) << "<br>";
-	    ss << "Huidige status sensor rechts:&nbsp;" << digitalRead(motor.right_sensor) << "<br>";
-	    ss << "Huidige status relais links:&nbsp;" << digitalRead(motor.left_relay) << "<br>";
-	    ss << "Huidige status relais rechts:&nbsp;" << digitalRead(motor.right_relay) << "<br>";
+		ss << "<label for=\"leftsensor\">" << _("Button Left") << " GPIO:</label>"
+			  "<input class=\"inside\" id=\"leftsensor\" type=\"text\" size=\"4\" value=\"" <<
+			  motor.left_sensor << "\" name=\"leftsensor\"/>" << "</br>";
+	    ss << "<label for=\"rightsensor\">" << _("Button Right") << " GPIO:</label>"
+	          "<input class=\"inside\" id=\"rightsensor\" type=\"text\" size=\"4\" value=\"" <<
+	    	  motor.right_sensor << "\" name=\"rightsensor\"/>" << "</br>";
+	    ss << "<label for=\"leftrelay\">" << _("Toggle Left") << " GPIO:</label>"
+	    	  "<input class=\"inside\" id=\"leftrelay\" type=\"text\" size=\"4\" value=\"" <<
+	    	  motor.left_relay << "\" name=\"leftrelay\"/>" << "</br>";
+	    ss << "<label for=\"rightrelay\">" << _("Toggle Right") << " GPIO:</label>"
+	    	  "<input class=\"inside\" id=\"rightrelay\" type=\"text\" size=\"4\" value=\"" <<
+	    	  motor.right_relay << "\" name=\"rightrelay\"/>" << "</br>";
 	    ss << "</div>";
-	    ss <<  "<br>";
-	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">Refresh</button><br>";
-	    ss <<  "<br>";
-	    ss << "<button type=\"submit\" name=\"left\" value=\"left\" id=\"left\">LINKS</button>";
-	    ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">STOP</button>";
-	    ss << "<button type=\"submit\" name=\"right\" value=\"right\" id=\"right\">RECHTS</button></br>";
-		ss << "<h2>GPIO pins:</h2>";
-		ss << "<div class=\"container\">";
-		ss << "<label for=\"left-sensor\">Left Sensor GPIO pin:</label>"
-			  "<input class=\"inside\" id=\"left-sensor\" type=\"text\" size=\"4\" value=\"" <<
-			  motor.left_sensor << "\" name=\"left-sensor\"/>" << "</br>";
-	    ss << "<label for=\"right-sensor\">Right Sensor GPIO pin:</label>"
-	          "<input class=\"inside\" id=\"right-sensor\" type=\"text\" size=\"4\" value=\"" <<
-	    	  motor.right_sensor << "\" name=\"right-sensor\"/>" << "</br>";
-	    ss << "<label for=\"left-relay\">Left Relay GPIO pin:</label>"
-	    	  "<input class=\"inside\" id=\"left-relay type=\"text\" size=\"4\" value=\"" <<
-	    	  motor.left_relay << "\" name=\"left-relay\"/>" << "</br>";
-	    ss << "<label for=\"right-relay\">Right Relay GPIO pin:</label>"
-	    	  "<input class=\"inside\" id=\"right-relay\" type=\"text\" size=\"4\" value=\"" <<
-	    	  motor.right_relay << "\" name=\"right-relay\"/>" << "</br>";
-	    ss << "</div>";
-	    ss << "<br>";
-	    ss << "<button type=\"submit\" name=\"submit\" value=\"submit\" id=\"submit\">Submit</button></br>";
 	    ss << "<br>";
 	    ss << "<img src=\"images/RP2_Pinout.png\" alt=\"Pin Layout\" style=\"width:400px;height:300px;\"><br>";
 	}
 
-	ss = getHtml(meta, message, "motor", ss.str().c_str());
+	ss = getHtml(meta, message, "motor", ss.str().c_str(), tohead.str().c_str());
     mg_printf(conn,  ss.str().c_str(), "%s");
 	return true;
 }

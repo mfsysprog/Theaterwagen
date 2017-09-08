@@ -421,7 +421,7 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "saveall", dummy))
 	{
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/\" />";
-	   message = "Alles opgeslagen!";
+	   message = _("All saved!");
 	   std::stringstream ss;
 
        ss = getHtml(meta, message, "home", ss.str().c_str());
