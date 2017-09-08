@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-08 08:37-0700\n"
+"POT-Creation-Date: 2017-09-08 10:07-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -37,6 +37,14 @@ msgstr ""
 msgid "Action"
 msgstr ""
 
+#: ChaseFactory.cpp:848
+msgid "Action::Play"
+msgstr ""
+
+#: ChaseFactory.cpp:849
+msgid "Action::Stop"
+msgstr ""
+
 #: Theaterwagen.cpp:57
 msgid "Actions"
 msgstr ""
@@ -45,12 +53,20 @@ msgstr ""
 msgid "Activate"
 msgstr ""
 
-#: ButtonFactory.cpp:617 CaptureFactory.cpp:1347 SceneFactory.cpp:513
-#: ToggleFactory.cpp:289
+#: ChaseFactory.cpp:945
+msgid "Active"
+msgstr ""
+
+#: ButtonFactory.cpp:617 CaptureFactory.cpp:1347 ChaseFactory.cpp:485
+#: ChaseFactory.cpp:876 SceneFactory.cpp:526 ToggleFactory.cpp:289
 msgid "Add"
 msgstr ""
 
-#: SceneFactory.cpp:812
+#: ChaseFactory.cpp:482 ChaseFactory.cpp:930 ChaseFactory.cpp:935
+msgid "Automatic Start"
+msgstr ""
+
+#: SceneFactory.cpp:826
 msgid "Base address"
 msgstr ""
 
@@ -62,6 +78,14 @@ msgstr ""
 msgid "Button activated!"
 msgstr ""
 
+#: ChaseFactory.cpp:842
+msgid "Button::Activate"
+msgstr ""
+
+#: ChaseFactory.cpp:843
+msgid "Button::Wait"
+msgstr ""
+
 #: Theaterwagen.cpp:59
 msgid "Buttons"
 msgstr ""
@@ -70,15 +94,31 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
+#: ChaseFactory.cpp:844
+msgid "Capture::Photo"
+msgstr ""
+
+#: ChaseFactory.cpp:847
+msgid "Capture::clearScreen"
+msgstr ""
+
+#: ChaseFactory.cpp:846
+msgid "Capture::onScreen"
+msgstr ""
+
+#: ChaseFactory.cpp:845
+msgid "Capture::toFile"
+msgstr ""
+
 #: Theaterwagen.cpp:56
 msgid "Captures"
 msgstr ""
 
-#: SceneFactory.cpp:815
+#: SceneFactory.cpp:829
 msgid "Channel"
 msgstr ""
 
-#: SceneFactory.cpp:814
+#: SceneFactory.cpp:828
 msgid "Channels"
 msgstr ""
 
@@ -88,9 +128,9 @@ msgstr ""
 
 #: ButtonFactory.cpp:601 ButtonFactory.cpp:629 ButtonFactory.cpp:788
 #: CaptureFactory.cpp:1343 CaptureFactory.cpp:1359 CaptureFactory.cpp:1781
-#: SceneFactory.cpp:509 SceneFactory.cpp:524 SceneFactory.cpp:783
-#: SceneFactory.cpp:813 ToggleFactory.cpp:283 ToggleFactory.cpp:302
-#: ToggleFactory.cpp:424
+#: ChaseFactory.cpp:480 ChaseFactory.cpp:925 SceneFactory.cpp:522
+#: SceneFactory.cpp:537 SceneFactory.cpp:797 SceneFactory.cpp:827
+#: ToggleFactory.cpp:283 ToggleFactory.cpp:302 ToggleFactory.cpp:424
 msgid "Comment"
 msgstr ""
 
@@ -107,7 +147,7 @@ msgstr ""
 msgid "Detect File"
 msgstr ""
 
-#: SceneFactory.cpp:815
+#: SceneFactory.cpp:829
 msgid "Exclude from Fade"
 msgstr ""
 
@@ -115,15 +155,23 @@ msgstr ""
 msgid "Facedetection running in background!"
 msgstr ""
 
-#: SceneFactory.cpp:787
+#: SceneFactory.cpp:783
+msgid "Fade In"
+msgstr ""
+
+#: SceneFactory.cpp:784
+msgid "Fade Out"
+msgstr ""
+
+#: SceneFactory.cpp:801
 msgid "Fade Steps"
 msgstr ""
 
-#: SceneFactory.cpp:726
+#: SceneFactory.cpp:739
 msgid "Fading in!"
 msgstr ""
 
-#: SceneFactory.cpp:763
+#: SceneFactory.cpp:776
 msgid "Fading out!"
 msgstr ""
 
@@ -155,6 +203,12 @@ msgstr ""
 msgid "Input File"
 msgstr ""
 
+#: ChaseFactory.cpp:981 ChaseFactory.cpp:998 ChaseFactory.cpp:1022
+#: ChaseFactory.cpp:1039 ChaseFactory.cpp:1056 ChaseFactory.cpp:1073
+#: ChaseFactory.cpp:1090 ChaseFactory.cpp:1113
+msgid "Invalid Action! Forgot to save or removed?"
+msgstr ""
+
 #: ButtonFactory.cpp:780 ButtonFactory.cpp:782
 msgid "Led"
 msgstr ""
@@ -163,13 +217,13 @@ msgstr ""
 msgid "Lights"
 msgstr ""
 
-#: ButtonFactory.cpp:648 CaptureFactory.cpp:1378 SceneFactory.cpp:543
-#: ToggleFactory.cpp:321
+#: ButtonFactory.cpp:648 CaptureFactory.cpp:1378 ChaseFactory.cpp:516
+#: SceneFactory.cpp:556 ToggleFactory.cpp:321
 msgid "Load"
 msgstr ""
 
-#: ButtonFactory.cpp:574 CaptureFactory.cpp:1312 SceneFactory.cpp:473
-#: ToggleFactory.cpp:260
+#: ButtonFactory.cpp:574 CaptureFactory.cpp:1312 ChaseFactory.cpp:452
+#: SceneFactory.cpp:486 ToggleFactory.cpp:260
 msgid "Loaded!"
 msgstr ""
 
@@ -185,12 +239,32 @@ msgstr ""
 msgid "Merged!"
 msgstr ""
 
+#: ChaseFactory.cpp:874
+msgid "Milliseconds (1000 = 1 second)"
+msgstr ""
+
 #: CaptureFactory.cpp:1795
 msgid "Mix from"
 msgstr ""
 
 #: CaptureFactory.cpp:1798
 msgid "Mix to"
+msgstr ""
+
+#: ChaseFactory.cpp:854
+msgid "Motor::Left"
+msgstr ""
+
+#: ChaseFactory.cpp:855
+msgid "Motor::Right"
+msgstr ""
+
+#: ChaseFactory.cpp:856
+msgid "Motor::Stop"
+msgstr ""
+
+#: ChaseFactory.cpp:857
+msgid "Motor::Wait"
 msgstr ""
 
 #: Theaterwagen.cpp:58
@@ -201,16 +275,41 @@ msgstr ""
 msgid "Music"
 msgstr ""
 
+#: ChaseFactory.cpp:859
+msgid "Music::FadeIn"
+msgstr ""
+
+#: ChaseFactory.cpp:861
+msgid "Music::FadeOut"
+msgstr ""
+
+#: ChaseFactory.cpp:858
+msgid "Music::Play"
+msgstr ""
+
+#: ChaseFactory.cpp:860
+msgid "Music::Stop"
+msgstr ""
+
+#: ChaseFactory.cpp:637
+msgid "N/A"
+msgstr ""
+
 #: ButtonFactory.cpp:599 ButtonFactory.cpp:628 ButtonFactory.cpp:785
 #: CaptureFactory.cpp:1341 CaptureFactory.cpp:1358 CaptureFactory.cpp:1778
-#: SceneFactory.cpp:507 SceneFactory.cpp:523 SceneFactory.cpp:780
-#: ToggleFactory.cpp:281 ToggleFactory.cpp:301 ToggleFactory.cpp:421
+#: ChaseFactory.cpp:478 ChaseFactory.cpp:922 SceneFactory.cpp:520
+#: SceneFactory.cpp:536 SceneFactory.cpp:794 ToggleFactory.cpp:281
+#: ToggleFactory.cpp:301 ToggleFactory.cpp:421
 msgid "Name"
 msgstr ""
 
-#: ButtonFactory.cpp:642 CaptureFactory.cpp:1372 SceneFactory.cpp:537
-#: ToggleFactory.cpp:315
+#: ButtonFactory.cpp:642 CaptureFactory.cpp:1372 ChaseFactory.cpp:510
+#: SceneFactory.cpp:550 ToggleFactory.cpp:315
 msgid "New"
+msgstr ""
+
+#: SceneFactory.cpp:787
+msgid "New Like"
 msgstr ""
 
 #: CaptureFactory.cpp:1760
@@ -253,21 +352,34 @@ msgstr ""
 msgid "Photo"
 msgstr ""
 
-#: SceneFactory.cpp:689
+#: SceneFactory.cpp:782
+msgid "Play"
+msgstr ""
+
+#: SceneFactory.cpp:702
 msgid "Playing!"
 msgstr ""
 
-#: ButtonFactory.cpp:774 CaptureFactory.cpp:1757 ToggleFactory.cpp:414
+#: ChaseFactory.cpp:863
+msgid "Portret::After"
+msgstr ""
+
+#: ChaseFactory.cpp:862
+msgid "Portret::Before"
+msgstr ""
+
+#: ButtonFactory.cpp:774 CaptureFactory.cpp:1757 ChaseFactory.cpp:914
+#: ToggleFactory.cpp:414
 msgid "Refresh"
 msgstr ""
 
-#: ButtonFactory.cpp:635 CaptureFactory.cpp:1365 SceneFactory.cpp:530
-#: ToggleFactory.cpp:308
+#: ButtonFactory.cpp:635 CaptureFactory.cpp:1365 ChaseFactory.cpp:503
+#: SceneFactory.cpp:543 ToggleFactory.cpp:308
 msgid "Remove"
 msgstr ""
 
-#: ButtonFactory.cpp:645 CaptureFactory.cpp:1375 SceneFactory.cpp:540
-#: ToggleFactory.cpp:318
+#: ButtonFactory.cpp:645 CaptureFactory.cpp:1375 ChaseFactory.cpp:513
+#: SceneFactory.cpp:553 ToggleFactory.cpp:318
 msgid "Save"
 msgstr ""
 
@@ -275,9 +387,21 @@ msgstr ""
 msgid "Save as Video"
 msgstr ""
 
-#: ButtonFactory.cpp:566 CaptureFactory.cpp:1305 SceneFactory.cpp:465
-#: ToggleFactory.cpp:252
+#: ButtonFactory.cpp:566 CaptureFactory.cpp:1305 ChaseFactory.cpp:444
+#: SceneFactory.cpp:478 ToggleFactory.cpp:252
 msgid "Saved!"
+msgstr ""
+
+#: ChaseFactory.cpp:865
+msgid "Scene::FadeIn"
+msgstr ""
+
+#: ChaseFactory.cpp:866
+msgid "Scene::FadeOut"
+msgstr ""
+
+#: ChaseFactory.cpp:864
+msgid "Scene::Play"
 msgstr ""
 
 #: Theaterwagen.cpp:62
@@ -289,11 +413,11 @@ msgid "Screen empty!"
 msgstr ""
 
 #: ButtonFactory.cpp:632 CaptureFactory.cpp:1362 CaptureFactory.cpp:1713
-#: SceneFactory.cpp:527 ToggleFactory.cpp:305
+#: ChaseFactory.cpp:500 SceneFactory.cpp:540 ToggleFactory.cpp:305
 msgid "Select"
 msgstr ""
 
-#: SceneFactory.cpp:815
+#: SceneFactory.cpp:829
 msgid "Selected"
 msgstr ""
 
@@ -301,8 +425,44 @@ msgstr ""
 msgid "Show Menu"
 msgstr ""
 
+#: ChaseFactory.cpp:851
+msgid "Sound::FadeIn"
+msgstr ""
+
+#: ChaseFactory.cpp:853
+msgid "Sound::FadeOut"
+msgstr ""
+
+#: ChaseFactory.cpp:850
+msgid "Sound::Play"
+msgstr ""
+
+#: ChaseFactory.cpp:852
+msgid "Sound::Stop"
+msgstr ""
+
 #: Theaterwagen.cpp:64
 msgid "Sounds"
+msgstr ""
+
+#: ChaseFactory.cpp:916
+msgid "Start"
+msgstr ""
+
+#: ChaseFactory.cpp:750
+msgid "Started!"
+msgstr ""
+
+#: ChaseFactory.cpp:917
+msgid "Stop"
+msgstr ""
+
+#: ChaseFactory.cpp:757
+msgid "Stopped!"
+msgstr ""
+
+#: ChaseFactory.cpp:869
+msgid "Time::Wait"
 msgstr ""
 
 #: ToggleFactory.cpp:285 ToggleFactory.cpp:418 ToggleFactory.cpp:427
@@ -317,11 +477,19 @@ msgstr ""
 msgid "Toggle on!"
 msgstr ""
 
+#: ChaseFactory.cpp:868
+msgid "Toggle::Off"
+msgstr ""
+
+#: ChaseFactory.cpp:867
+msgid "Toggle::On"
+msgstr ""
+
 #: Theaterwagen.cpp:60
 msgid "Toggles"
 msgstr ""
 
-#: SceneFactory.cpp:815
+#: ChaseFactory.cpp:963 SceneFactory.cpp:829
 msgid "Value"
 msgstr ""
 
