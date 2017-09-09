@@ -860,7 +860,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option value=\"Music::Stop\">" << _("Music::Stop") << "</option>";
 	   ss << "  <option value=\"Music::FadeOut\">" << _("Music::FadeOut") << "</option>";
 	   ss << "  <option value=\"Portret::Before\">" << _("Portret::Before") << "</option>";
-	   ss << "  <option value=\"Portret::After<\">" << _("Portret::After") << "</option>";
+	   ss << "  <option value=\"Portret::After\">" << _("Portret::After") << "</option>";
 	   ss << "  <option value=\"Scene::Play\">" << _("Scene::Play") << "</option>";
 	   ss << "  <option value=\"Scene::FadeIn\">" << _("Scene::FadeIn") << "</option>";
 	   ss << "  <option value=\"Scene::FadeOut\">" << _("Scene::FadeOut") << "</option>";
