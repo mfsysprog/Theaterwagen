@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-08 16:42-0700\n"
+"POT-Creation-Date: 2017-09-08 17:05-0700\n"
 "PO-Revision-Date: 2017-09-08 05:58-0700\n"
 "Last-Translator: Erik Janssen <eaw.janssen@chello.nl>\n"
 "Language-Team: Dutch\n"
@@ -18,25 +18,25 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: ButtonFactory.cpp:605
-#: ButtonFactory.cpp:796
+#: ButtonFactory.cpp:803
 msgid "(0 if not in use)"
 msgstr "(0 bij niet in gebruik)"
 
 #: ButtonFactory.cpp:608
-#: ButtonFactory.cpp:799
+#: ButtonFactory.cpp:806
 msgid "(empty if not in use)"
 msgstr "(leeg bij niet in gebruik)"
 
-#: ButtonFactory.cpp:782
+#: ButtonFactory.cpp:789
 msgid "0 - Button active"
 msgstr "0 - Knop actief"
 
-#: ButtonFactory.cpp:782
+#: ButtonFactory.cpp:789
 msgid "1 - Button inactive"
 msgstr "1 - Knop inactief"
 
 #: ButtonFactory.cpp:608
-#: ButtonFactory.cpp:799
+#: ButtonFactory.cpp:806
 #: ChaseFactory.cpp:966
 msgid "Action"
 msgstr "Actie"
@@ -53,7 +53,7 @@ msgstr "Actie::Stop"
 msgid "Actions"
 msgstr "Acties"
 
-#: ButtonFactory.cpp:775
+#: ButtonFactory.cpp:783
 msgid "Activate"
 msgstr "Activeren"
 
@@ -83,14 +83,14 @@ msgid "Automatic Start"
 msgstr "Automatisch Starten"
 
 #: FixtureFactory.cpp:232
-#: FixtureFactory.cpp:366
+#: FixtureFactory.cpp:369
 #: SceneFactory.cpp:720
 msgid "Base address"
 msgstr "Basis adres"
 
 #: ButtonFactory.cpp:603
-#: ButtonFactory.cpp:780
-#: ButtonFactory.cpp:793
+#: ButtonFactory.cpp:787
+#: ButtonFactory.cpp:800
 msgid "Button"
 msgstr "Knop"
 
@@ -162,7 +162,7 @@ msgstr "Scherm Leegmaken"
 
 #: ButtonFactory.cpp:601
 #: ButtonFactory.cpp:629
-#: ButtonFactory.cpp:790
+#: ButtonFactory.cpp:797
 #: CaptureFactory.cpp:1343
 #: CaptureFactory.cpp:1359
 #: CaptureFactory.cpp:1781
@@ -171,7 +171,7 @@ msgstr "Scherm Leegmaken"
 #: ChaseFactory.cpp:927
 #: FixtureFactory.cpp:230
 #: FixtureFactory.cpp:249
-#: FixtureFactory.cpp:363
+#: FixtureFactory.cpp:366
 #: MotorFactory.cpp:928
 #: MotorFactory.cpp:952
 #: MotorFactory.cpp:1134
@@ -187,14 +187,14 @@ msgstr "Scherm Leegmaken"
 #: SoundFactory.cpp:571
 #: ToggleFactory.cpp:283
 #: ToggleFactory.cpp:302
-#: ToggleFactory.cpp:425
+#: ToggleFactory.cpp:426
 msgid "Comment"
 msgstr "Commentaar"
 
-#: ButtonFactory.cpp:779
-#: ButtonFactory.cpp:780
-#: ButtonFactory.cpp:782
-#: ButtonFactory.cpp:784
+#: ButtonFactory.cpp:786
+#: ButtonFactory.cpp:787
+#: ButtonFactory.cpp:789
+#: ButtonFactory.cpp:791
 #: MotorFactory.cpp:1124
 #: MotorFactory.cpp:1125
 #: MotorFactory.cpp:1126
@@ -202,8 +202,8 @@ msgstr "Commentaar"
 #: MotorFactory.cpp:1128
 #: MusicFactory.cpp:548
 #: SoundFactory.cpp:559
-#: ToggleFactory.cpp:418
 #: ToggleFactory.cpp:419
+#: ToggleFactory.cpp:420
 msgid "Current State"
 msgstr "Huidige Status"
 
@@ -309,8 +309,8 @@ msgstr "Ongeldige Actie! Opslaan vergeten of verwijderd?"
 msgid "Language"
 msgstr "Taal"
 
-#: ButtonFactory.cpp:782
-#: ButtonFactory.cpp:784
+#: ButtonFactory.cpp:789
+#: ButtonFactory.cpp:791
 msgid "Led"
 msgstr "Led"
 
@@ -429,7 +429,7 @@ msgstr "n.v.t."
 
 #: ButtonFactory.cpp:599
 #: ButtonFactory.cpp:628
-#: ButtonFactory.cpp:787
+#: ButtonFactory.cpp:794
 #: CaptureFactory.cpp:1341
 #: CaptureFactory.cpp:1358
 #: CaptureFactory.cpp:1778
@@ -438,7 +438,7 @@ msgstr "n.v.t."
 #: ChaseFactory.cpp:924
 #: FixtureFactory.cpp:228
 #: FixtureFactory.cpp:248
-#: FixtureFactory.cpp:360
+#: FixtureFactory.cpp:363
 #: MotorFactory.cpp:926
 #: MotorFactory.cpp:951
 #: MotorFactory.cpp:1131
@@ -453,7 +453,7 @@ msgstr "n.v.t."
 #: SoundFactory.cpp:568
 #: ToggleFactory.cpp:281
 #: ToggleFactory.cpp:301
-#: ToggleFactory.cpp:422
+#: ToggleFactory.cpp:423
 msgid "Name"
 msgstr "Naam"
 
@@ -486,7 +486,7 @@ msgid "No faces found."
 msgstr "Geen gezichten gevonden."
 
 #: FixtureFactory.cpp:234
-#: FixtureFactory.cpp:369
+#: FixtureFactory.cpp:372
 msgid "Number of channels"
 msgstr "Aantal kanalen"
 
@@ -494,11 +494,11 @@ msgstr "Aantal kanalen"
 msgid "Number of faces in frame "
 msgstr "Aantal gezichten in frame "
 
-#: ToggleFactory.cpp:414
+#: ToggleFactory.cpp:416
 msgid "Off"
 msgstr "Uit"
 
-#: ToggleFactory.cpp:413
+#: ToggleFactory.cpp:415
 msgid "On"
 msgstr "Aan"
 
@@ -569,13 +569,18 @@ msgstr "Portret::Na"
 msgid "Portret::Before"
 msgstr "Portret::Voor"
 
-#: ButtonFactory.cpp:776
+#: ButtonFactory.cpp:748
+msgid "Pressed Button cannot be activated!"
+msgstr "Ingedrukte Knop kan niet geactiveerd worden!"
+
+#: ButtonFactory.cpp:781
 #: CaptureFactory.cpp:1757
 #: ChaseFactory.cpp:915
+#: FixtureFactory.cpp:356
 #: MotorFactory.cpp:1117
 #: MusicFactory.cpp:539
 #: SoundFactory.cpp:550
-#: ToggleFactory.cpp:415
+#: ToggleFactory.cpp:413
 msgid "Refresh"
 msgstr "Vernieuwen"
 
@@ -746,8 +751,8 @@ msgid "To Right!"
 msgstr "Naar Rechts!"
 
 #: ToggleFactory.cpp:285
-#: ToggleFactory.cpp:419
-#: ToggleFactory.cpp:428
+#: ToggleFactory.cpp:420
+#: ToggleFactory.cpp:429
 msgid "Toggle"
 msgstr "Schakelaar"
 
@@ -799,7 +804,7 @@ msgstr "Video opgeslagen!"
 msgid "Volume"
 msgstr "Volume"
 
-#: ButtonFactory.cpp:784
+#: ButtonFactory.cpp:791
 msgid "not in use."
 msgstr "niet in gebruik."
 

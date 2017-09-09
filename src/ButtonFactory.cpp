@@ -739,10 +739,16 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 	}
 	if(CivetServer::getParam(conn, "activate", dummy))
 	{
-	   button.setActive();
+	   if (!digitalRead(button.button_gpio))
+	   {
+		   button.setActive();
+		   message = _("Button activated!");
+	   }
+	   else
+		   message = _("Pressed Button cannot be activated!");
 
 	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + button.getUrl() + "\"/>";
-	   message = _("Button activated!");
+
 	}
 
 	/* initial page display */

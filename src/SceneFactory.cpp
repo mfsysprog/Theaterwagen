@@ -673,6 +673,8 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	/* initial page display */
 	{
 		ss << "<form action=\"" << scene.getUrl() << "\" method=\"POST\">";
+		ss << "<button type=\"submit\" name=\"refresh\" value=\"true\" id=\"refresh\">" << _("Refresh") << "</button><br>";
+		ss << "<br>";
 		ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">" << _("Play") << "</button>";
 		ss << "<button type=\"submit\" name=\"fadein\" value=\"fadein\" id=\"fadein\">" << _("Fade In") << "</button>";
 		ss << "<button type=\"submit\" name=\"fadeout\" value=\"fadeout\" id=\"fadeout\">" << _("Fade Out") << "</button>";
