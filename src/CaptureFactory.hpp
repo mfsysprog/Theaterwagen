@@ -112,10 +112,6 @@ class CaptureFactory {
 		std::string omschrijving;
 		std::string filmpje = "";
 		std::vector<std::stringstream>* off_screen;
-		double scaleFactor = 1.2;
-		int minNeighbors = 4;
-		int minSizeX = 20;
-		int minSizeY = 20;
 
 		unsigned int mix_from = 100;
 		unsigned int mix_to = 100;
@@ -144,6 +140,10 @@ class CaptureFactory {
 	std::vector<std::vector<std::vector<cv::Point2f>>>* camPoints;
 	void renderingThread(sf::RenderWindow *window);
 	void save();
+	double scaleFactor = 1.2;
+	int minNeighbors = 4;
+	int minSizeX = 20;
+	int minSizeY = 20;
 	std::map<std::string, CaptureFactory::Capture*> capturemap;
 	CaptureFactoryHandler* mfh;
 };

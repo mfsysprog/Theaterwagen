@@ -666,7 +666,18 @@ void CaptureFactory::load(){
 	else file.close();
 
 	YAML::Node node = YAML::LoadFile(CONFIG_FILE_CAPTURE);
-	for (std::size_t i=0;i<node.size();i++) {
+
+	if (node[0]["scaleFactor"])
+		scaleFactor = node[0]["scaleFactor"].as<double>();
+	if (node[0]["minNeighbors"])
+		minNeighbors = node[0]["minNeighbors"].as<int>();
+	if (node[0]["minSizeX"])
+		minSizeX = node[0]["minSizeX"].as<int>();
+	if (node[0]["minSizeY"])
+		minSizeY = node[0]["minSizeY"].as<int>();
+
+	//we start this loop at 1 to skip previous node
+	for (std::size_t i=1;i<node.size();i++) {
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
@@ -704,6 +715,17 @@ void CaptureFactory::save(){
 	std::map<std::string, CaptureFactory::Capture*>::iterator it = capturemap.begin();
 
 	emitter << YAML::BeginSeq;
+	emitter << YAML::BeginMap;
+	emitter << YAML::Key << "scaleFactor";
+	emitter << YAML::Value << scaleFactor;
+	emitter << YAML::Key << "minNeighbors";
+	emitter << YAML::Value << minNeighbors;
+	emitter << YAML::Key << "minSizeX";
+	emitter << YAML::Value << minSizeX;
+	emitter << YAML::Key << "minSizeY";
+	emitter << YAML::Value << minSizeY;
+	emitter << YAML::EndMap;
+
 	for (std::pair<std::string, CaptureFactory::Capture*> element  : capturemap)
 	{
 		emitter << YAML::BeginMap;
@@ -963,7 +985,7 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        cv::UMat reeds;
        cvtColor( *input, reeds, CV_BGR2GRAY);
        equalizeHist( reeds, reeds );
-       (*face_cascade).detectMultiScale( reeds, faces, 1.1, 4, 0|CV_HAAR_SCALE_IMAGE, Size(20, 20) );
+       (*face_cascade).detectMultiScale( reeds, faces, cf.scaleFactor, cf.minNeighbors, 0|CV_HAAR_SCALE_IMAGE, Size(cf.minSizeX, cf.minSizeY) );
        if (faces.size() == 0)
        {
     	 cout << "No faces detected." << endl;
@@ -1292,6 +1314,52 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	std::string value;
 	std::string message="&nbsp;";
 	std::string meta="";
+	std::stringstream tohead;
+
+	if(CivetServer::getParam(conn, "scaleFactor", dummy))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capturefactory.scaleFactor = atof(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "minNeighbors", dummy))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capturefactory.minNeighbors = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "minSizeX", dummy))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capturefactory.minSizeX = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "minSizeY", dummy))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capturefactory.minSizeY = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
 
 	if(CivetServer::getParam(conn, "delete", value))
 	{
@@ -1351,6 +1419,26 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	/* initial page display */
 	else
 	{
+		tohead << "<script type=\"text/javascript\">";
+		tohead << " $(document).ready(function(){";
+		tohead << " $('#scaleFactor').on('change', function() {";
+		tohead << " $.get( \"captureFactory\", { scaleFactor: 'true', value: $('#scaleFactor').val() }, function( data ) {";
+		tohead << "  $( \"#scaleFactor\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#minNeighbors').on('change', function() {";
+		tohead << " $.get( \"captureFactory\", { minNeighbors: 'true', value: $('#minNeighbors').val() }, function( data ) {";
+		tohead << "  $( \"#minNeighbors\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#minSizeX').on('change', function() {";
+		tohead << " $.get( \"captureFactory\", { minSizeX: 'true', value: $('#minSizeX').val() }, function( data ) {";
+		tohead << "  $( \"#minSizeX\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#minSizeY').on('change', function() {";
+		tohead << " $.get( \"captureFactory\", { minSizeY: 'true', value: $('#minSizeY').val() }, function( data ) {";
+		tohead << "  $( \"#minSizeY\" ).html( data );})";
+	    tohead << "});";
+		tohead << "});";
+		tohead << "</script>";
 		std::map<std::string, CaptureFactory::Capture*>::iterator it = capturefactory.capturemap.begin();
 		for (std::pair<std::string, CaptureFactory::Capture*> element : capturefactory.capturemap) {
 			ss << "<br style=\"clear:both\">";
@@ -1381,9 +1469,25 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	    ss << "<button type=\"submit\" name=\"clear\" id=\"clear\">" << _("Clear Screen") << "</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
+	    ss << "<br>";
+	    ss << "<h2>";
+	    ss << _("Capture sensitivity settings:");
+	    ss << "</h2>";
+		ss << "<label for=\"scaleFactor\">" << _("scaleFactor") << ":</label>"
+					  "<input class=\"inside\" id=\"scaleFactor\" type=\"number\" min=\"0\" max=\"10\" placeholder=\"0.00\" step=\"any\" value=\"" <<
+					  capturefactory.scaleFactor << "\" name=\"scaleFactor\"/>" << "<br>";
+		ss << "<label for=\"minNeighbors\">" << _("minNeighbors") << ":</label>"
+					  "<input class=\"inside\" id=\"minNeighbors\" type=\"number\" size=\"4\" value=\"" <<
+					  capturefactory.minNeighbors << "\" name=\"minNeighbors\"/>" << "<br>";
+		ss << "<label for=\"minSizeX\">" << _("minSizeX") << ":</label>"
+					  "<input class=\"inside\" id=\"minSizeX\" type=\"number\" size=\"4\" value=\"" <<
+					  capturefactory.minSizeX << "\" name=\"minSizeX\"/>" << "<br>";
+		ss << "<label for=\"minSizeY\">" << _("minSizeY") << ":</label>"
+					  "<input class=\"inside\" id=\"minSizeY\" type=\"number\" size=\"4\" value=\"" <<
+					  capturefactory.minSizeY << "\" name=\"minSizeY\"/>" << "<br>";
 	}
 
-	ss = getHtml(meta, message, "capture",  ss.str().c_str());
+	ss = getHtml(meta, message, "capture",  ss.str().c_str(), tohead.str().c_str());
     mg_printf(conn, ss.str().c_str(), "%s");
 
 	return true;

@@ -80,6 +80,8 @@ int main(int, char**){
 
 	/* Setting the i18n environment */
 	setlocale (LC_ALL, "");
+	/* this will keep all floats to . as decimal point */
+	setlocale (LC_NUMERIC, "C");
 	bindtextdomain ("theaterwagen", (home + "languages/").c_str());
 	textdomain ("theaterwagen");
 

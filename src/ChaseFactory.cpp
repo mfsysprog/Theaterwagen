@@ -656,7 +656,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   ss << "<option value=\"\"></option>";
 	 	   for (std::pair<std::string, SoundFactory::Sound*> element  : chase.cf.sound->soundmap)
 		   {
-	 		   ss << "<option value=\"" << element.first << "\">" << element.second->filename << "</option>";
+	 		   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
 		   }
 		   ss << "</select>";
 		}
@@ -678,7 +678,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   ss << "<option value=\"\"></option>";
      	   for (std::pair<std::string, MusicFactory::Music*> element  : chase.cf.music->musicmap)
 		   {
-	 		   ss << "<option value=\"" << element.first << "\">" << element.second->filename << "</option>";
+	 		   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
 		   }
 		   ss << "</select>";
 		}

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-08 17:05-0700\n"
+"POT-Creation-Date: 2017-09-10 11:49-0700\n"
 "PO-Revision-Date: 2017-09-08 05:58-0700\n"
 "Last-Translator: Erik Janssen <eaw.janssen@chello.nl>\n"
 "Language-Team: Dutch\n"
@@ -62,7 +62,7 @@ msgid "Active"
 msgstr "Activeren"
 
 #: ButtonFactory.cpp:617
-#: CaptureFactory.cpp:1347
+#: CaptureFactory.cpp:1408
 #: ChaseFactory.cpp:485
 #: ChaseFactory.cpp:876
 #: FixtureFactory.cpp:238
@@ -84,7 +84,7 @@ msgstr "Automatisch Starten"
 
 #: FixtureFactory.cpp:232
 #: FixtureFactory.cpp:369
-#: SceneFactory.cpp:720
+#: SceneFactory.cpp:722
 msgid "Base address"
 msgstr "Basis adres"
 
@@ -120,9 +120,13 @@ msgstr "Knop::Wachten"
 msgid "Buttons"
 msgstr "Knoppen"
 
-#: CaptureFactory.cpp:1717
+#: CaptureFactory.cpp:1812
 msgid "Cancel"
 msgstr "Annuleren"
+
+#: CaptureFactory.cpp:1466
+msgid "Capture sensitivity settings:"
+msgstr "Foto gevoeligsheidsinstellingen:"
 
 #: ChaseFactory.cpp:844
 msgid "Capture::Photo"
@@ -148,24 +152,24 @@ msgstr "Foto's"
 msgid "Change Language"
 msgstr "Taal Aanpassen"
 
-#: SceneFactory.cpp:723
+#: SceneFactory.cpp:725
 msgid "Channel"
 msgstr "Kanaal"
 
-#: SceneFactory.cpp:722
+#: SceneFactory.cpp:724
 msgid "Channels"
 msgstr "Kanalen"
 
-#: CaptureFactory.cpp:1381
+#: CaptureFactory.cpp:1462
 msgid "Clear Screen"
 msgstr "Scherm Leegmaken"
 
 #: ButtonFactory.cpp:601
 #: ButtonFactory.cpp:629
 #: ButtonFactory.cpp:797
-#: CaptureFactory.cpp:1343
-#: CaptureFactory.cpp:1359
-#: CaptureFactory.cpp:1781
+#: CaptureFactory.cpp:1404
+#: CaptureFactory.cpp:1440
+#: CaptureFactory.cpp:1876
 #: ChaseFactory.cpp:480
 #: ChaseFactory.cpp:497
 #: ChaseFactory.cpp:927
@@ -180,8 +184,8 @@ msgstr "Scherm Leegmaken"
 #: MusicFactory.cpp:560
 #: SceneFactory.cpp:522
 #: SceneFactory.cpp:537
-#: SceneFactory.cpp:691
-#: SceneFactory.cpp:721
+#: SceneFactory.cpp:693
+#: SceneFactory.cpp:723
 #: SoundFactory.cpp:322
 #: SoundFactory.cpp:352
 #: SoundFactory.cpp:571
@@ -207,25 +211,25 @@ msgstr "Commentaar"
 msgid "Current State"
 msgstr "Huidige Status"
 
-#: CaptureFactory.cpp:1761
+#: CaptureFactory.cpp:1856
 msgid "Detect"
 msgstr "Detecteer"
 
-#: CaptureFactory.cpp:1764
+#: CaptureFactory.cpp:1859
 msgid "Detect File"
 msgstr "Detecteer Bestand"
 
-#: SceneFactory.cpp:723
+#: SceneFactory.cpp:725
 msgid "Exclude from Fade"
 msgstr "Uitsluiten van Fade"
 
-#: CaptureFactory.cpp:1657
-#: CaptureFactory.cpp:1691
+#: CaptureFactory.cpp:1752
+#: CaptureFactory.cpp:1786
 msgid "Facedetection running in background!"
 msgstr "Gezichtherkenning draait op de achtergrond!"
 
 #: MusicFactory.cpp:542
-#: SceneFactory.cpp:677
+#: SceneFactory.cpp:679
 #: SoundFactory.cpp:553
 msgid "Fade In"
 msgstr "Infaden"
@@ -236,7 +240,7 @@ msgid "Fade In!"
 msgstr "Infaden!"
 
 #: MusicFactory.cpp:544
-#: SceneFactory.cpp:678
+#: SceneFactory.cpp:680
 #: SoundFactory.cpp:555
 msgid "Fade Out"
 msgstr "Uitfaden"
@@ -247,7 +251,7 @@ msgid "Fade Out!"
 msgstr "Uitfaden!"
 
 #: MusicFactory.cpp:572
-#: SceneFactory.cpp:695
+#: SceneFactory.cpp:697
 #: SoundFactory.cpp:583
 msgid "Fade Steps"
 msgstr "Fade Stappen"
@@ -260,8 +264,8 @@ msgstr "Infaden!"
 msgid "Fading out!"
 msgstr "Uitfaden!"
 
-#: CaptureFactory.cpp:1786
-#: CaptureFactory.cpp:1791
+#: CaptureFactory.cpp:1881
+#: CaptureFactory.cpp:1886
 msgid "File Only"
 msgstr "Alleen Bestand"
 
@@ -274,11 +278,11 @@ msgstr "Bestandsnaam"
 msgid "Files"
 msgstr "Bestanden"
 
-#: CaptureFactory.cpp:1571
+#: CaptureFactory.cpp:1666
 msgid "Frame Captured!"
 msgstr "Frame Gefotografeerd!"
 
-#: CaptureFactory.cpp:1599
+#: CaptureFactory.cpp:1694
 msgid "Frames Captured!"
 msgstr "Frames Gefotografeerd!"
 
@@ -286,11 +290,11 @@ msgstr "Frames Gefotografeerd!"
 msgid "Home"
 msgstr "Home"
 
-#: CaptureFactory.cpp:1759
+#: CaptureFactory.cpp:1854
 msgid "Input Cam"
 msgstr "Invoer Cam"
 
-#: CaptureFactory.cpp:1763
+#: CaptureFactory.cpp:1858
 msgid "Input File"
 msgstr "Invoer Bestand"
 
@@ -331,7 +335,7 @@ msgid "Lights"
 msgstr "Lampen"
 
 #: ButtonFactory.cpp:648
-#: CaptureFactory.cpp:1378
+#: CaptureFactory.cpp:1459
 #: ChaseFactory.cpp:516
 #: FixtureFactory.cpp:268
 #: MotorFactory.cpp:971
@@ -343,7 +347,7 @@ msgid "Load"
 msgstr "Laden"
 
 #: ButtonFactory.cpp:574
-#: CaptureFactory.cpp:1312
+#: CaptureFactory.cpp:1373
 #: ChaseFactory.cpp:452
 #: FixtureFactory.cpp:205
 #: MotorFactory.cpp:899
@@ -359,15 +363,15 @@ msgstr "Geladen!"
 msgid "Loop"
 msgstr "Loop"
 
-#: CaptureFactory.cpp:1765
+#: CaptureFactory.cpp:1860
 msgid "Merge"
 msgstr "Samenvoegen"
 
-#: CaptureFactory.cpp:1501
+#: CaptureFactory.cpp:1596
 msgid "Merge failed!"
 msgstr "Samenvoegen mislukt!"
 
-#: CaptureFactory.cpp:1503
+#: CaptureFactory.cpp:1598
 msgid "Merged!"
 msgstr "Samengevoegd!"
 
@@ -375,11 +379,11 @@ msgstr "Samengevoegd!"
 msgid "Milliseconds (1000 = 1 second)"
 msgstr "Milliseconden (1000 = 1 seconde)"
 
-#: CaptureFactory.cpp:1795
+#: CaptureFactory.cpp:1890
 msgid "Mix from"
 msgstr "Mix van"
 
-#: CaptureFactory.cpp:1798
+#: CaptureFactory.cpp:1893
 msgid "Mix to"
 msgstr "Mix tot"
 
@@ -430,9 +434,9 @@ msgstr "n.v.t."
 #: ButtonFactory.cpp:599
 #: ButtonFactory.cpp:628
 #: ButtonFactory.cpp:794
-#: CaptureFactory.cpp:1341
-#: CaptureFactory.cpp:1358
-#: CaptureFactory.cpp:1778
+#: CaptureFactory.cpp:1402
+#: CaptureFactory.cpp:1439
+#: CaptureFactory.cpp:1873
 #: ChaseFactory.cpp:478
 #: ChaseFactory.cpp:496
 #: ChaseFactory.cpp:924
@@ -447,7 +451,7 @@ msgstr "n.v.t."
 #: MusicFactory.cpp:557
 #: SceneFactory.cpp:520
 #: SceneFactory.cpp:536
-#: SceneFactory.cpp:688
+#: SceneFactory.cpp:690
 #: SoundFactory.cpp:320
 #: SoundFactory.cpp:351
 #: SoundFactory.cpp:568
@@ -458,7 +462,7 @@ msgid "Name"
 msgstr "Naam"
 
 #: ButtonFactory.cpp:642
-#: CaptureFactory.cpp:1372
+#: CaptureFactory.cpp:1453
 #: ChaseFactory.cpp:510
 #: FixtureFactory.cpp:262
 #: MotorFactory.cpp:965
@@ -469,19 +473,19 @@ msgstr "Naam"
 msgid "New"
 msgstr "Nieuw"
 
-#: SceneFactory.cpp:681
+#: SceneFactory.cpp:683
 msgid "New Like"
 msgstr "Nieuw Als"
 
-#: CaptureFactory.cpp:1760
+#: CaptureFactory.cpp:1855
 msgid "Next Frame"
 msgstr "Volgend Frame"
 
-#: CaptureFactory.cpp:1621
+#: CaptureFactory.cpp:1716
 msgid "Next Frame Captured!"
 msgstr "Volgend Frame Gefotografeerd!"
 
-#: CaptureFactory.cpp:1775
+#: CaptureFactory.cpp:1870
 msgid "No faces found."
 msgstr "Geen gezichten gevonden."
 
@@ -490,7 +494,7 @@ msgstr "Geen gezichten gevonden."
 msgid "Number of channels"
 msgstr "Aantal kanalen"
 
-#: CaptureFactory.cpp:1772
+#: CaptureFactory.cpp:1867
 msgid "Number of faces in frame "
 msgstr "Aantal gezichten in frame "
 
@@ -502,11 +506,11 @@ msgstr "Uit"
 msgid "On"
 msgstr "Aan"
 
-#: CaptureFactory.cpp:1766
+#: CaptureFactory.cpp:1861
 msgid "On Screen"
 msgstr "Op Scherm"
 
-#: CaptureFactory.cpp:1490
+#: CaptureFactory.cpp:1585
 msgid "On Screen!"
 msgstr "Op Scherm!"
 
@@ -525,7 +529,7 @@ msgstr "Pauze!"
 msgid "Paused"
 msgstr "Gepauseerd"
 
-#: CaptureFactory.cpp:1808
+#: CaptureFactory.cpp:1903
 #. ss << "<div id=\"capture\">";
 #. ss << "<img src=\"" << capture.url << "/?streaming=true\">";
 #. ss << "</div>";
@@ -538,7 +542,7 @@ msgid "Pitch"
 msgstr "Toonhoogte"
 
 #: MusicFactory.cpp:541
-#: SceneFactory.cpp:676
+#: SceneFactory.cpp:678
 #: SoundFactory.cpp:552
 msgid "Play"
 msgstr "Afspelen"
@@ -574,18 +578,19 @@ msgid "Pressed Button cannot be activated!"
 msgstr "Ingedrukte Knop kan niet geactiveerd worden!"
 
 #: ButtonFactory.cpp:781
-#: CaptureFactory.cpp:1757
+#: CaptureFactory.cpp:1852
 #: ChaseFactory.cpp:915
 #: FixtureFactory.cpp:356
 #: MotorFactory.cpp:1117
 #: MusicFactory.cpp:539
+#: SceneFactory.cpp:676
 #: SoundFactory.cpp:550
 #: ToggleFactory.cpp:413
 msgid "Refresh"
 msgstr "Vernieuwen"
 
 #: ButtonFactory.cpp:635
-#: CaptureFactory.cpp:1365
+#: CaptureFactory.cpp:1446
 #: ChaseFactory.cpp:503
 #: FixtureFactory.cpp:255
 #: MotorFactory.cpp:958
@@ -609,7 +614,7 @@ msgid "Right Toggle"
 msgstr "Schakelaar Rechts"
 
 #: ButtonFactory.cpp:645
-#: CaptureFactory.cpp:1375
+#: CaptureFactory.cpp:1456
 #: ChaseFactory.cpp:513
 #: FixtureFactory.cpp:265
 #: MotorFactory.cpp:968
@@ -624,12 +629,12 @@ msgstr "Opslaan"
 msgid "Save All"
 msgstr "Alles Opslaan"
 
-#: CaptureFactory.cpp:1762
+#: CaptureFactory.cpp:1857
 msgid "Save as Video"
 msgstr "Opslaan als Video"
 
 #: ButtonFactory.cpp:566
-#: CaptureFactory.cpp:1305
+#: CaptureFactory.cpp:1366
 #: ChaseFactory.cpp:444
 #: FixtureFactory.cpp:197
 #: MotorFactory.cpp:891
@@ -656,13 +661,13 @@ msgstr "Scene::Afspelen"
 msgid "Scenes"
 msgstr "Scene's"
 
-#: CaptureFactory.cpp:1320
+#: CaptureFactory.cpp:1381
 msgid "Screen empty!"
 msgstr "Scherm leeg!"
 
 #: ButtonFactory.cpp:632
-#: CaptureFactory.cpp:1362
-#: CaptureFactory.cpp:1713
+#: CaptureFactory.cpp:1443
+#: CaptureFactory.cpp:1808
 #: ChaseFactory.cpp:500
 #: FixtureFactory.cpp:252
 #: MotorFactory.cpp:955
@@ -680,7 +685,7 @@ msgstr "Selecteer"
 msgid "Select File:"
 msgstr "Selecteer Bestand:"
 
-#: SceneFactory.cpp:723
+#: SceneFactory.cpp:725
 msgid "Selected"
 msgstr "Geselecteerd"
 
@@ -787,15 +792,15 @@ msgid "Toggles"
 msgstr "Schakelaars"
 
 #: ChaseFactory.cpp:966
-#: SceneFactory.cpp:723
+#: SceneFactory.cpp:725
 msgid "Value"
 msgstr "Waarde"
 
-#: CaptureFactory.cpp:1810
+#: CaptureFactory.cpp:1905
 msgid "Video"
 msgstr "Video"
 
-#: CaptureFactory.cpp:1548
+#: CaptureFactory.cpp:1643
 msgid "Video saved!"
 msgstr "Video opgeslagen!"
 
@@ -804,7 +809,23 @@ msgstr "Video opgeslagen!"
 msgid "Volume"
 msgstr "Volume"
 
+#: CaptureFactory.cpp:1470
+msgid "minNeighbors"
+msgstr "minNeighbors"
+
+#: CaptureFactory.cpp:1473
+msgid "minSizeX"
+msgstr "minSizeX"
+
+#: CaptureFactory.cpp:1476
+msgid "minSizeY"
+msgstr "minSizeY"
+
 #: ButtonFactory.cpp:791
 msgid "not in use."
 msgstr "niet in gebruik."
+
+#: CaptureFactory.cpp:1467
+msgid "scaleFactor"
+msgstr "scaleFactor"
 

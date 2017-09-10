@@ -71,7 +71,14 @@ bool HomeHandler::handleAll(const char *method,
 }
 
 HomeHandler::HomeHandler() {
-	if (getenv("LANGUAGE") == NULL) setenv("LANGUAGE", "en" , 1);
+	if (getenv("LANGUAGE") == NULL)
+	{
+    	setenv("LANGUAGE", "en" , 1);
+			  {
+			    extern int  _nl_msg_cat_cntr;
+			    ++_nl_msg_cat_cntr;
+			  }
+	}
 }
 
 HomeHandler::~HomeHandler() {
