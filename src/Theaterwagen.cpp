@@ -32,6 +32,7 @@
 using namespace std;
 
 CivetServer* server = nullptr;
+std::stringstream* syslog = nullptr;
 
 std::stringstream getHtml(std::string meta, std::string message, std::string bodyclass, std::string data, std::string tohead){
 	std::stringstream ss;
@@ -76,6 +77,7 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
  */
 int main(int, char**){
 
+	syslog = new std::stringstream();
 	std::string home = std::string(getenv("HOME")) + "/" + ROOT_DIR;
 
 	/* Setting the i18n environment */
@@ -98,6 +100,12 @@ int main(int, char**){
 	CivetServer server_start(cpp_options); // <-- C++ style start
 	server = &server_start;
 
+	FileHandler fh;
+	server->addHandler("/files", fh);
+
+	HomeHandler hh;
+	server->addHandler("/theaterwagen", hh);
+
 	//UploadHandler hu;
 	//server->addHandler("/upload", hu);
 
@@ -107,17 +115,11 @@ int main(int, char**){
 
     setenv("WIRINGPI_GPIOMEM", "1", 1);
 	if (wiringPiSetupGpio() != 0){
-		std::cerr << "Unable to start wiringPi interface!" << std::endl;
+		(*syslog) << "Unable to start wiringPi interface!" << std::endl;
 		return 1;
 	}
 
 	ChaseFactory* chase = new ChaseFactory();
-
-	FileHandler fh;
-	server->addHandler("/files", fh);
-
-	HomeHandler hh;
-	server->addHandler("/theaterwagen", hh);
 
 	do
 	{

@@ -42,6 +42,7 @@
 #define FACE_DOWNSAMPLE_RATIO 2
 
 extern CivetServer* server;
+extern std::stringstream* syslog;
 
 enum captureType{
 	CAP_CAM,
@@ -68,7 +69,7 @@ class CaptureFactory {
 		friend class ChaseFactory;
 		Capture(CaptureFactory& cf, std::string naam, std::string omschrijving);
 		Capture(CaptureFactory& cf, std::string uuidstr, std::string naam,
-				std::string omschrijving, std::string filmpje,
+				std::string omschrijving, std::string filename,
 				std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints,
 				bool fileonly,
 				unsigned int mix_from,
@@ -110,7 +111,7 @@ class CaptureFactory {
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
-		std::string filmpje = "";
+		std::string filename = "";
 		std::vector<std::stringstream>* off_screen;
 
 		unsigned int mix_from = 100;

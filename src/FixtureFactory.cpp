@@ -226,13 +226,13 @@ bool FixtureFactory::FixtureFactoryHandler::handleAll(const char *method,
 	   ss << "<form action=\"/fixturefactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">" << _("Name") << "</label>"
-  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">" << _("Comment") << "</label>"
-	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "<label for=\"base\">" << _("Base address") << ":</label>"
-	   	     "<input class=\"inside\" id=\"base\" type=\"text\" size=\"3\" name=\"base\"/>" << "</br>";
+	   	     "<input class=\"inside\" id=\"base\" type=\"number\" min=\"0\" max=\"255\" placeholder=\"0\" step=\"1\" name=\"base\"/>" << "</br>";
 	   ss << "<label for=\"number\">" <<_("Number of channels") << ":</label>"
-	   	   	 "<input class=\"inside\" id=\"number\" type=\"text\" size=\"3\" name=\"number\"/>" << "</br>";
+	   	   	 "<input class=\"inside\" id=\"number\" type=\"number\" min=\"1\" max=\"256\" placeholder=\"1\" step=\"1\" name=\"number\"/>" << "</br>";
 	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">" << _("Add") << "</button>&nbsp;";
@@ -361,16 +361,16 @@ bool FixtureFactory::Fixture::FixtureHandler::handleAll(const char *method,
 		ss << "</h2>";
 		 ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-					  "<input class=\"inside\" id=\"naam\" type=\"text\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" value=\"" <<
 					  fixture.getNaam() << "\"" << " name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" value=\"" <<
 					  fixture.getOmschrijving() << "\"" << " name=\"omschrijving\"/>" << "</br>";
 		ss << "<label for=\"base\">" << _("Base address") << ":</label>"
-			  "<input class=\"inside\" id=\"base\" type=\"text\" value=\"" <<
+			  "<input class=\"inside\" id=\"base\" type=\"number\" min=\"0\" max=\"255\" placeholder=\"0\" step=\"1\" value=\"" <<
 			  fixture.base_channel << "\"" << " name=\"base\"/>" << "</br>";
 		ss << "<label for=\"number\">" << _("Number of channels") << ":</label>"
-			  "<input class=\"inside\" id=\"number\" type=\"text\" value=\"" <<
+			  "<input class=\"inside\" id=\"number\" type=\"number\" min=\"1\" max=\"256\" placeholder=\"1\" step=\"1\" value=\"" <<
 			  fixture.number_channels << "\"" << " name=\"number\"/>" << "</br>";
 		ss << "</div>";
 		ss << "<br>";

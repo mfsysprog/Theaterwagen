@@ -318,12 +318,12 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	   ss << "<form action=\"/soundfactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "<h2>" << _("Select File:") << "</h2>";
 	   if ((dirp = opendir(SOUND_DIR)) == NULL) {
-	          fprintf(stderr,"couldn't open %s.\n",SOUND_DIR);
+	          (*syslog) << "couldn't open " << SOUND_DIR << endl;
 	   }
        do {
 	      errno = 0;
@@ -425,7 +425,6 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "volume", value))
 	{
 		CivetServer::getParam(conn,"value", value);
-		cout << "volume value:" << value << "stof:" << std::stof(value) << endl;
 		sound.setVolume(std::stof(value));
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
@@ -448,7 +447,6 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "fade", value))
 	{
 		CivetServer::getParam(conn,"value", value);
-		cout << "fade value:" << value << "stof:" << std::stof(value) << endl;
 		sound.setFadeSteps(std::stof(value));
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
@@ -566,10 +564,10 @@ bool SoundFactory::Sound::SoundHandler::handleAll(const char *method,
 	    ss << "</h2>";
 		ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" value=\"" <<
 					  sound.naam << "\" name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" value=\"" <<
 					  sound.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
 		ss << "<label for=\"filename\">" << _("Filename") << ":</label>"
 					  "<input class=\"inside\" id=\"filename\" type=\"text\" size=\"50\" value=\"" <<

@@ -26,6 +26,7 @@
 #define CONFIG_FILE_MOTOR CONFIG_DIR "motorfactory.yaml"
 
 extern CivetServer* server;
+extern std::stringstream* syslog;
 
 enum direction : int {
 	 LEFT = 0,

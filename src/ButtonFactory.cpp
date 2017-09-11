@@ -435,7 +435,7 @@ void ButtonFactory::Button::Initialize(){
 	 */
 	cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Dummy,this);
 	if ( myWiringPiISR (button_gpio, INT_EDGE_RISING) < 0 ) {
-		 std::cerr << "Error setting interrupt for GPIO sensor " << std::endl;
+		(*syslog) << "Error setting interrupt for GPIO sensor " << std::endl;
 	 }
 }
 
@@ -498,7 +498,7 @@ void ButtonFactory::Button::Pushed(){
     catch( cv::Exception& e )
     {
         const char* err_msg = e.what();
-        std::cout << "Cannot execute button action: " << err_msg << std::endl;
+        (*syslog) << "Cannot execute button action: " << err_msg << std::endl;
     }
     pushed = true;
 	cbfunc_button[getPosition(this->button_gpio)] = std::bind(&Button::Dummy,this);
@@ -597,13 +597,13 @@ bool ButtonFactory::ButtonFactoryHandler::handleAll(const char *method,
 	   ss << "<form action=\"/buttonfactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "<label for=\"button\">" << _("Button") << " GPIO:</label>"
-	   	     "<input class=\"inside\" id=\"button\" type=\"text\" size=\"3\" name=\"button\"/>" << "</br>";
+	   	     "<input class=\"inside\" id=\"button\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" name=\"button\"/>" << "</br>";
 	   ss << "<label for=\"led\">Led GPIO:" << _("(0 if not in use)") << ":</label>"
-	   	     "<input class=\"inside\" id=\"led\" type=\"text\" size=\"3\" name=\"led\"/>" << "</br>";
+	   	     "<input class=\"inside\" id=\"led\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" name=\"led\"/>" << "</br>";
 	   ss << "</div>";
 	   ss << "<label for=\"action\">" << _("Action") << _("(empty if not in use)") << ":</label></br>";
 	   ss << "<select id=\"action\" name=\"action\">";
@@ -792,16 +792,16 @@ bool ButtonFactory::Button::ButtonHandler::handleAll(const char *method,
 	    ss << "</h2>";
 		ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" value=\"" <<
 					  button.naam << "\" name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" value=\"" <<
 					  button.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
 		ss << "<label for=\"button\">" << _("Button") << " GPIO:</label>"
-			  "<input class=\"inside\" id=\"button\" type=\"text\" size=\"4\" value=\"" <<
+			  "<input class=\"inside\" id=\"button\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" value=\"" <<
 			  button.button_gpio << "\" name=\"button\"/>" << "</br>";
 	    ss << "<label for=\"led\">Led GPIO " << _("(0 if not in use)") << ":</label>"
-	          "<input class=\"inside\" id=\"led\" type=\"text\" size=\"4\" value=\"" <<
+	          "<input class=\"inside\" id=\"led\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" value=\"" <<
 	    	  button.led_gpio << "\" name=\"led\"/>" << "</br>";
 		ss << "<label for=\"action\">" << _("Action") << _("(empty if not in use)") << ":</label></br>";
 	    ss << "<select id=\"action\" name=\"action\">";

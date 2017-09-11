@@ -29,6 +29,7 @@
 #define CONFIG_FILE_SOUND CONFIG_DIR "soundfactory.yaml"
 
 extern CivetServer* server;
+extern std::stringstream* syslog;
 
 class SoundFactory {
 	friend class ChaseFactory;

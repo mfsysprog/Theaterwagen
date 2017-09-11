@@ -29,6 +29,7 @@
 #define CONFIG_FILE_MUSIC CONFIG_DIR "musicfactory.yaml"
 
 extern CivetServer* server;
+extern std::stringstream* syslog;
 
 class MusicFactory {
 	friend int main(int, char**);

@@ -41,7 +41,7 @@ class mythread : public std::thread
         sched_param sch_params;
         sch_params.sched_priority = priority;
         if(pthread_setschedparam(th.native_handle(), policy, &sch_params)) {
-            std::cerr << "Failed to set Thread scheduling : " << std::strerror(errno) << std::endl;
+        	(*syslog) << "Failed to set Thread scheduling : " << std::strerror(errno) << std::endl;
         }
     }
   private:
@@ -99,7 +99,7 @@ static std::stringstream matToJPG(cv::Mat* input)
     catch( cv::Exception& e )
     {
         const char* err_msg = e.what();
-        std::cout << "exception caught: " << err_msg << std::endl;
+        (*syslog) << "exception caught: " << err_msg << std::endl;
     }
 
     stringstream incoming;
@@ -403,9 +403,9 @@ static std::stringstream drawToJPG(cv::Mat* input, std::vector<std::vector<cv::P
 CaptureFactory::CaptureFactory(){
     mfh = new CaptureFactory::CaptureFactoryHandler(*this);
     pose_model = new dlib::shape_predictor();
-	cout << "Reading in shape predictor..." << endl;
+	(*syslog) << "Reading in shape predictor..." << endl;
     deserialize("theaterwagen/shape_predictor_68_face_landmarks.dat") >> *pose_model;
-    cout << "Done reading in shape predictor ..." << endl;
+    (*syslog) << "Done reading in shape predictor ..." << endl;
 	server->addHandler("/capturefactory", mfh);
 	camMat = new std::vector<cv::Mat>();
 	camPoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
@@ -484,7 +484,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 }
 
 CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::string naam,
-		                         std::string omschrijving, std::string filmpje,
+		                         std::string omschrijving, std::string filename,
 								 std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints,
 								 bool fileonly,
 								 unsigned int mix_from,
@@ -496,7 +496,7 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::s
 	this->omschrijving = omschrijving;
 	this->cap = new cv::VideoCapture();
 	this->off_screen = new std::vector<std::stringstream>();
-	this->filmpje = filmpje;
+	this->filename = filename;
 	this->filePoints = filepoints;
 	this->fileonly = fileonly;
 	this->mix_from = mix_from;
@@ -564,12 +564,12 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
     			}
     			else
     			{
-    				cout << "Videofile kon niet geopend worden!" << endl;
+    				(*syslog) << "Videofile kon niet geopend worden!" << endl;
     			}
     		}
     		catch( cv::Exception& e )
     		{
-    		  	cout << "Error loading merged mp4: " << e.msg << endl;
+    		  	(*syslog) << "Error loading merged mp4: " << e.msg << endl;
     		}
 
     	}
@@ -638,7 +638,7 @@ void CaptureFactory::renderingThread(sf::RenderWindow *window)
             {
                 if (event.key.code == sf::Keyboard::Escape)
                 {
-                    std::cout << "the escape key was pressed" << std::endl;
+                    *(syslog) << "the escape key was pressed" << std::endl;
                     window->close();
                 }
             }
@@ -681,7 +681,7 @@ void CaptureFactory::load(){
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
-		std::string filmpje = node[i]["filmpje"].as<std::string>();
+		std::string filename = node[i]["filename"].as<std::string>();
 		bool fileonly = node[i]["fileonly"].as<bool>();
 		unsigned int mix_from = (unsigned int) node[i]["mix_from"].as<int>();
 		unsigned int mix_to = (unsigned int) node[i]["mix_to"].as<int>();
@@ -703,7 +703,7 @@ void CaptureFactory::load(){
 		  }
 		  filepoints->push_back(faces);
 		}
-		CaptureFactory::Capture * capture = new CaptureFactory::Capture(*this, uuidstr, naam, omschrijving, filmpje, filepoints, fileonly, mix_from, mix_to);
+		CaptureFactory::Capture * capture = new CaptureFactory::Capture(*this, uuidstr, naam, omschrijving, filename, filepoints, fileonly, mix_from, mix_to);
 		std::string uuid_str = capture->getUuid();
 		capturemap.insert(std::make_pair(uuid_str,capture));
 	}
@@ -735,8 +735,8 @@ void CaptureFactory::save(){
 		emitter << YAML::Value << element.second->naam;
 		emitter << YAML::Key << "omschrijving";
 		emitter << YAML::Value << element.second->omschrijving;
-		emitter << YAML::Key << "filmpje";
-		emitter << YAML::Value << element.second->filmpje;
+		emitter << YAML::Key << "filename";
+		emitter << YAML::Value << element.second->filename;
 		emitter << YAML::Key << "fileonly";
 		emitter << YAML::Value << element.second->fileonly;
 		emitter << YAML::Key << "mix_from";
@@ -784,7 +784,7 @@ void CaptureFactory::Capture::openCap(captureType type)
 			if(!cap->isOpened()) cap->open(0); //if no camera, try webcam on usb0
 			else
 			// if camera found output all of its options
-			cout << (const char*)((intptr_t)cap->get(CV_CAP_PROP_GPHOTO2_WIDGET_ENUMERATE)) << endl;
+			(*syslog) << (const char*)((intptr_t)cap->get(CV_CAP_PROP_GPHOTO2_WIDGET_ENUMERATE)) << endl;
 			cap->set(CAP_PROP_FOURCC ,CV_FOURCC('M', 'J', 'P', 'G') );
 			cap->set(CAP_PROP_FRAME_WIDTH,2304);   // width pixels 2304
 			cap->set(CAP_PROP_FRAME_HEIGHT,1296);   // height pixels 1296
@@ -793,7 +793,7 @@ void CaptureFactory::Capture::openCap(captureType type)
 	else
 	{
 		if(!cap->isOpened()){   // connect to the camera
-			cap->open(filmpje);
+			cap->open(filename);
 		}
 	}
 }
@@ -930,13 +930,13 @@ void CaptureFactory::Capture::onScreen()
 
 cv::Mat CaptureFactory::Capture::captureFrame(){
     // Serialize the input image to a stringstream
-	cout << "Grabbing a frame..." << endl;
+	(*syslog) << "Grabbing a frame..." << endl;
     // Grab a frame
 	cv::Mat input;
 	try
 	{
 		*cap >> input;
-		cout << "img size is " << input.cols << " x " << input.rows << endl;
+		(*syslog) << "img size is " << input.cols << " x " << input.rows << endl;
 		if (!input.empty())
 		{
 			cv::resize(input,input,cv::Size(1024,768));
@@ -950,7 +950,7 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
 	catch( cv::Exception& e )
 	{
 	    const char* err_msg = e.what();
-	    std::cout << "exception caught: " << err_msg << std::endl;
+	    (*syslog) << "exception caught: " << err_msg << std::endl;
 	}
 	return input;
     /*
@@ -961,7 +961,7 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
 std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::Mat* input)
 {
        std::vector<std::vector<cv::Point2f>> points;
-       cout << "Image size: " << (*input).cols << " x " << (*input).rows << std::endl;
+       (*syslog) << "Image size: " << (*input).cols << " x " << (*input).rows << std::endl;
        cv::Mat im_small;
        // Resize image for face detection
        try
@@ -971,13 +971,13 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        catch( cv::Exception& e )
        {
   	    const char* err_msg = e.what();
-        std::cout << "exception caught in resize: " << err_msg << std::endl;
+        (*syslog) << "exception caught in resize: " << err_msg << std::endl;
         return points;
        }
 
        //std::vector<dlib::rectangle> faces;
        std::vector<cv::Rect> faces;
-       cout << "Detecting faces..." << endl;
+       (*syslog) << "Detecting faces..." << endl;
        // Detect faces
        cv_image<bgr_pixel> img(*input);
        cv_image<bgr_pixel> cimg(im_small);
@@ -988,13 +988,13 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        (*face_cascade).detectMultiScale( reeds, faces, cf.scaleFactor, cf.minNeighbors, 0|CV_HAAR_SCALE_IMAGE, Size(cf.minSizeX, cf.minSizeY) );
        if (faces.size() == 0)
        {
-    	 cout << "No faces detected." << endl;
+    	 (*syslog) << "No faces detected." << endl;
          return points;
        }
        // Find the pose of each face.
        std::vector<full_object_detection> shapes;
        full_object_detection shape;
-       cout << "There were " << faces.size() << " faces detected." << endl;
+       (*syslog) << "There were " << faces.size() << " faces detected." << endl;
        /*
        for (unsigned long i = 0; i < faces.size(); ++i)
        {
@@ -1087,7 +1087,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
             catch( cv::Exception& e )
 	      	{
 	   	     const char* err_msg = e.what();
-	         std::cout << "exception caught in convexHull: " << err_msg << std::endl;
+	   	     (*syslog) << "exception caught in convexHull: " << err_msg << std::endl;
     	     return totaal;
 	      	}
 
@@ -1108,7 +1108,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
             catch( cv::Exception& e )
 	      	{
 	   	     const char* err_msg = e.what();
-	         std::cout << "exception caught in calculateDelauneyTriangles: " << err_msg << std::endl;
+	   	     (*syslog) << "exception caught in calculateDelauneyTriangles: " << err_msg << std::endl;
 	     	 return totaal;
 	      	}
 
@@ -1129,7 +1129,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	           catch( cv::Exception& e )
 		       {
 		   	    const char* err_msg = e.what();
-		        std::cout << "exception caught in warpTriangle: " << err_msg << std::endl;
+		   	    (*syslog) << "exception caught in warpTriangle: " << err_msg << std::endl;
 		    	return totaal;
 		       }
 	       	}
@@ -1154,7 +1154,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
             catch( cv::Exception& e )
 	      	{
 	   	     const char* err_msg = e.what();
-	         std::cout << "exception caught in fillConvexPoly: " << err_msg << std::endl;
+	   	     (*syslog) << "exception caught in fillConvexPoly: " << err_msg << std::endl;
           	 return totaal;
 	      	}
 
@@ -1185,9 +1185,8 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	        }
             catch( cv::Exception& e )
 	      	{
-             std::cout << "exception!" << endl;
-	   	     const char* err_msg = e.what();
-	         std::cout << "exception caught in seamlessClone: " << err_msg << std::endl;
+             const char* err_msg = e.what();
+	   	     (*syslog) << "exception caught in seamlessClone: " << err_msg << std::endl;
 	     	 return totaal;
 	      	}
       	    if (fileonly)
@@ -1201,7 +1200,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
       	      compression_params.push_back(95);
       	      std::stringstream filename;
       	      filename << CAPTURE_DIR << std::time(0) << gezicht << ".jpg";
-      	      cout << "writing file " << filename.str().c_str() << endl;
+      	      (*syslog) << "writing file " << filename.str().c_str() << endl;
       	      imwrite(filename.str().c_str(), resultaat, compression_params);
       		  totaal.push_back(matToJPG(&resultaat));
       	    }
@@ -1235,7 +1234,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	  }
 	  high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	  auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-      cout << "merging frame took: " << int_ms.count() << " milliseconds" << endl;
+      (*syslog) << "merging frame took: " << int_ms.count() << " milliseconds" << endl;
 	}
 	closeCap();
 	return totaal;
@@ -1407,9 +1406,9 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 	   ss << "<form action=\"/capturefactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">" << _("Name") << "</label>"
-  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">" << _("Comment") << "</label>"
-	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">" << _("Add") << "</button>&nbsp;";
@@ -1477,13 +1476,13 @@ bool CaptureFactory::CaptureFactoryHandler::handleAll(const char *method,
 					  "<input class=\"inside\" id=\"scaleFactor\" type=\"number\" min=\"0\" max=\"10\" placeholder=\"0.00\" step=\"any\" value=\"" <<
 					  capturefactory.scaleFactor << "\" name=\"scaleFactor\"/>" << "<br>";
 		ss << "<label for=\"minNeighbors\">" << _("minNeighbors") << ":</label>"
-					  "<input class=\"inside\" id=\"minNeighbors\" type=\"number\" size=\"4\" value=\"" <<
+					  "<input class=\"inside\" id=\"minNeighbors\" type=\"number\" min=\"0\" max=\"10\" placeholder=\"0\" step=\"1\" value=\"" <<
 					  capturefactory.minNeighbors << "\" name=\"minNeighbors\"/>" << "<br>";
 		ss << "<label for=\"minSizeX\">" << _("minSizeX") << ":</label>"
-					  "<input class=\"inside\" id=\"minSizeX\" type=\"number\" size=\"4\" value=\"" <<
+					  "<input class=\"inside\" id=\"minSizeX\" type=\"number\" min=\"0\" max=\"100\" placeholder=\"0\" step=\"1\" value=\"" <<
 					  capturefactory.minSizeX << "\" name=\"minSizeX\"/>" << "<br>";
 		ss << "<label for=\"minSizeY\">" << _("minSizeY") << ":</label>"
-					  "<input class=\"inside\" id=\"minSizeY\" type=\"number\" size=\"4\" value=\"" <<
+					  "<input class=\"inside\" id=\"minSizeY\" type=\"number\" min=\"0\" max=\"100\" placeholder=\"0\" step=\"1\" value=\"" <<
 					  capturefactory.minSizeY << "\" name=\"minSizeY\"/>" << "<br>";
 	}
 
@@ -1571,6 +1570,17 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		mg_printf(conn, ss.str().c_str(), "%s");
 		return true;
 	}
+	if(CivetServer::getParam(conn, "filename", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.filename = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
 	if(CivetServer::getParam(conn, "fileonly", value))
 	{
 		CivetServer::getParam(conn,"value", value);
@@ -1611,7 +1621,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		//capture.fileMat->clear();
 		//capture.filePoints->clear();
 		std::unique_lock<std::mutex> l(m);
-		capture.filmpje = value;
+		capture.filename = value;
 		std::stringstream ss;
 		capture.openCap(CAP_FILE);
 		cv::Mat frame;
@@ -1639,9 +1649,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		VideoWriter outputVideo(MOVIES_DIR "capture.mp4", codec, 10.0, S, true);
 
 		if (outputVideo.open(MOVIES_DIR "capture.mp4", codec, 10.0, S, true))
-			cout << "Video open success!" << endl;
+			(*syslog) << "Video open success!" << endl;
 		else
-			cout << "Video open failure!" << endl;
+			(*syslog) << "Video open failure!" << endl;
 		for (unsigned int i = 0; i < (*capture.cf.camMat).size(); ++i)
 		{
 			outputVideo << (*capture.cf.camMat)[i];
@@ -1693,7 +1703,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		{
 			cv::Mat mat  = (*capture.cf.camMat)[i];
 			/* add points of found faces */
-			cout << "adding frame " << i << endl;
+			(*syslog) << "adding frame " << i << endl;
 			capture.off_screen->push_back(matToJPG(&mat));
 		}
 
@@ -1803,7 +1813,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	   struct dirent *dp;
 	   ss << "<form action=\"" << capture.getUrl() << "\" method=\"POST\">";
 	   if ((dirp = opendir(MOVIES_DIR)) == NULL) {
-	          fprintf(stderr,"couldn't open %s.\n",MOVIES_DIR);
+	          (*syslog) << "couldn't open " << MOVIES_DIR << endl;
 	   }
        do {
 	      errno = 0;
@@ -1843,6 +1853,10 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		tohead << " $.get( \"" << capture.getUrl() << "\", { omschrijving: 'true', value: $('#omschrijving').val() }, function( data ) {";
 		tohead << "  $( \"#omschrijving\" ).html( data );})";
 	    tohead << "});";
+		tohead << " $('#filename').on('change', function() {";
+		tohead << " $.get( \"" << capture.getUrl() << "\", { filename: 'true', value: $('#filename').val() }, function( data ) {";
+		tohead << "  $( \"#filename\" ).html( data );})";
+	    tohead << "});";
 		tohead << " $('#mix_from').on('change', function() {";
 		tohead << " $.get( \"" << capture.getUrl() << "\", { mix_from: 'true', value: $('#mix_from').val() }, function( data ) {";
 		tohead << "  $( \"#mix_from\" ).html( data );})";
@@ -1880,11 +1894,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		ss << "</h2>";
 		ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" value=\"" <<
 					  capture.naam << "\" name=\"naam\"/>" << "<br>";
 		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" value=\"" <<
 					  capture.omschrijving << "\" name=\"omschrijving\"/>" << "<br>";
+		ss << "<label for=\"filename\">" << _("Filename") << ":</label>"
+					  "<input class=\"inside\" id=\"filename\" type=\"text\" size=\"50\" value=\"" <<
+					  capture.filename << "\" name=\"filename\"/>" << "</br>";
 		if (capture.fileonly)
 		{
 			ss << "<label for=\"fileonly\">" << _("File Only") << ":</label>"

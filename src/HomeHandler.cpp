@@ -44,6 +44,13 @@ bool HomeHandler::handleAll(const char *method,
 		  }
 		}
 
+	tohead << "<script type=\"text/javascript\">";
+	tohead << " $(document).ready(function(){";
+	tohead << " var log = $('#syslog'),";
+	tohead << " fix = log.html().replace(/(?:\\r\\n|\\r|\\n)/g, '<br />');";
+	tohead << " log.html(fix);";
+    tohead << "});";
+    tohead << "</script>";
 	ss << "<h2>" << _("Language") << ":";
 	ss << "<form action=\"/theaterwagen\" method=\"POST\">";
     ss << "<select id=\"taal\" name=\"taal\">";
@@ -65,6 +72,13 @@ bool HomeHandler::handleAll(const char *method,
 	ss << "<form action=\"/portret\" method=\"POST\">";
     ss << "<button type=\"submit\" name=\"portret\" value=\"portret\" id=\"portret\">" << _("Portret") << "</button>";
 	ss << "</form>";
+	ss << "<br>";
+	ss << "<h2>";
+	ss << "Syslog:" << "<br>";
+	ss << "<div id=syslog>";
+	ss << (*syslog).str();
+	ss << "</div>";
+	ss << "</h2>";
 	ss = getHtml(meta, message, "home",  ss.str().c_str(), tohead.str().c_str());
 	mg_printf(conn, "%s", ss.str().c_str());
 	return true;

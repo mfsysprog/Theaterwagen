@@ -689,10 +689,10 @@ void MotorFactory::Motor::Initialize(){
 	cbfunc_motor[getPosition(LEFT,this->left_sensor)] = std::bind(&Motor::Dummy,this);
 	cbfunc_motor[getPosition(RIGHT,this->right_sensor)] = std::bind(&Motor::Dummy,this);
 	if ( myWiringPiISR (left_sensor, INT_EDGE_RISING, LEFT) < 0 ) {
-		 std::cerr << "Error setting interrupt for left GPIO sensor " << std::endl;
+		(*syslog) << "Error setting interrupt for left GPIO sensor " << std::endl;
 	 }
 	if ( myWiringPiISR (right_sensor, INT_EDGE_RISING, RIGHT) < 0 ) {
-	     std::cerr << "Error setting interrupt for right GPIO sensor " << std::endl;
+		(*syslog) << "Error setting interrupt for right GPIO sensor " << std::endl;
 	}
 }
 
@@ -733,7 +733,7 @@ int MotorFactory::Motor::myWiringPiISR(int val, int mask, direction dir)
   	  case RIGHT:
   		  return wiringPiISR(val, mask, getCallBack(RIGHT, this->right_sensor));
   	  default:
-  		  std::cerr << "Invalid direction specified on myWiringPiISR method call!!" << std::endl;
+  		  (*syslog) << "Invalid direction specified on myWiringPiISR method call!!" << std::endl;
   		  return -1;
   }
 }
@@ -752,7 +752,7 @@ bool MotorFactory::Motor::Full(direction dir){
 		case RIGHT:
 			return(full_right);
 		default:
-			std::cerr << "Invalid direction specified on Full method call!!" << std::endl;
+			(*syslog) << "Invalid direction specified on Full method call!!" << std::endl;
 			return false;
 	}
 }
@@ -796,7 +796,7 @@ void MotorFactory::Motor::Stop(direction dir){
 			}
 		break;
 		default:
-			std::cerr << "Unknown state received in Stop function!" << std::endl;
+			(*syslog) << "Unknown state received in Stop function!" << std::endl;
 	}
 }
 
@@ -833,7 +833,7 @@ void MotorFactory::Motor::Start(direction dir){
 				else full_right=true;
 			break;
 			default:
-				std::cerr << "Unknown state received in Start function!" << std::endl;
+				(*syslog) << "Unknown state received in Start function!" << std::endl;
 		}
 }
 
@@ -924,17 +924,17 @@ bool MotorFactory::MotorFactoryHandler::handleAll(const char *method,
 	   ss << "<form action=\"/motorfactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "<label for=\"left_sensor\">" << _("Left Button") << " GPIO:</label>"
-	   	     "<input class=\"inside\" id=\"left_sensor\" type=\"text\" size=\"3\" name=\"left_sensor\"/>" << "</br>";
+	   	     "<input class=\"inside\" id=\"left_sensor\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" name=\"left_sensor\"/>" << "</br>";
 	   ss << "<label for=\"right_sensor\">" << _("Right Button") << " GPIO:</label>"
-	   	     "<input class=\"inside\" id=\"right_sensor\" type=\"text\" size=\"3\" name=\"right_sensor\"/>" << "</br>";
+	   	     "<input class=\"inside\" id=\"right_sensor\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" name=\"right_sensor\"/>" << "</br>";
 	   ss << "<label for=\"left_relay\">" << _("Left Toggle") << " GPIO:</label>"
-	   	     "<input class=\"inside\" id=\"left_relay\" type=\"text\" size=\"3\" name=\"left_relay\"/>" << "</br>";
+	   	     "<input class=\"inside\" id=\"left_relay\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" name=\"left_relay\"/>" << "</br>";
 	   ss << "<label for=\"right_relay\">" << _("Right Toggle") << " GPIO:</label>"
-	   	     "<input class=\"inside\" id=\"right_relay\" type=\"text\" size=\"3\" name=\"right_relay\"/>" << "</br>";
+	   	     "<input class=\"inside\" id=\"right_relay\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" name=\"right_relay\"/>" << "</br>";
 	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">" << _("Add") << "</button>&nbsp;";
@@ -1129,22 +1129,22 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
 	    ss << "</h2>";
 		ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" value=\"" <<
 					  motor.naam << "\" name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" value=\"" <<
 					  motor.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
 		ss << "<label for=\"leftsensor\">" << _("Button Left") << " GPIO:</label>"
-			  "<input class=\"inside\" id=\"leftsensor\" type=\"text\" size=\"4\" value=\"" <<
+			  "<input class=\"inside\" id=\"leftsensor\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" value=\"" <<
 			  motor.left_sensor << "\" name=\"leftsensor\"/>" << "</br>";
 	    ss << "<label for=\"rightsensor\">" << _("Button Right") << " GPIO:</label>"
-	          "<input class=\"inside\" id=\"rightsensor\" type=\"text\" size=\"4\" value=\"" <<
+	          "<input class=\"inside\" id=\"rightsensor\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" value=\"" <<
 	    	  motor.right_sensor << "\" name=\"rightsensor\"/>" << "</br>";
 	    ss << "<label for=\"leftrelay\">" << _("Toggle Left") << " GPIO:</label>"
-	    	  "<input class=\"inside\" id=\"leftrelay\" type=\"text\" size=\"4\" value=\"" <<
+	    	  "<input class=\"inside\" id=\"leftrelay\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" value=\"" <<
 	    	  motor.left_relay << "\" name=\"leftrelay\"/>" << "</br>";
 	    ss << "<label for=\"rightrelay\">" << _("Toggle Right") << " GPIO:</label>"
-	    	  "<input class=\"inside\" id=\"rightrelay\" type=\"text\" size=\"4\" value=\"" <<
+	    	  "<input class=\"inside\" id=\"rightrelay\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" value=\"" <<
 	    	  motor.right_relay << "\" name=\"rightrelay\"/>" << "</br>";
 	    ss << "</div>";
 	    ss << "<br>";

@@ -17,6 +17,8 @@
 #include <unistd.h>
 #include <cstring>
 
+extern std::stringstream* syslog;
+
 class HomeHandler : public CivetHandler {
 public:
 	HomeHandler();

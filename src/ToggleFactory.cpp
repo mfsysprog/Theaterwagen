@@ -279,11 +279,11 @@ bool ToggleFactory::ToggleFactoryHandler::handleAll(const char *method,
 	   ss << "<form action=\"/togglefactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "<label for=\"relay\">" << _("Toggle") << " GPIO:</label>"
-	   	     "<input class=\"inside\" id=\"relay\" type=\"text\" size=\"3\" name=\"relay\"/>" << "</br>";
+	   	     "<input class=\"inside\" id=\"relay\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" name=\"relay\"/>" << "</br>";
 	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
    	   ss << "id=\"newselect\">" << _("Add") << "</button>&nbsp;";
@@ -421,13 +421,13 @@ bool ToggleFactory::Toggle::ToggleHandler::handleAll(const char *method,
 	    ss << "</h2>";
 	    ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" value=\"" <<
 					  toggle.naam << "\" name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" value=\"" <<
 					  toggle.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
 		ss << "<label for=\"relay\">" << _("Toggle") << " GPIO:</label>"
-	    	  "<input class=\"inside\" id=\"relay\" type=\"text\" size=\"4\" value=\"" <<
+	    	  "<input class=\"inside\" id=\"relay\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" value=\"" <<
 	    	  toggle.relay << "\" name=\"relay\"/>" << "</br>";
 	    ss << "<br>";
 	    ss << "</div>";

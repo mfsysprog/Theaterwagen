@@ -476,9 +476,9 @@ bool ChaseFactory::ChaseFactoryHandler::handleAll(const char *method,
 	   ss << "<form action=\"/chasefactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "<label for=\"autostart\">" << _("Automatic Start") << ":</label>"
 	         "<input id=\"autostart\" type=\"checkbox\" name=\"autostart\" value=\"ja\"/>" << "</br>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"newselect\" ";
@@ -872,7 +872,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option></option>";
 	   ss << " </select>";
 	   ss << "<div id=\"tijd_div\"><label for=\"tijd\">" << _("Milliseconds (1000 = 1 second)") << ":</label>"
-	   		  "<input id=\"tijd\" type=\"text\" size=\"10\" name=\"target\"/>" << "</div><br>";
+	   		  "<input id=\"tijd\" type=\"number\" min=\"0\" placeholder=\"1000\" step=\"1\" name=\"target\"/>" << "</div><br>";
 	   ss << "<button type=\"submit\" name=\"submit_action\" value=\"submit_action\" id=\"submit\" disabled>" << _("Add") << "</button></br>";
 	   ss << "</br>";
 	   ss << "</form>";
@@ -922,10 +922,10 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	    ss << "</h2>";
 	    ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" value=\"" <<
 					  chase.naam << "\" name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" value=\"" <<
 					  chase.omschrijving << "\" name=\"omschrijving\"/>" << "</br>";
 		if (chase.autostart)
 		{

@@ -13,6 +13,8 @@
 #define PORT "8080"
 
 #include <string>
+#include <sstream>
+
 using namespace std;
 
 std::stringstream getHtml(std::string meta, std::string message, std::string bodyclass, std::string data, std::string tohead = "");

@@ -75,8 +75,7 @@ static usb_dev_handle *findDevice(void) {
                 /* open the device to query strings */
                 handle = usb_open(dev);
                 if (!handle) {
-                    fprintf(stderr, "Warning: cannot open USB device: %s\n",
-                            usb_strerror());
+                    (*syslog) << "Warning: cannot open USB device: " << usb_strerror() << endl;
                     continue;
                 }
 
@@ -84,8 +83,7 @@ static usb_dev_handle *findDevice(void) {
                 len = usbGetStringAscii(handle, dev->descriptor.iManufacturer,
                                         0x0409, string, sizeof(string));
                 if (len < 0) {
-                    fprintf(stderr, "warning: cannot query manufacturer for device: %s\n",
-                            usb_strerror());
+                    (*syslog) << "warning: cannot query manufacturer for device: " << usb_strerror() << endl;
                     goto skipDevice;
                 }
                 if (debug) { printf("Device vendor is %s\n",string); }
@@ -94,7 +92,7 @@ static usb_dev_handle *findDevice(void) {
 
                 len = usbGetStringAscii(handle, dev->descriptor.iProduct, 0x0409, string, sizeof(string));
                 if (len < 0) {
-                    fprintf(stderr, "warning: cannot query product for device: %s\n", usb_strerror());
+                    (*syslog) << "warning: cannot query product for device: " << usb_strerror() << endl;
                     goto skipDevice;
                 }
                 if (debug) { printf("Device product is %s\n",string); }
@@ -128,9 +126,7 @@ SceneFactory::SceneFactory(FixtureFactory* ff){
     handle = findDevice();
 
     if (handle == NULL) {
-        fprintf(stderr,
-                "Could not find USB device www.anyma.ch/uDMX (vid=0x%x pid=0x%x)\n",
-                USBDEV_SHARED_VENDOR, USBDEV_SHARED_PRODUCT);
+       (*syslog) << "Could not find USB device www.anyma.ch/uDMX (vid=0x" << std::hex << USBDEV_SHARED_VENDOR << " pid=0x" << std::hex << USBDEV_SHARED_PRODUCT << ")" << endl;
         //exit(1);
     }
     else uDMX_found = true;
@@ -518,9 +514,9 @@ bool SceneFactory::SceneFactoryHandler::handleAll(const char *method,
 	   ss << "<form action=\"/scenefactory\" method=\"POST\">";
 	   ss << "<div class=\"container\">";
 	   ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"10\" name=\"naam\"/>" << "</br>";
+  			 "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" name=\"naam\"/>" << "</br>";
 	   ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"20\" name=\"omschrijving\"/>" << "</br>";
+	         "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" name=\"omschrijving\"/>" << "</br>";
 	   ss << "</div>";
 	   ss << "<button type=\"submit\" name=\"newselect\" value=\"" << value << "\" ";
    	   ss << "id=\"newselect\">" << _("Add") << "</button>&nbsp;";
@@ -688,10 +684,10 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    ss << "</h2>";
 		ss << "<div class=\"container\">";
 		ss << "<label for=\"naam\">" << _("Name") << ":</label>"
-					  "<input class=\"inside\" id=\"naam\" type=\"text\" value=\"" <<
+					  "<input class=\"inside\" id=\"naam\" type=\"text\" size=\"20\" value=\"" <<
 					  scene.getNaam() << "\"" << " name=\"naam\"/>" << "</br>";
 		ss << "<label for=\"omschrijving\">" << _("Comment") << ":</label>"
-					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" value=\"" <<
+					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" value=\"" <<
 					  scene.getOmschrijving() << "\"" << " name=\"omschrijving\"/>" << "</br>";
 		ss << "<br>";
 		ss << "<label for=\"fadesteps\">" << _("Fade Steps") << ":</label>";

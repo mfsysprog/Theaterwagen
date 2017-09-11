@@ -31,6 +31,7 @@ class ChaseFactory;
 #define CONFIG_FILE_BUTTON CONFIG_DIR "buttonfactory.yaml"
 
 extern CivetServer* server;
+extern std::stringstream* syslog;
 
 typedef void (*fptr)();
 

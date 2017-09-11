@@ -31,6 +31,7 @@
 #define CONFIG_FILE_SCENE CONFIG_DIR "scenefactory.yaml"
 
 extern CivetServer* server;
+extern std::stringstream* syslog;
 
 class SceneFactory {
 	friend class ChaseFactory;
