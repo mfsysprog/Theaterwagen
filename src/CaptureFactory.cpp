@@ -929,14 +929,11 @@ void CaptureFactory::Capture::onScreen()
 }
 
 cv::Mat CaptureFactory::Capture::captureFrame(){
-    // Serialize the input image to a stringstream
-	(*syslog) << "Grabbing a frame..." << endl;
     // Grab a frame
 	cv::Mat input;
 	try
 	{
 		*cap >> input;
-		(*syslog) << "img size is " << input.cols << " x " << input.rows << endl;
 		if (!input.empty())
 		{
 			cv::resize(input,input,cv::Size(1024,768));
@@ -961,7 +958,6 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
 std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::Mat* input)
 {
        std::vector<std::vector<cv::Point2f>> points;
-       (*syslog) << "Image size: " << (*input).cols << " x " << (*input).rows << std::endl;
        cv::Mat im_small;
        // Resize image for face detection
        try
@@ -977,7 +973,6 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
 
        //std::vector<dlib::rectangle> faces;
        std::vector<cv::Rect> faces;
-       (*syslog) << "Detecting faces..." << endl;
        // Detect faces
        cv_image<bgr_pixel> img(*input);
        cv_image<bgr_pixel> cimg(im_small);
@@ -988,13 +983,11 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        (*face_cascade).detectMultiScale( reeds, faces, cf.scaleFactor, cf.minNeighbors, 0|CV_HAAR_SCALE_IMAGE, Size(cf.minSizeX, cf.minSizeY) );
        if (faces.size() == 0)
        {
-    	 (*syslog) << "No faces detected." << endl;
-         return points;
+    	 return points;
        }
        // Find the pose of each face.
        std::vector<full_object_detection> shapes;
        full_object_detection shape;
-       (*syslog) << "There were " << faces.size() << " faces detected." << endl;
        /*
        for (unsigned long i = 0; i < faces.size(); ++i)
        {
@@ -1200,7 +1193,6 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
       	      compression_params.push_back(95);
       	      std::stringstream filename;
       	      filename << CAPTURE_DIR << std::time(0) << gezicht << ".jpg";
-      	      (*syslog) << "writing file " << filename.str().c_str() << endl;
       	      imwrite(filename.str().c_str(), resultaat, compression_params);
       		  totaal.push_back(matToJPG(&resultaat));
       	    }
@@ -1648,9 +1640,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		int codec = CV_FOURCC('H', '2', '6', '4');
 		VideoWriter outputVideo(MOVIES_DIR "capture.mp4", codec, 10.0, S, true);
 
-		if (outputVideo.open(MOVIES_DIR "capture.mp4", codec, 10.0, S, true))
-			(*syslog) << "Video open success!" << endl;
-		else
+		if (!(outputVideo.open(MOVIES_DIR "capture.mp4", codec, 10.0, S, true)))
 			(*syslog) << "Video open failure!" << endl;
 		for (unsigned int i = 0; i < (*capture.cf.camMat).size(); ++i)
 		{
@@ -1703,7 +1693,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		{
 			cv::Mat mat  = (*capture.cf.camMat)[i];
 			/* add points of found faces */
-			(*syslog) << "adding frame " << i << endl;
 			capture.off_screen->push_back(matToJPG(&mat));
 		}
 

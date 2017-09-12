@@ -13,9 +13,12 @@
 #include <iostream>
 #include <functional>
 #include <sstream>
+#include <fstream>
 #include "CivetServer.h"
 #include <unistd.h>
 #include <cstring>
+
+#define SYSLOG_FILE RESOURCES_DIR "syslog.txt"
 
 extern std::stringstream* syslog;
 
@@ -27,6 +30,7 @@ public:
 	bool handlePost(CivetServer *server, struct mg_connection *conn);
 private:
 	bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
+	void save();
 };
 
 

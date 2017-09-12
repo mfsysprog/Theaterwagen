@@ -9,6 +9,11 @@
 #include <libintl.h>
 #define _(String) gettext (String)
 
+void HomeHandler::save(){
+	std::ofstream fout(SYSLOG_FILE);
+	fout << (*syslog).str();
+}
+
 bool HomeHandler::handleGet(CivetServer *server, struct mg_connection *conn)
 	{
 		return handleAll("GET", server, conn);
@@ -44,6 +49,14 @@ bool HomeHandler::handleAll(const char *method,
 		  }
 		}
 
+	/* if parameter save is present the savelog button was pushed */
+	if(CivetServer::getParam(conn, "savelog", dummy))
+	{
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/theaterwagen\">";
+	   message = _("Saved!");
+       this->save();
+	}
+
 	tohead << "<script type=\"text/javascript\">";
 	tohead << " $(document).ready(function(){";
 	tohead << " var log = $('#syslog'),";
@@ -51,6 +64,16 @@ bool HomeHandler::handleAll(const char *method,
 	tohead << " log.html(fix);";
     tohead << "});";
     tohead << "</script>";
+	ss << "<form action=\"/theaterwagen\" method=\"POST\">";
+    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">" << _("Refresh") << "</button><br>";
+    ss << "<br>";
+    ss << "</form>";
+	ss << "<form action=\"/chasefactory\" method=\"POST\">";
+    ss << "<button type=\"submit\" name=\"saveall\" value=\"saveall\" id=\"saveall\">" << _("Save All") << "</button>";
+	ss << "</form>";
+	ss << "<form action=\"/portret\" method=\"POST\">";
+    ss << "<button type=\"submit\" name=\"portret\" value=\"portret\" id=\"portret\">" << _("Portret") << "</button>";
+	ss << "</form>";
 	ss << "<h2>" << _("Language") << ":";
 	ss << "<form action=\"/theaterwagen\" method=\"POST\">";
     ss << "<select id=\"taal\" name=\"taal\">";
@@ -66,15 +89,13 @@ bool HomeHandler::handleAll(const char *method,
     ss << "<button type=\"submit\" name=\"save\" value=\"save\" id=\"save\">" << _("Change Language") << "</button>";
 	ss << "</form>";
 	ss << "</h2>";
-	ss << "<form action=\"/chasefactory\" method=\"POST\">";
-    ss << "<button type=\"submit\" name=\"saveall\" value=\"saveall\" id=\"saveall\">" << _("Save All") << "</button>";
-	ss << "</form>";
-	ss << "<form action=\"/portret\" method=\"POST\">";
-    ss << "<button type=\"submit\" name=\"portret\" value=\"portret\" id=\"portret\">" << _("Portret") << "</button>";
-	ss << "</form>";
 	ss << "<br>";
 	ss << "<h2>";
-	ss << "Syslog:" << "<br>";
+	ss << "SYSLOG:" << "<br>";
+	ss << "<form action=\"/theaterwagen\" method=\"POST\">";
+    ss << "<button type=\"submit\" name=\"savelog\" value=\"savelog\" id=\"savelog\">" << _("Save Log") << "</button>";
+	ss << "</form>";
+	ss << "<br>";
 	ss << "<div id=syslog>";
 	ss << (*syslog).str();
 	ss << "</div>";
