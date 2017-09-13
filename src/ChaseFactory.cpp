@@ -842,11 +842,11 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option value=\"Button::Activate\">" << _("Button::Activate") << "</option>";
 	   ss << "  <option value=\"Button::Wait\">" << _("Button::Wait") << "</option>";
 	   ss << "  <option value=\"Capture::Photo\">" << _("Capture::Photo") << "</option>";
-	   ss << "  <option value=\"Capture::toFile<\">" << _("Capture::toFile") << "</option>";
-	   ss << "  <option value=\"Capture::onScreen<\">" << _("Capture::onScreen") << "</option>";
+	   ss << "  <option value=\"Capture::toFile\">" << _("Capture::toFile") << "</option>";
+	   ss << "  <option value=\"Capture::onScreen\">" << _("Capture::onScreen") << "</option>";
 	   ss << "  <option value=\"Capture::clearScreen\">" << _("Capture::clearScreen") << "</option>";
 	   ss << "  <option value=\"Action::Play\">" << _("Action::Play") << "</option>";
-	   ss << "  <option value=\"Action::Stop<\">" << _("Action::Stop") << "</option>";
+	   ss << "  <option value=\"Action::Stop\">" << _("Action::Stop") << "</option>";
 	   ss << "  <option value=\"Sound::Play\">" << _("Sound::Play") << "</option>";
 	   ss << "  <option value=\"Sound::FadeIn\">" << _("Sound::FadeIn") << "</option>";
 	   ss << "  <option value=\"Sound::Stop\">" << _("Sound::Stop") << "</option>";
@@ -1063,7 +1063,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 					ss << "<td><div class=\"waarde\">";
 					ss << _((*it_list).action.c_str()) << "</div></td>";
 					ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
-					ss << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></div></td>";
+					ss << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 				}
 			}
 			if (action.compare("Motor") == 0)
@@ -1097,7 +1097,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 					ss << "<td><div class=\"waarde\">";
 		    		ss << _((*it_list).action.c_str()) << "</div></td>";
 			    	ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
-				    ss << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->filename << "</a></div></td>";
+				    ss << chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 				}
 			}
 			if (action.compare("Portret") == 0)

@@ -784,7 +784,7 @@ void CaptureFactory::Capture::openCap(captureType type)
 			if(!cap->isOpened()) cap->open(0); //if no camera, try webcam on usb0
 			else
 			// if camera found output all of its options
-			(*syslog) << (const char*)((intptr_t)cap->get(CV_CAP_PROP_GPHOTO2_WIDGET_ENUMERATE)) << endl;
+			//(*syslog) << (const char*)((intptr_t)cap->get(CV_CAP_PROP_GPHOTO2_WIDGET_ENUMERATE)) << endl;
 			cap->set(CAP_PROP_FOURCC ,CV_FOURCC('M', 'J', 'P', 'G') );
 			cap->set(CAP_PROP_FRAME_WIDTH,2304);   // width pixels 2304
 			cap->set(CAP_PROP_FRAME_HEIGHT,1296);   // height pixels 1296

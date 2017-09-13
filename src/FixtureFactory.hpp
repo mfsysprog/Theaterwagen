@@ -51,7 +51,7 @@ class FixtureFactory {
 		friend class SceneFactory;
 		friend class ChaseFactory;
 		public:
-		Fixture(std::string naam, std::string omschrijving, int base_channel, int number_channels);
+		Fixture(FixtureFactory& ff, std::string naam, std::string omschrijving, int base_channel, int number_channels);
 		~Fixture();
 		std::string getUuid();
 		std::string getNaam();
@@ -75,6 +75,7 @@ class FixtureFactory {
 		std::string naam;
 		std::string omschrijving;
 		FixtureHandler* mh;
+		FixtureFactory& ff;
 	};
 	public:
 	FixtureFactory();

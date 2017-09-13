@@ -41,7 +41,7 @@ FixtureFactory::FixtureFactoryHandler::~FixtureFactoryHandler(){
 /*
  * Fixture Constructor en Destructor
  */
-FixtureFactory::Fixture::Fixture(std::string naam, std::string omschrijving, int base_channel, int number_channels){
+FixtureFactory::Fixture::Fixture(FixtureFactory& ff, std::string naam, std::string omschrijving, int base_channel, int number_channels):ff(ff){
 	mh = new FixtureFactory::Fixture::FixtureHandler(*this);
 
 	this->naam = naam;
@@ -96,7 +96,7 @@ void FixtureFactory::load(){
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
 		int base = node[i]["base"].as<int>();
 		int number = node[i]["number"].as<int>();
-		FixtureFactory::Fixture * fixture = new FixtureFactory::Fixture(naam, omschrijving, base, number);
+		FixtureFactory::Fixture * fixture = new FixtureFactory::Fixture(*this, naam, omschrijving, base, number);
 		fixturemap.insert(std::make_pair(base,fixture));
 	}
 }
@@ -129,7 +129,7 @@ std::string FixtureFactory::Fixture::getUrl(){
 }
 
 FixtureFactory::Fixture* FixtureFactory::addFixture(std::string naam, std::string omschrijving, int base_channel, int number_channels){
-	FixtureFactory::Fixture * fixture = new FixtureFactory::Fixture(naam, omschrijving, base_channel, number_channels);
+	FixtureFactory::Fixture * fixture = new FixtureFactory::Fixture(*this, naam, omschrijving, base_channel, number_channels);
 	fixturemap.insert(std::make_pair(base_channel,fixture));
 	return fixture;
 }
@@ -308,17 +308,6 @@ bool FixtureFactory::Fixture::FixtureHandler::handleAll(const char *method,
 		mg_printf(conn, ss.str().c_str(), "%s");
 		return true;
 	}
-	if(CivetServer::getParam(conn, "base", value))
-	{
-		CivetServer::getParam(conn,"value", value);
-		fixture.base_channel = atoi(value.c_str());
-		std::stringstream ss;
-		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
-		ss << "text/html\r\nConnection: close\r\n\r\n";
-		ss << value;
-		mg_printf(conn, ss.str().c_str(), "%s");
-		return true;
-	}
 	if(CivetServer::getParam(conn, "number", value))
 	{
 		CivetServer::getParam(conn,"value", value);
@@ -342,10 +331,6 @@ bool FixtureFactory::Fixture::FixtureHandler::handleAll(const char *method,
 		tohead << " $.get( \"" << fixture.getUrl() << "\", { omschrijving: 'true', value: $('#omschrijving').val() }, function( data ) {";
 		tohead << "  $( \"#omschrijving\" ).html( data );})";
 	    tohead << "});";
-		tohead << " $('#base').on('change', function() {";
-		tohead << " $.get( \"" << fixture.getUrl() << "\", { base: 'true', value: $('#base').val() }, function( data ) {";
-		tohead << "  $( \"#base\" ).html( data );})";
-	    tohead << "});";
 		tohead << " $('#number').on('change', function() {";
 		tohead << " $.get( \"" << fixture.getUrl() << "\", { number: 'true', value: $('#number').val() }, function( data ) {";
 		tohead << "  $( \"#number\" ).html( data );})";
@@ -368,7 +353,7 @@ bool FixtureFactory::Fixture::FixtureHandler::handleAll(const char *method,
 					  fixture.getOmschrijving() << "\"" << " name=\"omschrijving\"/>" << "</br>";
 		ss << "<label for=\"base\">" << _("Base address") << ":</label>"
 			  "<input class=\"inside\" id=\"base\" type=\"number\" min=\"0\" max=\"255\" placeholder=\"0\" step=\"1\" value=\"" <<
-			  fixture.base_channel << "\"" << " name=\"base\"/>" << "</br>";
+			  fixture.base_channel << "\"" << " name=\"base\" readonly/>" << "</br>";
 		ss << "<label for=\"number\">" << _("Number of channels") << ":</label>"
 			  "<input class=\"inside\" id=\"number\" type=\"number\" min=\"1\" max=\"256\" placeholder=\"1\" step=\"1\" value=\"" <<
 			  fixture.number_channels << "\"" << " name=\"number\"/>" << "</br>";
