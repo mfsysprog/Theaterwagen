@@ -101,8 +101,9 @@ class CaptureFactory {
 		CaptureHandler* mh;
 		void openCap(captureType capturetype);
 		void closeCap();
-		cv::Mat captureFrame();
-		std::vector<std::vector<cv::Point2f>> detectFrame(cv::Mat* input);
+		cv::Mat captureFrame(captureType capturetype);
+		void getFrame(int framenumber, bool drawFaces);
+		std::vector<std::vector<cv::Point2f>> detectFrame(cv::Mat* input, captureType capturetype);
 		std::vector<std::stringstream> mergeFrames();
 		void loadModel();
 		void captureLoop();

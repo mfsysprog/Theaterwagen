@@ -27,6 +27,10 @@
 #include "boost/shared_ptr.hpp"
 #include "yaml-cpp/yaml.h"
 #include "FixtureFactory.hpp"
+#include "usb.h"
+#include "uDMX_cmds.h"
+
+#include <libintl.h>
 
 #define CONFIG_FILE_SCENE CONFIG_DIR "scenefactory.yaml"
 
@@ -95,8 +99,6 @@ class SceneFactory {
 
 	private:
 	void save();
-	bool uDMX_found = false;
-	unsigned char main_channel[512] = {0};
 	std::map<std::string, SceneFactory::Scene*> scenemap;
 	SceneFactoryHandler* mfh;
 	FixtureFactory* ff;

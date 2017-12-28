@@ -170,13 +170,13 @@ std::vector <cv::Point2f> get_points(const dlib::full_object_detection& d)
     }
 
     //calculate forehead left (point index 68)
-    points.push_back(cv::Point2f(points[17].x+(points[17].x-points[2].x),points[17].y - (points[2].y-points[17].y)));
+    //points.push_back(cv::Point2f(points[17].x+(points[17].x-points[2].x),points[17].y - (points[2].y-points[17].y)));
 
     //calculate forehead middle (point index 69)
-    points.push_back(cv::Point2f(points[27].x+(points[29].x-points[8].x), points[29].y - (points[8].y - points[29].y)));
+    //points.push_back(cv::Point2f(points[27].x+(points[29].x-points[8].x), points[29].y - (points[8].y - points[29].y)));
 
     //calculate forehead right ((point index 70)
-    points.push_back(cv::Point2f(points[26].x+(points[26].x-points[14].x),points[26].y - (points[14].y-points[26].y)));
+    //points.push_back(cv::Point2f(points[26].x+(points[26].x-points[14].x),points[26].y - (points[14].y-points[26].y)));
 
     return points;
 }
@@ -370,6 +370,30 @@ void specifyHistogram(const cv::Mat source_image, cv::Mat target_image, cv::Mat 
     }
 }
 
+static cv::Mat drawFaces(cv::Mat* input, std::vector<std::vector<cv::Point2f>>* points)
+{
+	cv::Mat output = (*input).clone();
+	//Read points
+    for (unsigned long i = 0; i < (*points).size(); ++i)
+    {
+        draw_polyline(output, (*points)[i], 0, 16);           // Jaw line
+        draw_polyline(output, (*points)[i], 17, 21);          // Left eyebrow
+        draw_polyline(output, (*points)[i], 22, 26);          // Right eyebrow
+        draw_polyline(output, (*points)[i], 27, 30);          // Nose bridge
+        draw_polyline(output, (*points)[i], 30, 35, true);    // Lower nose
+        draw_polyline(output, (*points)[i], 36, 41, true);    // Left eye
+        draw_polyline(output, (*points)[i], 42, 47, true);    // Right Eye
+        draw_polyline(output, (*points)[i], 48, 59, true);    // Outer lip
+        draw_polyline(output, (*points)[i], 60, 67, true);    // Inner lip
+        //draw_polyline(output, (*points)[i], 68, 70);          // Forehead
+
+        cv::circle(output, (*points)[i][8], 3, cv::Scalar(0,255,255), -1, 16);
+        cv::circle(output, (*points)[i][29], 3, cv::Scalar(0,255,255), -1, 16);
+        //cv::circle(output, (*points)[i][69], 3, cv::Scalar(0,255,255), -1, 16);
+    }
+    return output;
+}
+
 static std::stringstream drawToJPG(cv::Mat* input, std::vector<std::vector<cv::Point2f>>* points)
 {
 	cv::Mat output = (*input).clone();
@@ -386,11 +410,11 @@ static std::stringstream drawToJPG(cv::Mat* input, std::vector<std::vector<cv::P
         draw_polyline(output, (*points)[i], 42, 47, true);    // Right Eye
         draw_polyline(output, (*points)[i], 48, 59, true);    // Outer lip
         draw_polyline(output, (*points)[i], 60, 67, true);    // Inner lip
-        draw_polyline(output, (*points)[i], 68, 70);          // Forehead
+        //draw_polyline(output, (*points)[i], 68, 70);          // Forehead
 
         cv::circle(output, (*points)[i][8], 3, cv::Scalar(0,255,255), -1, 16);
         cv::circle(output, (*points)[i][29], 3, cv::Scalar(0,255,255), -1, 16);
-        cv::circle(output, (*points)[i][69], 3, cv::Scalar(0,255,255), -1, 16);
+        //cv::circle(output, (*points)[i][69], 3, cv::Scalar(0,255,255), -1, 16);
 
     }
 
@@ -824,11 +848,11 @@ void CaptureFactory::Capture::captureDetectAndMerge()
 	cf.camMat->clear();
 	for (int i = 0; i < 6; i++)
 	{
-		captured = captureFrame();
+		captured = captureFrame(CAP_CAM);
 
 		if (captured.empty()) continue;
 
-		std::vector<std::vector<cv::Point2f>> points = detectFrame(&captured);
+		std::vector<std::vector<cv::Point2f>> points = detectFrame(&captured, CAP_CAM);
 		if (points.size() == 0)
 			continue;
 		else
@@ -886,7 +910,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::loadFilmpje()
 	std::vector<std::stringstream> jpg;
 	for (;;)
 	{
-	   frame = captureFrame();
+	   frame = captureFrame(CAP_FILE);
 	   if (frame.empty()) break;
 	    jpg.push_back(matToJPG(&frame));
 	}
@@ -928,7 +952,24 @@ void CaptureFactory::Capture::onScreen()
 	 */
 }
 
-cv::Mat CaptureFactory::Capture::captureFrame(){
+void CaptureFactory::Capture::getFrame(int framenumber, bool draw){
+	std::string photo = TMP_DIR + this->getUuid() + "_file.jpg";
+	std::vector<int> compression_params;
+	compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+	compression_params.push_back(95);
+    std::unique_lock<std::mutex> l(m);
+	openCap(CAP_FILE);
+	this->cap->set(CV_CAP_PROP_POS_FRAMES, framenumber - 1);
+	cv::Mat input;
+	*cap >> input;
+	closeCap();
+	if (draw)
+		input = drawFaces(&input,&((*filePoints)[framenumber - 1]));
+	imwrite(photo.c_str(), input, compression_params);
+	l.unlock();
+}
+
+cv::Mat CaptureFactory::Capture::captureFrame(captureType capturetype){
     // Grab a frame
 	cv::Mat input;
 	try
@@ -938,11 +979,14 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
 		{
 			cv::resize(input,input,cv::Size(1024,768));
 		}
-		std::string photo = TMP_DIR + this->getUuid() + ".jpg";
-		std::vector<int> compression_params;
-		compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
-	    compression_params.push_back(95);
-	    imwrite(photo.c_str(), input, compression_params);
+		if (capturetype == CAP_CAM)
+		{
+			std::string photo = TMP_DIR + this->getUuid() + "_photo.jpg";
+			std::vector<int> compression_params;
+			compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+			compression_params.push_back(95);
+			imwrite(photo.c_str(), input, compression_params);
+		}
 	}
 	catch( cv::Exception& e )
 	{
@@ -955,7 +999,7 @@ cv::Mat CaptureFactory::Capture::captureFrame(){
      */
 }
 
-std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::Mat* input)
+std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::Mat* input, captureType capturetype)
 {
        std::vector<std::vector<cv::Point2f>> points;
        cv::Mat im_small;
@@ -1018,6 +1062,20 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
     	   points.push_back(get_points(shapes[i]));
        }
 
+       //sort all found faces in frame by face with lowest x to highest x (and lowest y to highest y if x values are the same)
+       std::sort(points.begin(), points.end(), [](const std::vector<cv::Point2f> &a, const std::vector<cv::Point2f> &b) {
+           return (a[0].x == b[0].x ? a[0].y < b[0].y: a[0].x < b[0].x);
+       });
+
+		if (capturetype == CAP_CAM)
+		{
+			std::string photo = TMP_DIR + this->getUuid() + "_photo.jpg";
+			std::vector<int> compression_params;
+			compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+			compression_params.push_back(95);
+			imwrite(photo.c_str(), drawFaces(input,&points), compression_params);
+		}
+
        return points;
 }
 
@@ -1035,7 +1093,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	{
 		high_resolution_clock::time_point t1 = high_resolution_clock::now();
 		//delete img_file;
-		cv::Mat img_file = captureFrame();
+		cv::Mat img_file = captureFrame(CAP_FILE);
 		cv::Mat img_orig = img_file.clone();
 		if (img_file.empty()) break;
 
@@ -1226,7 +1284,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	  }
 	  high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	  auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-      (*syslog) << "merging frame took: " << int_ms.count() << " milliseconds" << endl;
+      std::cout << "merging frame took: " << int_ms.count() << " milliseconds" << endl;
 	}
 	closeCap();
 	return totaal;
@@ -1587,6 +1645,41 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		mg_printf(conn, ss.str().c_str(), "%s");
 		return true;
 	}
+	if(CivetServer::getParam(conn, "faceonframe", value))
+	{
+		if (value.compare("true") == 0)
+			{
+				CivetServer::getParam(conn,"frames", value);
+				capture.getFrame(atoi(value.c_str()),true);
+			}
+		else
+			{
+				CivetServer::getParam(conn,"frames", value);
+				capture.getFrame(atoi(value.c_str()), false);
+			}
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << "tmp/" << capture.getUuid() << "_file.jpg?t=" << std::time(0);
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "frames", value))
+	{
+		std::string faceonframe;
+		CivetServer::getParam(conn,"faceonframe", faceonframe);
+		if (faceonframe.compare("true") == 0)
+					capture.getFrame(atoi(value.c_str()),true);
+			else
+					capture.getFrame(atoi(value.c_str()), false);
+		capture.getFrame(atoi(value.c_str()),true);
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << "tmp/" << capture.getUuid() << "_file.jpg?t=" << std::time(0);
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
 
 	if(CivetServer::getParam(conn, "on_screen", dummy))
 	{
@@ -1624,7 +1717,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 
 		for (;;)
 		{
-			frame = capture.captureFrame();
+			frame = capture.captureFrame(CAP_FILE);
 			if (frame.empty()) break;
 			capture.off_screen->push_back(matToJPG(&frame));
 		}
@@ -1656,7 +1749,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.openCap(CAP_CAM);
 		capture.cf.camPoints->clear();
 		capture.cf.camMat->clear();
-		capture.cf.camMat->push_back(capture.captureFrame());
+		capture.cf.camMat->push_back(capture.captureFrame(CAP_CAM));
 		capture.closeCap();
 		std::unique_lock<std::mutex> l(m);
 
@@ -1681,7 +1774,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.cf.camMat->clear();
 		for (int i = 0; i < atoi(value.c_str()); ++i)
 		{
-			capture.cf.camMat->push_back(capture.captureFrame());
+			capture.cf.camMat->push_back(capture.captureFrame(CAP_CAM));
 		}
 		capture.closeCap();
 		std::unique_lock<std::mutex> l(m);
@@ -1704,7 +1797,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "capture_next", dummy))
 	{
 		capture.openCap(CAP_CAM);
-		capture.cf.camMat->push_back(capture.captureFrame());
+		capture.cf.camMat->push_back(capture.captureFrame(CAP_CAM));
 		capture.closeCap();
 		std::unique_lock<std::mutex> l(m);
 
@@ -1725,8 +1818,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	}
 	if(CivetServer::getParam(conn, "detect", dummy))
 	{
-		std::thread t1( [this] {
-
 		std::vector<std::vector<cv::Point2f>> points;
 		std::unique_lock<std::mutex> l(m);
 
@@ -1736,7 +1827,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		for (unsigned int i = 0; i < capture.cf.camMat->size(); ++i)
 		{
 			cv::Mat mat  = (*capture.cf.camMat)[i];
-			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&mat);
+			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&mat, CAP_CAM);
 			if (points.size() == 0)
 			{
 				/* remove frame with no detected faces */
@@ -1750,14 +1841,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			}
 		}
 		l.unlock();
-		} );
-
-		mythread::setScheduling(t1, SCHED_IDLE, 0);
-
-		t1.detach();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		message = _("Facedetection running in background!");
+		message = _("Face detection done!");
 	}
 	if(CivetServer::getParam(conn, "detect_file", dummy))
 	{
@@ -1773,9 +1859,10 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		cv::Mat frame;
 		for (;;)
 		{
-			frame = capture.captureFrame();
+			frame = capture.captureFrame(CAP_FILE);
 			if (frame.empty()) break;
-			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&frame);
+			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&frame, CAP_FILE);
+			(*syslog) << "Found " << std::dec << points.size() << " faces in fileframe. " << endl;
 			capture.off_screen->push_back(drawToJPG(&frame, &points));
 			capture.filePoints->push_back(points);
 		}
@@ -1858,6 +1945,14 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
    		tohead << " $.get( \"" << capture.getUrl() << "\", { fileonly: 'true', value: $('#fileonly').is(':checked') }, function( data ) {";
    		tohead << "  $( \"#fileonly\" ).html( data );})";
   	    tohead << "});";
+	    tohead << " $('#frames').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { frames: $('#frames').val(), faceonframe: $('#faceonframe').is(':checked') }, function( data ) {";
+   		tohead << "  $( \"#photo\" ).attr( 'src' , data );})";
+  	    tohead << "});";
+  	    tohead << " $('#faceonframe').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { frames: $('#frames').val(), faceonframe: $('#faceonframe').is(':checked') }, function( data ) {";
+   		tohead << "  $( \"#photo\" ).attr( 'src' , data );})";
+   		tohead << "});";
 		tohead << "});";
 		tohead << "</script>";
 		ss << "<form action=\"" << capture.getUrl() << "\" method=\"POST\">";
@@ -1916,7 +2011,25 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss << "<img src=\"" << capture.url << "/?streaming=true\">";
 	    ss << "</div>"; */
 	    ss << "<h2>" << _("Photo") << ":</h2>";
-	    ss << "<img src=\"" << "tmp/" << capture.getUuid() << ".jpg?t=" << std::time(0) << "\"></img>";
+	    ss << "<img src=\"" << "tmp/" << capture.getUuid() << "_photo.jpg?t=" << std::time(0) << "\"></img><br>";
+		if (!capture.filename.empty())
+	    {
+	    	capture.openCap(CAP_FILE);
+	    	int number_of_frames = capture.cap->get(CV_CAP_PROP_FRAME_COUNT);
+	    	if (number_of_frames)
+	    	{
+	    		ss << "<h2>" << _("File") << ":</h2>";
+	    		ss << "<form oninput=\"result.value=parseInt(frames.value)\">";
+	    		ss << "<label for=\"frames\">" << _("Frame") << ":</label>";
+	    		ss << "<output name=\"result\">1</output><br>";
+	    		ss << "<input class=\"inside\" id=\"frames\" type=\"range\" min=\"1\" max=\"" << number_of_frames << "\" step=\"1\" value=\"1\" name=\"frames\" />";
+	    		ss << "</form>";
+				ss << "<label for=\"faceonframe\">" << _("Render faces on frame") << ":</label>"
+				   	   	  "<input id=\"faceonframe\" type=\"checkbox\" name=\"faceonframe\" value=\"ja\"/>" << "</br>";
+	    		ss << "<img id=\"photo\" src=\"" << "tmp/" << capture.getUuid() << "_file.jpg?t=" << std::time(0) << "\"></img><br>";
+	    		ss << "<br>";
+	    	}
+	    }
 	    ss << "<h2>" << _("Video") << ":</h2>";
 	    ss << "<video width\"1024\" height=\"768\" controls>";
 	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4?t=" << std::time(0) << "\" type=\"video/mp4\">";

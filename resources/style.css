@@ -49,7 +49,7 @@ li {
 	display:inline-block;
 	float: left;
 	margin-right: 1px;
-	width: 9%;
+	width: 8.24%;
 }
 
 body.home li.home a {background-color: #ff9900;}
@@ -60,6 +60,7 @@ body.fixture li.fixture a {background-color: #ff9900;}
 body.scene li.scene a {background-color: #ff9900;}
 body.music li.music a {background-color: #ff9900;}
 body.motor li.motor a {background-color: #ff9900;}
+body.lift li.lift a {background-color: #ff9900;}
 body.sound li.sound a {background-color: #ff9900;}
 body.files li.files a {background-color: #ff9900;}
 body.button li.button a {background-color: #ff9900;}
@@ -75,7 +76,6 @@ body.button li.button a {background-color: #ff9900;}
 /*Style for menu links*/
 li a {
 	display:block;
-	min-width:140px;
 	height: 50px;
 	text-align: center;
 	line-height: 50px;

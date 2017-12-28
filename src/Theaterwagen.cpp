@@ -56,6 +56,7 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
 	ss << "	<li class=\"home\"><a href=\"/theaterwagen\">" << _("Home") << "</a></li>";
 	ss << "	<li class=\"capture\"><a href=\"/capturefactory\">" << _("Captures") << "</a></li>";
 	ss << "	<li class=\"chase\"><a href=\"/chasefactory\">" << _("Actions") << "</a></li>";
+	ss << "	<li class=\"lift\"><a href=\"/liftfactory\">" << _("Lifts") << "</a></li>";
 	ss << "	<li class=\"motor\"><a href=\"/motorfactory\">" << _("Motors") << "</a></li>";
 	ss << "	<li class=\"button\"><a href=\"/buttonfactory\">" << _("Buttons") << "</a></li>";
 	ss << "	<li class=\"toggle\"><a href=\"/togglefactory\">" << _("Toggles") << "</a></li>";
@@ -114,6 +115,7 @@ int main(int, char**){
 	//FaceSwapper face_swapper("shape_predictor_68_face_landmarks.dat");
 
     setenv("WIRINGPI_GPIOMEM", "1", 1);
+
 	if (wiringPiSetupGpio() != 0){
 		(*syslog) << "Unable to start wiringPi interface!" << std::endl;
 		return 1;

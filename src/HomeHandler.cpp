@@ -14,6 +14,10 @@ void HomeHandler::save(){
 	fout << (*syslog).str();
 }
 
+void HomeHandler::clear(){
+	(*syslog).str(std::string());
+}
+
 bool HomeHandler::handleGet(CivetServer *server, struct mg_connection *conn)
 	{
 		return handleAll("GET", server, conn);
@@ -56,6 +60,13 @@ bool HomeHandler::handleAll(const char *method,
 	   message = _("Saved!");
        this->save();
 	}
+	/* if parameter clear is present the clear button was pushed */
+	if(CivetServer::getParam(conn, "clear", dummy))
+	{
+	   meta = "<meta http-equiv=\"refresh\" content=\"1;url=/theaterwagen\">";
+	   message = _("Cleared!");
+       this->clear();
+	}
 
 	tohead << "<script type=\"text/javascript\">";
 	tohead << " $(document).ready(function(){";
@@ -92,10 +103,11 @@ bool HomeHandler::handleAll(const char *method,
 	ss << "<br>";
 	ss << "<h2>";
 	ss << "SYSLOG:" << "<br>";
-	ss << "<form action=\"/theaterwagen\" method=\"POST\">";
+	ss << "<form style ='float: left; margin: 0px; padding: 0px;' action=\"/theaterwagen\" method=\"POST\">";
+    ss << "<button type=\"submit\" name=\"clear\" value=\"clear\" id=\"clear\">" << _("Clear Log") << "</button>";
     ss << "<button type=\"submit\" name=\"savelog\" value=\"savelog\" id=\"savelog\">" << _("Save Log") << "</button>";
 	ss << "</form>";
-	ss << "<br>";
+	ss << "<br style=\"clear:both\">";
 	ss << "<div id=syslog>";
 	ss << (*syslog).str();
 	ss << "</div>";

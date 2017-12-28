@@ -7,10 +7,7 @@ x * SceneFactory.cpp
 
 #include "SceneFactory.hpp"
 #include "FixtureFactory.hpp"
-#include "usb.h"
-#include "uDMX_cmds.h"
 
-#include <libintl.h>
 #define _(String) gettext (String)
 
 #define USBDEV_SHARED_VENDOR 0x16C0  /* Obdev's free shared VID */
@@ -18,12 +15,13 @@ x * SceneFactory.cpp
 /* Use obdev's generic shared VID/PID pair and follow the rules outlined
  * in firmware/usbdrv/USBID-License.txt.
  */
-
 std::mutex m_scene;
 
 int debug = 0;
 int verbose = 0;
 usb_dev_handle *handle = NULL;
+bool uDMX_found = false;
+unsigned char main_channel[512] = {0};
 
 static int usbGetStringAscii(usb_dev_handle *dev, int index, int langid,
                              char *buf, int buflen) {
@@ -304,15 +302,15 @@ void SceneFactory::Scene::fadeIn(){
 		  if ((*channels)[k][2] == '0') continue;
 		  // exclude channel
 		  if ((*channels)[k][1] == '1')
-			  sf.main_channel[k] =  (*channels)[k][0];
+			  main_channel[k] =  (*channels)[k][0];
 		  else
-			  sf.main_channel[k] =  (int)((float)(*channels)[k][0] / (float)fadesteps) * i;
+			  main_channel[k] =  (int)((float)(*channels)[k][0] / (float)fadesteps) * i;
 	  }
       std::unique_lock<std::mutex> l(m_scene);
-      if (sf.uDMX_found)
+      if (uDMX_found)
       {
 		  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-												cmd_SetChannelRange, 512, 0, (char *)sf.main_channel, 512, 1000);
+												cmd_SetChannelRange, 512, 0, (char *)main_channel, 512, 1000);
 		  if (nBytes < 0)
 			 fprintf(stderr, "USB error: %s\n", usb_strerror());
       }
@@ -337,15 +335,15 @@ void SceneFactory::Scene::fadeOut(){
 		  if ((*channels)[k][2] == '0') continue;
 		  // exclude channel
 		  if ((*channels)[k][1] == '1')
-			sf.main_channel[k] = (*channels)[k][0];
+			main_channel[k] = (*channels)[k][0];
 		  else
-			sf.main_channel[k] = (int)(float)(*channels)[k][0] - (((float)(*channels)[k][0] / (float)fadesteps) * i);
+			main_channel[k] = (int)(float)(*channels)[k][0] - (((float)(*channels)[k][0] / (float)fadesteps) * i);
 	  }
       std::unique_lock<std::mutex> l(m_scene);
-      if (sf.uDMX_found)
+      if (uDMX_found)
       {
 		  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-												cmd_SetChannelRange, 512, 0, (char *)sf.main_channel, 512, 1000);
+												cmd_SetChannelRange, 512, 0, (char *)main_channel, 512, 1000);
 		  if (nBytes < 0)
 			 fprintf(stderr, "USB error: %s\n", usb_strerror());
       }
@@ -360,7 +358,7 @@ void SceneFactory::Scene::Stop(){
 	int nBytes;
 	unsigned char channels_tmp[512] = {0};
 
-    if (sf.uDMX_found)
+    if (uDMX_found)
     {
 		nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
 												cmd_SetChannelRange, 512, 0, (char *)channels_tmp, 512, 1000);
@@ -377,14 +375,14 @@ void SceneFactory::Scene::Play(){
 	  {
 		  // if channel is not selected we do nothing
 		  if ((*channels)[k][2] == '0') continue;
-		  sf.main_channel[k] =  (*channels)[k][0];
+		  main_channel[k] =  (*channels)[k][0];
 	  }
 
       std::unique_lock<std::mutex> l(m_scene);
-      if (sf.uDMX_found)
+      if (uDMX_found)
       {
 		  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-												cmd_SetChannelRange, 512, 0, (char *)sf.main_channel, 512, 1000);
+												cmd_SetChannelRange, 512, 0, (char *)main_channel, 512, 1000);
 		  if (nBytes < 0)
 			 fprintf(stderr, "USB error: %s\n", usb_strerror());
       }

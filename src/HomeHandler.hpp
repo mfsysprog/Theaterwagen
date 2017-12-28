@@ -31,6 +31,7 @@ public:
 private:
 	bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
 	void save();
+	void clear();
 };
 
 

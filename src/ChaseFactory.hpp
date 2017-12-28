@@ -28,6 +28,7 @@
 #include "SceneFactory.hpp"
 #include "MusicFactory.hpp"
 #include "SoundFactory.hpp"
+#include "LiftFactory.hpp"
 #include "MotorFactory.hpp"
 #include "ToggleFactory.hpp"
 #include "CaptureFactory.hpp"
@@ -113,6 +114,7 @@ class ChaseFactory {
 	SceneFactory* scene;
 	MusicFactory* music;
 	SoundFactory* sound;
+	LiftFactory* lift;
 	MotorFactory* motor;
 	ToggleFactory* toggle;
 	WebHandler* web;

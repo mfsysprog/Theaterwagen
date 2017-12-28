@@ -28,6 +28,7 @@ ChaseFactory::ChaseFactory(){
 	toggle = new ToggleFactory();
 	web = new WebHandler();
 	capture = new CaptureFactory();
+	lift = new LiftFactory();
 
 	std::map<std::string, ChaseFactory::Chase*>::iterator it = chasemap.begin();
 
@@ -58,6 +59,7 @@ ChaseFactory::~ChaseFactory(){
 	delete toggle;
 	delete web;
 	delete capture;
+	delete lift;
 }
 
 /*
@@ -170,6 +172,7 @@ void ChaseFactory::saveAll(){
 	motor->save();
 	toggle->save();
 	capture->save();
+	lift->save();
 	this->save();
 }
 
@@ -252,6 +255,8 @@ void ChaseFactory::Chase::Stop(){
 			        cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->stop();
 				if (action.compare("Motor") == 0)
 					cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Stop();
+				if (action.compare("Lift") == 0)
+					cf.lift->liftmap.find((*it).uuid_or_milliseconds)->second->Stop();
 				if (action.compare("Music") == 0)
 					cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->stop();
 				if (action.compare("Scene") == 0)
@@ -338,6 +343,17 @@ void ChaseFactory::Chase::Action()
 			  cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Start(RIGHT);
 			if (method.compare("Stop") == 0)
 			  cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Stop();
+			if (method.compare("Wait") == 0)
+			  cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Wait();
+		}
+		if (action.compare("Lift") == 0)
+		{
+			if (method.compare("Up") == 0)
+			  cf.lift->liftmap.find((*it).uuid_or_milliseconds)->second->Up();
+			if (method.compare("Down") == 0)
+			  cf.lift->liftmap.find((*it).uuid_or_milliseconds)->second->Down();
+			if (method.compare("Stop") == 0)
+			  cf.lift->liftmap.find((*it).uuid_or_milliseconds)->second->Stop();
 			if (method.compare("Wait") == 0)
 			  cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Wait();
 		}
@@ -672,6 +688,17 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   ss << "</select>";
 		}
 		else
+		if (action.compare("Lift") == 0)
+		{
+		   ss << "<select id=\"target\" name=\"target\">";
+		   ss << "<option value=\"\"></option>";
+ 		   for (std::pair<std::string, LiftFactory::Lift*> element  : chase.cf.lift->liftmap)
+		   {
+ 			   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+		   }
+		   ss << "</select>";
+		}
+		else
 		if (action.compare("Music") == 0)
 		{
 		   ss << "<select id=\"target\" name=\"target\">";
@@ -851,6 +878,10 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option value=\"Sound::FadeIn\">" << _("Sound::FadeIn") << "</option>";
 	   ss << "  <option value=\"Sound::Stop\">" << _("Sound::Stop") << "</option>";
 	   ss << "  <option value=\"Sound::FadeOut\">" << _("Sound::FadeOut") << "</option>";
+	   ss << "  <option value=\"Lift::Up\">" << _("Lift::Up") << "</option>";
+	   ss << "  <option value=\"Lift::Down\">" << _("Lift::Down") << "</option>";
+	   ss << "  <option value=\"Lift::Stop\">" << _("Lift::Stop") << "</option>";
+	   ss << "  <option value=\"Lift::Wait\">" << _("Lift::Wait") << "</option>";
 	   ss << "  <option value=\"Motor::Left\">" << _("Motor::Left") << "</option>";
 	   ss << "  <option value=\"Motor::Right\">" << _("Motor::Right") << "</option>";
 	   ss << "  <option value=\"Motor::Stop\">" << _("Motor::Stop") << "</option>";
@@ -1065,6 +1096,23 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 					ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
 					ss << chase.cf.sound->soundmap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 				}
+			}
+			if (action.compare("Lift") == 0)
+			{
+				if (chase.cf.lift->liftmap.find((*it_list).uuid_or_milliseconds) == chase.cf.lift->liftmap.end())
+				{
+				   (*it_list).invalid = true;
+				   ss << "<td bgcolor=\"red\"><div class=\"waarde\">";
+				   ss << _((*it_list).action.c_str()) << "</div></td>";
+				   ss << "<td bgcolor=\"red\">" << _("Invalid Action! Forgot to save or removed?") << "</div></td>";
+				}
+				else
+				{
+					ss << "<td><div class=\"waarde\">";
+					ss << _((*it_list).action.c_str()) << "</div></td>";
+					ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.lift->liftmap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.lift->liftmap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
+			    }
 			}
 			if (action.compare("Motor") == 0)
 			{
