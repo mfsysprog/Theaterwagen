@@ -57,8 +57,8 @@ class LiftFactory {
 		friend class LiftFactory;
 		friend class ChaseFactory;
 		public:
-		Lift(std::string uuidstr, std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger1, int gpio_echo1, int gpio_trigger2, int gpio_echo2);
-		Lift(std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger1, int gpio_echo1, int gpio_trigger2, int gpio_echo2);
+		Lift(std::string uuidstr, std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger, int gpio_echo1, int gpio_echo2);
+		Lift(std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger, int gpio_echo1, int gpio_echo2);
 		~Lift();
 		void Up();
 		void Down();
@@ -86,15 +86,17 @@ class LiftFactory {
 		std::string omschrijving;
 		uuid_t uuid;
 		bool getPosition(liftdir direction);
+		void Echo1();
+		void Echo2();
 		unsigned char channel;
-		int gpio_dir, gpio_trigger1, gpio_echo1, gpio_trigger2, gpio_echo2;
+		int gpio_dir, gpio_trigger, gpio_echo1, gpio_echo2;
 		liftdir direction = LIFT_STOP;
 		LiftHandler* lh;
 	};
 	public:
 	LiftFactory();
 	~LiftFactory();
-	LiftFactory::Lift* addLift(std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger1, int gpio_echo1, int gpio_trigger2, int gpio_echo2);
+	LiftFactory::Lift* addLift(std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger, int gpio_echo1, int gpio_echo2);
 	void deleteLift(std::string uuid);
 	void load();
 
