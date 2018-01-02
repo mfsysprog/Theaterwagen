@@ -13,6 +13,7 @@
 #include <mutex>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <functional>
 #include <sstream>
 #include <fstream>
@@ -57,7 +58,7 @@ class LiftFactory {
 		friend class LiftFactory;
 		friend class ChaseFactory;
 		public:
-		Lift(std::string uuidstr, std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger, int gpio_echo1, int gpio_echo2);
+		Lift(std::string uuidstr, std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger, int gpio_echo1, int gpio_echo2, float upper_limit, float lower_limit);
 		Lift(std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger, int gpio_echo1, int gpio_echo2);
 		~Lift();
 		void Up();
@@ -88,9 +89,10 @@ class LiftFactory {
 		bool getPosition(liftdir direction);
 		void Echo1();
 		void Echo2();
+		float upper_limit = 30.00, lower_limit= 120.00;
 		unsigned char channel;
 		int gpio_dir, gpio_trigger, gpio_echo1, gpio_echo2;
-		liftdir direction = LIFT_STOP;
+		volatile liftdir direction = LIFT_STOP;
 		LiftHandler* lh;
 	};
 	public:

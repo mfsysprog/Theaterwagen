@@ -21,6 +21,8 @@ volatile long ipong1      = 0;
 volatile long iping2      = 0;
 volatile long ipong2      = 0;
 
+float median1 = 0, median2 = 0, gmean = 0;
+
 static std::function<void()> cb_echo1, cb_echo2;
 
 static void CallBackEcho1()
@@ -90,7 +92,7 @@ LiftFactory::Lift::Lift(std::string naam, std::string omschrijving, unsigned cha
 	server->addHandler(url, lh);
 }
 
-LiftFactory::Lift::Lift(std::string uuidstr, std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger, int gpio_echo1, int gpio_echo2){
+LiftFactory::Lift::Lift(std::string uuidstr, std::string naam, std::string omschrijving, unsigned char channel, int gpio_dir, int gpio_trigger, int gpio_echo1, int gpio_echo2, float upper_limit, float lower_limit){
 	lh = new LiftFactory::Lift::LiftHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 
@@ -101,6 +103,8 @@ LiftFactory::Lift::Lift(std::string uuidstr, std::string naam, std::string omsch
 	this->gpio_echo1 = gpio_echo1;
 	this->gpio_echo2 = gpio_echo2;
 	this->gpio_trigger = gpio_trigger;
+	this->upper_limit = upper_limit;
+	this->lower_limit = lower_limit;
 
 	pinMode(gpio_trigger, OUTPUT);
 	cb_echo1 = std::bind(&Lift::Echo1,this);
@@ -146,7 +150,7 @@ void LiftFactory::Lift::Up(){
 			delay(100);
 
 			//TODO: for testing only
-			main_channel[channel-2] =  255;
+			//main_channel[channel-2] =  255;
 			main_channel[channel-1] =  255;
 
 			std::unique_lock<std::mutex> l(m_scene);
@@ -186,7 +190,7 @@ void LiftFactory::Lift::Down(){
 			delay(100);
 
 			//TODO: for testing only
-			main_channel[channel-2] =  255;
+			//main_channel[channel-2] =  255;
 			main_channel[channel-1] =  255;
 
 			std::unique_lock<std::mutex> l(m_scene);
@@ -210,7 +214,7 @@ void LiftFactory::Lift::Down(){
 void LiftFactory::Lift::Stop(){
 
 	//TODO: for testing only
-	main_channel[channel-2] =  0;
+	//main_channel[channel-2] =  0;
 	main_channel[channel-1] =  0;
 
 	std::unique_lock<std::mutex> l(m_scene);
@@ -229,7 +233,7 @@ void LiftFactory::Lift::Stop(){
 }
 
 void LiftFactory::Lift::Wait(){
-	while(!(this->direction = LIFT_STOP)) delay(200);
+	while(!(this->direction == LIFT_STOP)) delay(200);
 }
 
 void LiftFactory::Lift::Echo1(){
@@ -243,9 +247,6 @@ void LiftFactory::Lift::Echo2(){
 }
 
 bool LiftFactory::Lift::getPosition(liftdir direction){
-
-	//if stop was pressed manually we stop
-	if (this->direction == LIFT_STOP) return true;
 
 	float idistance1 = 0, adistance1[10] = {0}, gdistance1 = 0;
 	float idistance2 = 0, adistance2[10] = {0}, gdistance2 = 0;
@@ -280,18 +281,20 @@ bool LiftFactory::Lift::getPosition(liftdir direction){
 
 	gdistance1 /= 10;
 	sort(adistance1, adistance1 + 10);
-	float median1 = (adistance1[3] + adistance1[4] + adistance1[5] + adistance1[6]) / 4.0;
+	median1 = (adistance1[3] + adistance1[4] + adistance1[5] + adistance1[6]) / 4.0;
 
 	gdistance2 /= 10;
 	sort(adistance2, adistance2 + 10);
-	float median2 = (adistance2[3] + adistance2[4] + adistance2[5] + adistance2[6]) / 4.0;
+	median2 = (adistance2[3] + adistance2[4] + adistance2[5] + adistance2[6]) / 4.0;
 
-	//printf("Distance : %.2f cm.\n", distance);
-	printf("ADistance1: %.1f cm. GDistance1: %.1f cm. ADistance2: %.1f cm. GDistance2: %.1f cm.\n", median1, gdistance1, median2, gdistance2);
+	gmean = (median1 + median2) / 2.0;
 
-	//TODO: for testing only
-	if (direction == LIFT_UP && median1 > 10.0) return false;
-	else if (direction == LIFT_DOWN && median1 < 70.0) return false;
+	//printf("Median1: %.1f Median2: %.1f gmean: %.1f \n", median1, median2, gmean);
+	//if stop was pressed manually we stop
+	if (this->direction == LIFT_STOP) return true;
+
+	if (direction == LIFT_UP && gmean > this->upper_limit) return false;
+	else if (direction == LIFT_DOWN && gmean < this->lower_limit) return false;
 	else return true;
 }
 
@@ -327,8 +330,10 @@ void LiftFactory::load(){
 		int gpio_trigger = node[i]["gpio_trigger"].as<int>();
 		int gpio_echo1 = node[i]["gpio_echo1"].as<int>();
 		int gpio_echo2 = node[i]["gpio_echo2"].as<int>();
+		float upper_limit = node[i]["upper_limit"].as<float>();
+		float lower_limit = node[i]["lower_limit"].as<float>();
 
-		LiftFactory::Lift * lift = new LiftFactory::Lift(uuidstr, naam, omschrijving, channel, gpio_dir, gpio_trigger, gpio_echo1, gpio_echo2);
+		LiftFactory::Lift * lift = new LiftFactory::Lift(uuidstr, naam, omschrijving, channel, gpio_dir, gpio_trigger, gpio_echo1, gpio_echo2, upper_limit, lower_limit);
 		std::string uuid_str = lift->getUuid();
 		liftmap.insert(std::make_pair(uuid_str,lift));
 	}
@@ -359,6 +364,10 @@ void LiftFactory::save(){
 		emitter << YAML::Value << element.second->gpio_echo1;
 		emitter << YAML::Key << "gpio_echo2";
 		emitter << YAML::Value << element.second->gpio_echo2;
+		emitter << YAML::Key << "upper_limit";
+		emitter << YAML::Value << element.second->upper_limit;
+		emitter << YAML::Key << "lower_limit";
+		emitter << YAML::Value << element.second->lower_limit;
 		emitter << YAML::EndMap;
 	}
 	emitter << YAML::EndSeq;
@@ -626,6 +635,29 @@ bool LiftFactory::Lift::LiftHandler::handleAll(const char *method,
 		mg_printf(conn, ss.str().c_str(), "%s");
 		return true;
 	}
+	if(CivetServer::getParam(conn, "upper_limit", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		lift.upper_limit = atof(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "lower_limit", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		lift.lower_limit = atof(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+
 
 	if(CivetServer::getParam(conn, "up", dummy))
 	{
@@ -645,6 +677,12 @@ bool LiftFactory::Lift::LiftHandler::handleAll(const char *method,
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + lift.getUrl() + "\"/>";
 		message = _("Stopping!");
 	}
+	if(CivetServer::getParam(conn, "position", dummy))
+	{
+		lift.getPosition(LIFT_STOP);
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + lift.getUrl() + "\"/>";
+		message = _("Getting Position!");
+	}
 
 	/* initial page display */
 	{
@@ -654,10 +692,11 @@ bool LiftFactory::Lift::LiftHandler::handleAll(const char *method,
 		ss << "<button type=\"submit\" name=\"up\" value=\"up\" id=\"up\">" << _("Move Up") << "</button>";
 		ss << "<button type=\"submit\" name=\"down\" value=\"down\" id=\"down\">" << _("Move Down") << "</button>";
 		ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">" << _("Stop") << "</button>";
-	    ss << "</form>";
+		ss << "<button type=\"submit\" name=\"position\" value=\"position\" id=\"position\">" << _("Get Position") << "</button>";
+		ss << "</form>";
 	    ss << "<div style=\"clear:both\">";
 	    ss << "<h2>";
-	    ss << _("Current State") << ":<br>";
+	    ss << _("Current Position") << " " << std::fixed << std::setprecision(1) << gmean << " cm. (" << median1 << "/" << median2 << "):<br>";
 	    switch(lift.direction)
 	    {
 	    	case LIFT_UP:
@@ -697,6 +736,13 @@ bool LiftFactory::Lift::LiftHandler::handleAll(const char *method,
 		ss << "<label for=\"gpio_echo2\">" << _("Echo") << " 2 GPIO:</label>"
 			  "<input class=\"inside\" id=\"gpio_echo2\" type=\"number\" min=\"0\" max=\"40\" placeholder=\"0\" step=\"1\" value=\"" <<
 			  lift.gpio_echo2 << "\" name=\"gpio_echo2\"/>" << "</br>";
+		ss << "<br>";
+		ss << "<label for=\"upper_limit\">" << _("Upper Limit") << ":</label>"
+			  "<input class=\"inside\" id=\"upper_limit\" type=\"number\" min=\"0.0\" max=\"500.0\" placeholder=\"0.0\" step=\"0.1\" value=\"" <<
+			  lift.upper_limit << "\" name=\"upper_limit\"/>" << "</br>";
+		ss << "<label for=\"lower_limit\">" << _("Lower Limit") << ":</label>"
+			  "<input class=\"inside\" id=\"lower_limit\" type=\"number\" min=\"0.0\" max=\"500.0\" placeholder=\"0.0\" step=\"0.1\" value=\"" <<
+			  lift.lower_limit << "\" name=\"lower_limit\"/>" << "</br>";
 		ss << "</tr>";
 		ss << "</div>";
 		ss << "<br>";
@@ -731,6 +777,14 @@ bool LiftFactory::Lift::LiftHandler::handleAll(const char *method,
 		tohead << " $('#gpio_echo2').on('change', function() {";
 		tohead << " $.get( \"" << lift.getUrl() << "\", { gpio_echo2: 'true', value: $('#gpio_echo2').val() }, function( data ) {";
 		tohead << "  $( \"#gpio_echo2\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#upper_limit').on('change', function() {";
+		tohead << " $.get( \"" << lift.getUrl() << "\", { upper_limit: 'true', value: $('#upper_limit').val() }, function( data ) {";
+		tohead << "  $( \"#upper_limit\" ).html( data );})";
+	    tohead << "});";
+		tohead << " $('#lower_limit').on('change', function() {";
+		tohead << " $.get( \"" << lift.getUrl() << "\", { lower_limit: 'true', value: $('#lower_limit').val() }, function( data ) {";
+		tohead << "  $( \"#lower_limit\" ).html( data );})";
 	    tohead << "});";
 	    tohead << "});";
 		tohead << "</script>";

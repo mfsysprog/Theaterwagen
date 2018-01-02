@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-12-28 12:45-0800\n"
+"POT-Creation-Date: 2018-01-02 04:46-0800\n"
 "PO-Revision-Date: 2017-09-08 05:58-0700\n"
 "Last-Translator: Erik Janssen <eaw.janssen@chello.nl>\n"
 "Language-Team: Dutch\n"
@@ -66,7 +66,7 @@ msgstr "Activeren"
 #: ChaseFactory.cpp:501
 #: ChaseFactory.cpp:907
 #: FixtureFactory.cpp:238
-#: LiftFactory.cpp:423
+#: LiftFactory.cpp:510
 #: MotorFactory.cpp:940
 #: SceneFactory.cpp:520
 #: ToggleFactory.cpp:289
@@ -153,8 +153,8 @@ msgstr "Foto's"
 msgid "Change Language"
 msgstr "Taal Aanpassen"
 
-#: LiftFactory.cpp:409
-#: LiftFactory.cpp:615
+#: LiftFactory.cpp:498
+#: LiftFactory.cpp:721
 #: SceneFactory.cpp:719
 msgid "Channel"
 msgstr "Kanaal"
@@ -187,9 +187,9 @@ msgstr "Leegmaken"
 #: FixtureFactory.cpp:230
 #: FixtureFactory.cpp:249
 #: FixtureFactory.cpp:351
-#: LiftFactory.cpp:407
-#: LiftFactory.cpp:434
-#: LiftFactory.cpp:611
+#: LiftFactory.cpp:496
+#: LiftFactory.cpp:521
+#: LiftFactory.cpp:717
 #: MotorFactory.cpp:928
 #: MotorFactory.cpp:952
 #: MotorFactory.cpp:1134
@@ -209,11 +209,14 @@ msgstr "Leegmaken"
 msgid "Comment"
 msgstr "Commentaar"
 
+#: LiftFactory.cpp:699
+msgid "Current Position"
+msgstr "Huidige Positie"
+
 #: ButtonFactory.cpp:786
 #: ButtonFactory.cpp:787
 #: ButtonFactory.cpp:789
 #: ButtonFactory.cpp:791
-#: LiftFactory.cpp:593
 #: MotorFactory.cpp:1124
 #: MotorFactory.cpp:1125
 #: MotorFactory.cpp:1126
@@ -234,15 +237,15 @@ msgstr "Detecteer"
 msgid "Detect File"
 msgstr "Detecteer Bestand"
 
-#: LiftFactory.cpp:411
-#: LiftFactory.cpp:619
+#: LiftFactory.cpp:500
+#: LiftFactory.cpp:725
 msgid "Direction"
 msgstr "Richting"
 
-#: LiftFactory.cpp:415
-#: LiftFactory.cpp:419
-#: LiftFactory.cpp:626
-#: LiftFactory.cpp:633
+#: LiftFactory.cpp:504
+#: LiftFactory.cpp:506
+#: LiftFactory.cpp:732
+#: LiftFactory.cpp:736
 msgid "Echo"
 msgstr "Echo"
 
@@ -325,6 +328,14 @@ msgstr "Frame Gefotografeerd!"
 msgid "Frames Captured!"
 msgstr "Frames Gefotografeerd!"
 
+#: LiftFactory.cpp:695
+msgid "Get Position"
+msgstr "Bepaal Positie"
+
+#: LiftFactory.cpp:684
+msgid "Getting Position!"
+msgstr "Positie Bepalen!"
+
 #: Theaterwagen.cpp:56
 msgid "Home"
 msgstr "Home"
@@ -398,7 +409,7 @@ msgstr "Lampen"
 #: CaptureFactory.cpp:1515
 #: ChaseFactory.cpp:532
 #: FixtureFactory.cpp:268
-#: LiftFactory.cpp:453
+#: LiftFactory.cpp:540
 #: MotorFactory.cpp:971
 #: MusicFactory.cpp:364
 #: SceneFactory.cpp:550
@@ -411,7 +422,7 @@ msgstr "Laden"
 #: CaptureFactory.cpp:1429
 #: ChaseFactory.cpp:468
 #: FixtureFactory.cpp:205
-#: LiftFactory.cpp:371
+#: LiftFactory.cpp:462
 #: MotorFactory.cpp:899
 #: MusicFactory.cpp:292
 #: SceneFactory.cpp:480
@@ -424,6 +435,10 @@ msgstr "Geladen!"
 #: SoundFactory.cpp:584
 msgid "Loop"
 msgstr "Loop"
+
+#: LiftFactory.cpp:743
+msgid "Lower Limit"
+msgstr "Onder Limiet"
 
 #: CaptureFactory.cpp:1967
 msgid "Merge"
@@ -469,27 +484,27 @@ msgstr "Motor::Wachten"
 msgid "Motors"
 msgstr "Motoren"
 
-#: LiftFactory.cpp:588
+#: LiftFactory.cpp:693
 msgid "Move Down"
 msgstr "Omlaag Bewegen"
 
-#: LiftFactory.cpp:587
+#: LiftFactory.cpp:692
 msgid "Move Up"
 msgstr "Omhoog Bewegen"
 
-#: LiftFactory.cpp:600
+#: LiftFactory.cpp:706
 msgid "Moving Down"
 msgstr "Naar Beneden"
 
-#: LiftFactory.cpp:573
+#: LiftFactory.cpp:672
 msgid "Moving Down!"
 msgstr "Naar Beneden!"
 
-#: LiftFactory.cpp:597
+#: LiftFactory.cpp:703
 msgid "Moving Up"
 msgstr "Naar Boven"
 
-#: LiftFactory.cpp:567
+#: LiftFactory.cpp:666
 msgid "Moving Up!"
 msgstr "Naar Boven!"
 
@@ -529,9 +544,9 @@ msgstr "n.v.t."
 #: FixtureFactory.cpp:228
 #: FixtureFactory.cpp:248
 #: FixtureFactory.cpp:348
-#: LiftFactory.cpp:405
-#: LiftFactory.cpp:433
-#: LiftFactory.cpp:608
+#: LiftFactory.cpp:494
+#: LiftFactory.cpp:520
+#: LiftFactory.cpp:714
 #: MotorFactory.cpp:926
 #: MotorFactory.cpp:951
 #: MotorFactory.cpp:1131
@@ -554,7 +569,7 @@ msgstr "Naam"
 #: CaptureFactory.cpp:1509
 #: ChaseFactory.cpp:526
 #: FixtureFactory.cpp:262
-#: LiftFactory.cpp:447
+#: LiftFactory.cpp:534
 #: MotorFactory.cpp:965
 #: MusicFactory.cpp:358
 #: SceneFactory.cpp:544
@@ -672,7 +687,7 @@ msgstr "Ingedrukte Knop kan niet geactiveerd worden!"
 #: ChaseFactory.cpp:946
 #: FixtureFactory.cpp:341
 #: HomeHandler.cpp:79
-#: LiftFactory.cpp:585
+#: LiftFactory.cpp:690
 #: MotorFactory.cpp:1117
 #: MusicFactory.cpp:537
 #: SceneFactory.cpp:670
@@ -685,7 +700,7 @@ msgstr "Vernieuwen"
 #: CaptureFactory.cpp:1502
 #: ChaseFactory.cpp:519
 #: FixtureFactory.cpp:255
-#: LiftFactory.cpp:440
+#: LiftFactory.cpp:527
 #: MotorFactory.cpp:958
 #: MusicFactory.cpp:351
 #: SceneFactory.cpp:537
@@ -714,7 +729,7 @@ msgstr "Schakelaar Rechts"
 #: CaptureFactory.cpp:1512
 #: ChaseFactory.cpp:529
 #: FixtureFactory.cpp:265
-#: LiftFactory.cpp:450
+#: LiftFactory.cpp:537
 #: MotorFactory.cpp:968
 #: MusicFactory.cpp:361
 #: SceneFactory.cpp:547
@@ -740,7 +755,7 @@ msgstr "Opslaan als Video"
 #: ChaseFactory.cpp:460
 #: FixtureFactory.cpp:197
 #: HomeHandler.cpp:60
-#: LiftFactory.cpp:363
+#: LiftFactory.cpp:454
 #: MotorFactory.cpp:891
 #: MusicFactory.cpp:284
 #: SceneFactory.cpp:472
@@ -774,7 +789,7 @@ msgstr "Scherm leeg!"
 #: CaptureFactory.cpp:1903
 #: ChaseFactory.cpp:516
 #: FixtureFactory.cpp:252
-#: LiftFactory.cpp:437
+#: LiftFactory.cpp:524
 #: MotorFactory.cpp:955
 #: MusicFactory.cpp:330
 #: MusicFactory.cpp:348
@@ -827,7 +842,7 @@ msgid "Started!"
 msgstr "Gestart!"
 
 #: ChaseFactory.cpp:949
-#: LiftFactory.cpp:589
+#: LiftFactory.cpp:694
 #: MotorFactory.cpp:1120
 #: MusicFactory.cpp:541
 #: SoundFactory.cpp:552
@@ -840,7 +855,7 @@ msgstr "Stoppen"
 msgid "Stop!"
 msgstr "Stoppen!"
 
-#: LiftFactory.cpp:603
+#: LiftFactory.cpp:709
 #: MusicFactory.cpp:548
 #: SoundFactory.cpp:559
 msgid "Stopped"
@@ -850,7 +865,7 @@ msgstr "Gestopt"
 msgid "Stopped!"
 msgstr "Gestopt!"
 
-#: LiftFactory.cpp:579
+#: LiftFactory.cpp:678
 msgid "Stopping!"
 msgstr "Stoppen!"
 
@@ -902,12 +917,14 @@ msgstr "Schakelaar::Aan"
 msgid "Toggles"
 msgstr "Schakelaars"
 
-#: LiftFactory.cpp:413
-#: LiftFactory.cpp:417
-#: LiftFactory.cpp:623
-#: LiftFactory.cpp:630
+#: LiftFactory.cpp:502
+#: LiftFactory.cpp:729
 msgid "Trigger"
 msgstr "Trigger"
+
+#: LiftFactory.cpp:740
+msgid "Upper Limit"
+msgstr "Boven Limiet"
 
 #: ChaseFactory.cpp:997
 #: SceneFactory.cpp:719

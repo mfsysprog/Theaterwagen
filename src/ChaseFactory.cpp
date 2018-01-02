@@ -355,7 +355,7 @@ void ChaseFactory::Chase::Action()
 			if (method.compare("Stop") == 0)
 			  cf.lift->liftmap.find((*it).uuid_or_milliseconds)->second->Stop();
 			if (method.compare("Wait") == 0)
-			  cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Wait();
+			  cf.lift->liftmap.find((*it).uuid_or_milliseconds)->second->Wait();
 		}
 		if (action.compare("Music") == 0)
 		{
