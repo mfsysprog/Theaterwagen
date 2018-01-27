@@ -87,6 +87,7 @@ class LiftFactory {
 		std::string omschrijving;
 		uuid_t uuid;
 		bool getPosition(liftdir direction);
+		void Initialize();
 		void Echo1();
 		void Echo2();
 		float upper_limit = 30.00, lower_limit= 120.00;

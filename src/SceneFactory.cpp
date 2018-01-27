@@ -716,12 +716,12 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    	ss << _("Base address") << ": &nbsp;" << element.second->base_channel << "<br>";
 	    	ss << _("Comment") << ": &nbsp;" << element.second->omschrijving << "<br>";
 	    	ss << _("Channels") << ":<br>";
-	    	ss << "<table class=\"container\"><th>" << _("Channel") << "</th><th>" << _("Selected") << "</><th>" << _("Exclude from Fade") << "</th><th>" << _("Value") << "</th>";
+	    	ss << "<table class=\"container\"><th>" << _("Channel") << "</th><th>" << _("Selected") << "</><th>" << _("Exclude from Fade") << "</th><th>" << _("Slider") << "</th><th>" << _("Value") << "</th>";
 	    	for (int i = element.second->base_channel; i < element.second->base_channel + element.second->number_channels; i++)
 	    	{
 	    		tohead << " $('#chan" << i <<"').on('change', function() {";
 	    		tohead << " $.get( \"" << scene.getUrl() << "\", { chan: \"" << i << "\", value: $('#chan" << i << "').val() }, function( data ) {";
-	    		tohead << "  $( \"#chan" << i << "\" ).html( data );})";
+	    		tohead << "  $( \"#chan" << i << "\" ).html( data ); $( \"#info" << i << "\" ).html( data )})";
       		    tohead << "});";
 	    		tohead << " $('#exclude" << i <<"').on('change', function() {";
 	    		tohead << " $.get( \"" << scene.getUrl() << "\", { exclude: \"" << i << "\", value: $('#exclude" << i << "').is(':checked') }, function( data ) {";
@@ -749,6 +749,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    		ss << "<td><input id=\"chan" << i << "\"" <<
 					  " type=\"range\" min=\"0\" max=\"255\" step=\"1\" value=\"" <<
 					  std::to_string((*scene.channels)[i-1][0]).c_str() << "\"" << " name=\"chan" << i << "\"/>" << "</td>";
+	    		ss << "<td style=\"text-align:center;\"><output for=\"chan" << i << "\" id=\"info" << i << "\">" << std::to_string((*scene.channels)[i-1][0]).c_str() << "</output></td>";
 	    		ss << "</tr>";
 	    	}
 		    ss << "</table>";

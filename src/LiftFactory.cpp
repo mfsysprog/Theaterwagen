@@ -80,11 +80,7 @@ LiftFactory::Lift::Lift(std::string naam, std::string omschrijving, unsigned cha
 	this->gpio_echo2 = gpio_echo2;
 	this->gpio_trigger = gpio_trigger;
 
-	pinMode(gpio_trigger, OUTPUT);
-	cb_echo1 = std::bind(&Lift::Echo1,this);
-	cb_echo2 = std::bind(&Lift::Echo2,this);
-	wiringPiISR(gpio_echo1, INT_EDGE_BOTH, &CallBackEcho1);
-	wiringPiISR(gpio_echo2, INT_EDGE_BOTH, &CallBackEcho2);
+	Initialize();
 
 	std::stringstream ss;
 	ss << "/lift-" << this->getUuid();
@@ -106,16 +102,23 @@ LiftFactory::Lift::Lift(std::string uuidstr, std::string naam, std::string omsch
 	this->upper_limit = upper_limit;
 	this->lower_limit = lower_limit;
 
-	pinMode(gpio_trigger, OUTPUT);
-	cb_echo1 = std::bind(&Lift::Echo1,this);
-	cb_echo2 = std::bind(&Lift::Echo2,this);
-	wiringPiISR(gpio_echo1, INT_EDGE_BOTH, &CallBackEcho1);
-	wiringPiISR(gpio_echo2, INT_EDGE_BOTH, &CallBackEcho2);
+	Initialize();
 
 	std::stringstream ss;
 	ss << "/lift-" << this->getUuid();
 	url = ss.str().c_str();
 	server->addHandler(url, lh);
+}
+
+void LiftFactory::Lift::Initialize(){
+	pinMode(gpio_dir, OUTPUT);
+	digitalWrite(gpio_dir, LOW);
+	this->direction = LIFT_STOP;
+	pinMode(gpio_trigger, OUTPUT);
+	cb_echo1 = std::bind(&Lift::Echo1,this);
+	cb_echo2 = std::bind(&Lift::Echo2,this);
+	wiringPiISR(gpio_echo1, INT_EDGE_BOTH, &CallBackEcho1);
+	wiringPiISR(gpio_echo2, INT_EDGE_BOTH, &CallBackEcho2);
 }
 
 LiftFactory::Lift::~Lift(){
@@ -595,6 +598,7 @@ bool LiftFactory::Lift::LiftHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		lift.gpio_dir = atoi(value.c_str());
+		lift.Initialize();
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -606,6 +610,7 @@ bool LiftFactory::Lift::LiftHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		lift.gpio_trigger = atoi(value.c_str());
+		lift.Initialize();
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -617,6 +622,7 @@ bool LiftFactory::Lift::LiftHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		lift.gpio_echo1 = atoi(value.c_str());
+		lift.Initialize();
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -628,6 +634,7 @@ bool LiftFactory::Lift::LiftHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		lift.gpio_echo2 = atoi(value.c_str());
+		lift.Initialize();
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
