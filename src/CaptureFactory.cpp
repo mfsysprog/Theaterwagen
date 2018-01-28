@@ -33,6 +33,8 @@ std::mutex m;
 std::mutex m_merging;
 std::mutex m_pose;
 
+bool first_open = true;
+
 class mythread : public std::thread
 {
   public:
@@ -805,10 +807,22 @@ void CaptureFactory::Capture::openCap(captureType type)
 	{
 		if(!cap->isOpened()){
 			cap->open(CAP_GPHOTO2); // connect to the camera
-			if(!cap->isOpened()) cap->open(0); //if no camera, try webcam on usb0
-			else
+			if(!cap->isOpened())
+				{
+					if (first_open)
+					{
+						(*syslog) << "Could not open SLR camera, retrying with webcam." << endl;
+						first_open = false;
+					}
+					cap->open(0); //if no camera, try webcam on usb0
+				}
 			// if camera found output all of its options
-			//(*syslog) << (const char*)((intptr_t)cap->get(CV_CAP_PROP_GPHOTO2_WIDGET_ENUMERATE)) << endl;
+			else
+			if (first_open)
+			{
+				(*syslog) << (const char*)((intptr_t)cap->get(CV_CAP_PROP_GPHOTO2_WIDGET_ENUMERATE)) << endl;
+				first_open = false;
+			}
 			cap->set(CAP_PROP_FOURCC ,CV_FOURCC('M', 'J', 'P', 'G') );
 			cap->set(CAP_PROP_FRAME_WIDTH,2304);   // width pixels 2304
 			cap->set(CAP_PROP_FRAME_HEIGHT,1296);   // height pixels 1296
@@ -1847,8 +1861,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	}
 	if(CivetServer::getParam(conn, "detect_file", dummy))
 	{
-		std::thread t1( [this] {
-
 		std::vector<std::vector<cv::Point2f>> points;
 		std::unique_lock<std::mutex> l(m);
 
@@ -1871,11 +1883,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		/* remove frame with no detected faces */
 		//(*capture.fileMat).erase((*capture.fileMat).begin() + i);
 		l.unlock();
-		} );
-
-		mythread::setScheduling(t1, SCHED_IDLE, 0);
-
-		t1.detach();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = _("Facedetection running in background!");
@@ -2029,6 +2036,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    		ss << "<img id=\"photo\" src=\"" << "tmp/" << capture.getUuid() << "_file.jpg?t=" << std::time(0) << "\"></img><br>";
 	    		ss << "<br>";
 	    	}
+	    	capture.closeCap();
 	    }
 	    ss << "<h2>" << _("Video") << ":</h2>";
 	    ss << "<video width\"1024\" height=\"768\" controls>";
