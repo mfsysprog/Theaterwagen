@@ -847,7 +847,7 @@ void CaptureFactory::Capture::loadModel(){
 	//delete detector;
 	//this->detector = new dlib::frontal_face_detector(get_frontal_face_detector());
 	this->face_cascade = new CascadeClassifier();
-	if( !(*face_cascade).load("theaterwagen/haarcascade_frontalface_default.xml") ){ printf("--(!)Error loading face cascade\n"); return; };
+	if( !(*face_cascade).load("theaterwagen/haarcascade_frontalface_alt.xml") ){ printf("--(!)Error loading face cascade\n"); return; };
     model_loaded = true;
 }
 
@@ -1098,10 +1098,30 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 {
 	std::vector<std::stringstream> totaal;
 	std::string recordname = TMP_DIR + this->getUuid() + ".mp4";
+
+	//we should not merge to a running video
+	if (recordname.compare(cf.on_screen) == 0) this->cf.clearScreen();
+
 	VideoWriter record(recordname, CV_FOURCC('H','2','6','4'),
 	    10, cv::Size(1024,768), true);
 
 	openCap(CAP_FILE);
+
+	/*
+	 * if we have no filepoints (faces) in the movie we just copy it asis
+	 */
+	if ((*filePoints).size() == 0) {
+		while(true)
+		{
+			cv::Mat img_file = captureFrame(CAP_FILE);
+			if (img_file.empty()) break;
+
+			record.write(img_file);
+			totaal.push_back(matToJPG(&img_file));
+		}
+		closeCap();
+		return totaal;
+	}
 
 	for (unsigned int frame = 0; frame < (*filePoints).size(); ++frame)
 	{
@@ -1136,7 +1156,8 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 			// if we have less faces in the capture than in the img_file for this frame we do nothing
 
 			if (!fileonly && gezicht >= (*cf.camPoints)[frame % ((*cf.camPoints).size())].size()) continue;
-	        //convert Mat to float data type
+
+			//convert Mat to float data type
 	        img_cam.convertTo(img_cam, CV_32F);
 	        resultaat.convertTo(resultaat, CV_32F);
 
@@ -1861,6 +1882,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	}
 	if(CivetServer::getParam(conn, "detect_file", dummy))
 	{
+		std::thread t1( [this] {
 		std::vector<std::vector<cv::Point2f>> points;
 		std::unique_lock<std::mutex> l(m);
 
@@ -1883,6 +1905,11 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		/* remove frame with no detected faces */
 		//(*capture.fileMat).erase((*capture.fileMat).begin() + i);
 		l.unlock();
+		} );
+
+		mythread::setScheduling(t1, SCHED_IDLE, 0);
+
+		t1.detach();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = _("Facedetection running in background!");
@@ -2021,8 +2048,11 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss << "<img src=\"" << "tmp/" << capture.getUuid() << "_photo.jpg?t=" << std::time(0) << "\"></img><br>";
 		if (!capture.filename.empty())
 	    {
-	    	capture.openCap(CAP_FILE);
-	    	int number_of_frames = capture.cap->get(CV_CAP_PROP_FRAME_COUNT);
+	    	//capture.openCap(CAP_FILE);
+	    	//int number_of_frames = capture.cap->get(CV_CAP_PROP_FRAME_COUNT);
+	    	//capture.closeCap();
+	    	//l.unlock();
+			int number_of_frames = capture.filePoints->size();
 	    	if (number_of_frames)
 	    	{
 	    		ss << "<h2>" << _("File") << ":</h2>";
@@ -2036,7 +2066,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    		ss << "<img id=\"photo\" src=\"" << "tmp/" << capture.getUuid() << "_file.jpg?t=" << std::time(0) << "\"></img><br>";
 	    		ss << "<br>";
 	    	}
-	    	capture.closeCap();
 	    }
 	    ss << "<h2>" << _("Video") << ":</h2>";
 	    ss << "<video width\"1024\" height=\"768\" controls>";
