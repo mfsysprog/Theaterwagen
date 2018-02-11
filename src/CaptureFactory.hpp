@@ -38,9 +38,21 @@
 #include <sfeMovie/Movie.hpp>
 #include "Theaterwagen.hpp"
 
+extern "C"{
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/avutil.h>
+#include <libavutil/pixdesc.h>
+#include <libswscale/swscale.h>
+#include <libavutil/opt.h>
+#include <libavcodec/avcodec.h>
+}
+
 #define CONFIG_FILE_CAPTURE CONFIG_DIR "capturefactory.yaml"
 #define FACE_DOWNSAMPLE_RATIO 2
-#define MOVIE_FRAMERATE 10
+#define VIDEO_WIDTH 1024
+#define VIDEO_HEIGHT 768
+#define VIDEO_FPS 10
 
 extern CivetServer* server;
 extern std::stringstream* syslog;

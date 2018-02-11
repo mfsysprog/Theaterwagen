@@ -66,7 +66,7 @@ static std::string matToJPG(cv::Mat* input)
     cv::Mat resized;
     try
     {
-        cv::resize((*input), resized, cv::Size(1024,768), 0, 0);
+        cv::resize((*input), resized, cv::Size(VIDEO_WIDTH,VIDEO_HEIGHT), 0, 0);
         int params[2] = {0};
         params[0] = CV_IMWRITE_JPEG_QUALITY;
         params[1] = 100;
@@ -99,6 +99,7 @@ static cv::Mat ImgToMat(std::string* input)
     try
     {
         cv::imdecode(buf, cv::IMREAD_UNCHANGED, &restored);
+        //cv::cvtColor(restored, restored, CV_RGB2BGR);
     }
     catch( cv::Exception& e )
     {
@@ -1003,7 +1004,7 @@ void CaptureFactory::Capture::onScreen()
 {
 	 delay(200);
 	 std::unique_lock<std::mutex> l(m_merging);
-	 cf.on_screen = TMP_DIR + this->getUuid() + ".mkv";
+	 cf.on_screen = TMP_DIR + this->getUuid() + ".mp4";
 	 cf.loaded = false;
 	 cf.loadme = true;
 	 l.unlock();
@@ -1052,7 +1053,7 @@ cv::Mat CaptureFactory::Capture::captureFrame(captureType capturetype){
 		*cap >> input;
 		if (!input.empty())
 		{
-			cv::resize(input,input,cv::Size(1024,768));
+			cv::resize(input,input,cv::Size(VIDEO_WIDTH,VIDEO_HEIGHT));
 		}
 		if (capturetype == CAP_CAM)
 		{
@@ -1433,19 +1434,20 @@ void CaptureFactory::Capture::mergeFrames()
 		int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
 		std::cout << "morphing file and file2 took: " << int_ms.count() << " milliseconds" << endl;
 
-		while (file.size() % MOVIE_FRAMERATE != 0) file.push_back(file[(file.size()-1)]);
+		while (file.size() % VIDEO_FPS != 0) file.push_back(file[(file.size()-1)]);
 		std::copy(file.begin(), file.end(), std::back_inserter(totaal));
-		while (morph.size() % MOVIE_FRAMERATE != 0) morph.push_back(morph[(morph.size()-1)]);
+		while (morph.size() % VIDEO_FPS != 0) morph.push_back(morph[(morph.size()-1)]);
 		std::copy(morph.begin(), morph.end(), std::back_inserter(totaal));
-		while (file2.size() % MOVIE_FRAMERATE != 0) file2.push_back(file2[(file2.size()-1)]);
+		while (file2.size() % VIDEO_FPS != 0) file2.push_back(file2[(file2.size()-1)]);
 		std::copy(file2.begin(), file2.end(), std::back_inserter(totaal));
 	}
 	else
 	{
-		while (file.size() % MOVIE_FRAMERATE != 0) file.push_back(file[(file.size()-1)]);
+		while (file.size() % VIDEO_FPS != 0) file.push_back(file[(file.size()-1)]);
+
 
 		/*
-		for (unsigned int i = 0; i < 100; i++)
+		for (unsigned int i = 0; i < 10; i++)
 		{
 			file.push_back(file[(file.size()-1)]);
 		}*/
@@ -1456,18 +1458,172 @@ void CaptureFactory::Capture::mergeFrames()
 		}
 	}
 
-    std::string recordname = TMP_DIR + this->getUuid() + ".mkv";
+	fprintf(stderr,"starting encoding...\n");
+    std::string recordname = TMP_DIR + this->getUuid() + ".mp4";
+    /*
 	  VideoWriter record(recordname, CV_FOURCC('M','P','4','V'),
-			  MOVIE_FRAMERATE, cv::Size(1024,768), true);
+			  MOVIE_FRAMERATE, cv::Size(1024,768), true); */
 
 	t1 = high_resolution_clock::now();
 
-	cv::Mat buffer;
-    for (unsigned int i = 0; i < totaal.size(); i++)
-		  {
-    		  ImgToMat(&totaal[i]).copyTo(buffer);
-			  record << (buffer);
-		  }
+    // initialize FFmpeg library
+    av_register_all();
+	av_log_set_level(AV_LOG_DEBUG);
+    int ret;
+
+    const int dst_width = VIDEO_WIDTH;
+    const int dst_height = VIDEO_HEIGHT;
+    const AVRational dst_fps = {VIDEO_FPS, 1};
+
+    // allocate cv::Mat with extra bytes (required by AVFrame::data)
+    std::vector<uint8_t> imgbuf(dst_height * dst_width * 3 + 16);
+    cv::Mat image(dst_height, dst_width, CV_8UC3, imgbuf.data(), dst_width * 3);
+
+    // open output format context
+    AVFormatContext* outctx = nullptr;
+    ret = avformat_alloc_output_context2(&outctx, nullptr, nullptr, recordname.c_str());
+    if (ret < 0) {
+        std::cerr << "fail to avformat_alloc_output_context2(" << recordname.c_str() << "): ret=" << ret;
+        return;
+    }
+
+    // open output IO context
+    ret = avio_open2(&outctx->pb, recordname.c_str(), AVIO_FLAG_WRITE, nullptr, nullptr);
+    if (ret < 0) {
+        std::cerr << "fail to avio_open2: ret=" << ret;
+        return;
+    }
+
+    // create new video stream
+    AVCodec* vcodec = avcodec_find_encoder(outctx->oformat->video_codec);
+    //AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
+    if (!vcodec)
+    {
+    	fprintf(stderr,"Kan codec nie vinden nie \n");
+    	return;
+    }
+    AVStream* vstrm = avformat_new_stream(outctx, vcodec);
+    if (!vstrm) {
+        std::cerr << "fail to avformat_new_stream";
+        return;
+    }
+
+    avcodec_get_context_defaults3(vstrm->codec, vcodec);
+    vstrm->codec->width = dst_width;
+    vstrm->codec->height = dst_height;
+    vstrm->codec->pix_fmt = vcodec->pix_fmts[0];
+    vstrm->codec->time_base = vstrm->time_base = av_inv_q(dst_fps);
+    vstrm->r_frame_rate = vstrm->avg_frame_rate = dst_fps;
+    //vstrm->codec->delay = 0;
+    //vstrm->codec->max_b_frames = 0;
+    //vstrm->codec->thread_count = 1;
+
+   	av_opt_set(vstrm->codec->priv_data, "preset", "ultrafast", 0);
+   	av_opt_set(vstrm->codec->priv_data, "tune", "fastdecode", 0);
+
+    //vstrm->codec->flags &= ~AV_CODEC_CAP_DELAY;
+    fprintf(stderr,"Capabilities %i",vstrm->codec->codec->capabilities);
+    if (outctx->oformat->flags & AVFMT_GLOBALHEADER)
+        vstrm->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+    // open video encoder
+    ret = avcodec_open2(vstrm->codec, vcodec, nullptr);
+    if (ret < 0) {
+        std::cerr << "fail to avcodec_open2: ret=" << ret;
+        return;
+    }
+
+    std::cout
+        << "outfile: " << recordname.c_str() << "\n"
+        << "format:  " << outctx->oformat->name << "\n"
+        << "vcodec:  " << vcodec->name << "\n"
+        << "size:    " << dst_width << 'x' << dst_height << "\n"
+        << "fps:     " << av_q2d(dst_fps) << "\n"
+        << "pixfmt:  " << av_get_pix_fmt_name(vstrm->codec->pix_fmt) << "\n"
+        << std::flush;
+
+    // initialize sample scaler
+    SwsContext* swsctx = sws_getCachedContext(
+        nullptr, dst_width, dst_height, AV_PIX_FMT_BGR24,
+        dst_width, dst_height, vstrm->codec->pix_fmt, SWS_BICUBIC, nullptr, nullptr, nullptr);
+    if (!swsctx) {
+        std::cerr << "fail to sws_getCachedContext";
+        return;
+    }
+
+    // allocate frame buffer for encoding
+    AVFrame* frame = av_frame_alloc();
+    std::vector<uint8_t> framebuf(avpicture_get_size(vstrm->codec->pix_fmt, dst_width, dst_height));
+    avpicture_fill(reinterpret_cast<AVPicture*>(frame), framebuf.data(), vstrm->codec->pix_fmt, dst_width, dst_height);
+    frame->width = dst_width;
+    frame->height = dst_height;
+    frame->format = static_cast<int>(vstrm->codec->pix_fmt);
+
+    // encoding loop
+    avformat_write_header(outctx, nullptr);
+    int64_t frame_pts = 0;
+    unsigned nb_frames = 0;
+    int got_pkt = 0;
+
+    for (unsigned int i = 0; i < totaal.size(); i++) {
+   		ImgToMat(&totaal[i]).copyTo(image);
+        const int stride[] = { static_cast<int>(image.step[0]) };
+        sws_scale(swsctx, &image.data, stride, 0, image.rows, frame->data, frame->linesize);
+        frame->pts = frame_pts++;
+        // encode video frame
+        AVPacket pkt;
+        pkt.data = nullptr;
+        pkt.size = 0;
+        av_init_packet(&pkt);
+        ret = avcodec_encode_video2(vstrm->codec, &pkt, frame, &got_pkt);
+        fprintf(stderr, "image size is %i\n",pkt.size);
+        if (ret < 0) {
+            std::cerr << "fail to avcodec_encode_video2: ret=" << ret << "\n";
+            break;
+        }
+        if (got_pkt) {
+            // rescale packet timestamp
+            pkt.duration = 1;
+            av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            // write packet
+            av_write_frame(outctx, &pkt);
+            std::cout << nb_frames << '\r' << std::flush;  // dump progress
+            ++nb_frames;
+            av_free_packet(&pkt);
+        }
+    }
+
+    /* get the delayed frames */
+    do {
+        // encode video frame
+        AVPacket pkt;
+        pkt.data = nullptr;
+        pkt.size = 0;
+        av_init_packet(&pkt);
+        ret = avcodec_encode_video2(vstrm->codec, &pkt, NULL, &got_pkt);
+        if (ret < 0) {
+            fprintf(stderr, "Error encoding frame\n");
+            exit(1);
+        }
+        if (got_pkt) {
+            // rescale packet timestamp
+            pkt.duration = 1;
+            av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            // write packet
+            av_write_frame(outctx, &pkt);
+            std::cout << nb_frames << '\r' << std::flush;  // dump progress
+            ++nb_frames;
+            av_free_packet(&pkt);
+        }
+    } while (got_pkt);
+
+    av_write_trailer(outctx);
+    std::cout << nb_frames << " frames encoded" << std::endl;
+
+    av_frame_free(&frame);
+    avcodec_close(vstrm->codec);
+    avio_close(outctx->pb);
+    avformat_free_context(outctx);
 
     t2 = high_resolution_clock::now();
 	int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
@@ -1887,9 +2043,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	{
 		Size S = Size((*capture.cf.camMat)[0].cols,(*capture.cf.camMat)[0].rows);
 		int codec = CV_FOURCC('H', '2', '6', '4');
-		VideoWriter outputVideo(MOVIES_DIR "capture.mp4", codec, 10.0, S, true);
+		VideoWriter outputVideo(MOVIES_DIR "capture.mp4", codec, VIDEO_FPS, S, true);
 
-		if (!(outputVideo.open(MOVIES_DIR "capture.mp4", codec, 10.0, S, true)))
+		if (!(outputVideo.open(MOVIES_DIR "capture.mp4", codec, VIDEO_FPS, S, true)))
 			(*syslog) << "Video open failure!" << endl;
 		for (unsigned int i = 0; i < (*capture.cf.camMat).size(); ++i)
 		{
@@ -2171,8 +2327,8 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    	}
 	    }
 	    ss << "<h2>" << _("Video") << ":</h2>";
-	    ss << "<video width\"1024\" height=\"768\" controls>";
-	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mkv?t=" << std::time(0) << "\" type=\"video/mkv\">";
+	    ss << "<video width=\"" << VIDEO_WIDTH << "\" height=\"" << VIDEO_HEIGHT << "\" controls>";
+	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4?t=" << std::time(0) << "\" type=\"video/mp4\">";
 	    ss << "Your browser does not support the video tag";
 		ss << "</video>";
 		ss << "<br>";
