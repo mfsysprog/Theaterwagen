@@ -40,13 +40,15 @@
 
 #define CONFIG_FILE_CAPTURE CONFIG_DIR "capturefactory.yaml"
 #define FACE_DOWNSAMPLE_RATIO 2
+#define MOVIE_FRAMERATE 10
 
 extern CivetServer* server;
 extern std::stringstream* syslog;
 
 enum captureType{
 	CAP_CAM,
-	CAP_FILE
+	CAP_FILE,
+	CAP_FILE2
 };
 
 class CaptureFactory {
@@ -69,13 +71,15 @@ class CaptureFactory {
 		friend class ChaseFactory;
 		Capture(CaptureFactory& cf, std::string naam, std::string omschrijving);
 		Capture(CaptureFactory& cf, std::string uuidstr, std::string naam,
-				std::string omschrijving, std::string filename,
+				std::string omschrijving, std::string filename, std::string filename2,
 				std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints,
+				std::vector<std::vector<std::vector<cv::Point2f>>>* file2points,
 				bool fileonly,
-				unsigned int mix_from,
-				unsigned int mix_to);
+				unsigned int mix_file,
+				unsigned int mix_file2);
 		~Capture();
 		void captureDetectAndMerge();
+		void mergeToScreen();
 		void mergeToFile();
 		void onScreen();
 		std::string getUuid();
@@ -104,20 +108,24 @@ class CaptureFactory {
 		cv::Mat captureFrame(captureType capturetype);
 		void getFrame(int framenumber, bool drawFaces);
 		std::vector<std::vector<cv::Point2f>> detectFrame(cv::Mat* input, captureType capturetype);
-		std::vector<std::stringstream> mergeFrames();
+		std::vector<std::string> mergeFaces(captureType type, unsigned int mix_file, std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints, bool fileonly);
+		void mergeFrames();
+		std::vector<std::string> morph(cv::Mat orig, cv::Mat target, unsigned int morphsteps);
 		void loadModel();
 		void captureLoop();
-		std::vector<std::stringstream> loadFilmpje();
+		void loadFilmpje();
 		//void detectFilmpje();
 		std::string url;
 		std::string naam;
 		std::string omschrijving;
 		std::string filename = "";
-		std::vector<std::stringstream>* off_screen;
+		std::string filename2 = "";
 
-		unsigned int mix_from = 100;
-		unsigned int mix_to = 100;
+		unsigned int mix_file = 100;
+		unsigned int mix_file2 = 100;
+		unsigned int morphsteps = 10;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints;
+		std::vector<std::vector<std::vector<cv::Point2f>>>* file2Points;
 		uuid_t uuid;
 		cv::VideoCapture* cap;
 		cv::CascadeClassifier* face_cascade;

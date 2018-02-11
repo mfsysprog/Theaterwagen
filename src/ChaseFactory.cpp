@@ -310,6 +310,8 @@ void ChaseFactory::Chase::Action()
 		{
 			if (method.compare("Photo") == 0)
 			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->captureDetectAndMerge();
+			if (method.compare("Merge") == 0)
+			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->mergeToScreen();
 			if (method.compare("toFile") == 0)
 			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->mergeToFile();
 			if (method.compare("onScreen") == 0)
@@ -869,6 +871,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option value=\"Button::Activate\">" << _("Button::Activate") << "</option>";
 	   ss << "  <option value=\"Button::Wait\">" << _("Button::Wait") << "</option>";
 	   ss << "  <option value=\"Capture::Photo\">" << _("Capture::Photo") << "</option>";
+	   ss << "  <option value=\"Capture::Merge\">" << _("Capture::Merge") << "</option>";
 	   ss << "  <option value=\"Capture::toFile\">" << _("Capture::toFile") << "</option>";
 	   ss << "  <option value=\"Capture::onScreen\">" << _("Capture::onScreen") << "</option>";
 	   ss << "  <option value=\"Capture::clearScreen\">" << _("Capture::clearScreen") << "</option>";
