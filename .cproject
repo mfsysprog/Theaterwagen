@@ -31,6 +31,7 @@
 								<option id="gnu.cpp.compiler.option.debugging.level.442984261" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.980885335" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="/home/erik/dlib-19.2"/>
+									<listOptionValue builtIn="false" value="/home/erik/FFmpeg"/>
 									<listOptionValue builtIn="false" value="/home/erik/sfeMovie/include"/>
 									<listOptionValue builtIn="false" value="/home/erik/wiringPi/wiringPi"/>
 									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/include/opencv"/>
@@ -57,8 +58,8 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1739474170" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.346323020" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
 								<option id="gnu.cpp.link.option.libs.672716456" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
+									<listOptionValue builtIn="false" value="avcodec"/>
 									<listOptionValue builtIn="false" value="dlib"/>
-									<listOptionValue builtIn="false" value="b64"/>
 									<listOptionValue builtIn="false" value="yaml-cpp"/>
 									<listOptionValue builtIn="false" value="uuid"/>
 									<listOptionValue builtIn="false" value="sfeMovie"/>
@@ -86,11 +87,10 @@
 									<listOptionValue builtIn="false" value="swscale"/>
 									<listOptionValue builtIn="false" value="avutil"/>
 									<listOptionValue builtIn="false" value="avformat"/>
-									<listOptionValue builtIn="false" value="avcodec"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1248030428" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="/usr/local/lib"/>
 									<listOptionValue builtIn="false" value="/usr/lib"/>
-									<listOptionValue builtIn="false" value="/usr/lib/arm-linux-gnueabihf"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1239100179" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-pthread --sysroot=/mnt/pi" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1970685322" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">

@@ -110,6 +110,14 @@ static cv::Mat ImgToMat(std::string* input)
     return restored;
 }
 
+static cv::UMat ImgToUMat(std::string* input)
+{
+	cv::UMat restored;
+	ImgToMat(input).copyTo(restored);
+    return restored;
+}
+
+
 // Apply affine transform calculated using srcTri and dstTri to src
 void applyAffineTransform(Mat &warpImage, Mat &src, std::vector<Point2f> &srcTri, std::vector<Point2f> &dstTri)
 {
@@ -508,7 +516,10 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::s
 								 std::vector<std::vector<std::vector<cv::Point2f>>>* file2points,
 								 bool fileonly,
 								 unsigned int mix_file,
-								 unsigned int mix_file2):cf(cf){
+								 unsigned int mix_file2,
+								 unsigned int filesteps,
+								 unsigned int file2steps,
+								 unsigned int morphsteps):cf(cf){
 	mh = new CaptureFactory::Capture::CaptureHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 
@@ -522,6 +533,10 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::s
 	this->fileonly = fileonly;
 	this->mix_file = mix_file;
 	this->mix_file2 = mix_file2;
+	this->filesteps = filesteps;
+	this->file2steps = file2steps;
+	this->morphsteps = morphsteps;
+
 
 	//cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
 	//cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
@@ -706,6 +721,9 @@ void CaptureFactory::load(){
 		bool fileonly = node[i]["fileonly"].as<bool>();
 		unsigned int mix_file = (unsigned int) node[i]["mix_file"].as<int>();
 		unsigned int mix_file2 = (unsigned int) node[i]["mix_file2"].as<int>();
+		unsigned int filesteps = (unsigned int) node[i]["filesteps"].as<int>();
+		unsigned int file2steps = (unsigned int) node[i]["file2steps"].as<int>();
+		unsigned int morphsteps = (unsigned int) node[i]["morphsteps"].as<int>();
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 		for (std::size_t frame=0;frame < node[i]["filepoints"].size();frame++)
 		{
@@ -742,7 +760,12 @@ void CaptureFactory::load(){
 		  }
 		  file2points->push_back(faces);
 		}
-		CaptureFactory::Capture * capture = new CaptureFactory::Capture(*this, uuidstr, naam, omschrijving, filename, filename2, filepoints, file2points, fileonly, mix_file, mix_file2);
+		CaptureFactory::Capture * capture =
+			new CaptureFactory::Capture(*this,
+					uuidstr, naam, omschrijving,
+					filename, filename2, filepoints,
+					file2points, fileonly, mix_file,
+					mix_file2, filesteps, file2steps, morphsteps);
 		std::string uuid_str = capture->getUuid();
 		capturemap.insert(std::make_pair(uuid_str,capture));
 	}
@@ -784,6 +807,12 @@ void CaptureFactory::save(){
     	emitter << YAML::Value << (int) element.second->mix_file;
     	emitter << YAML::Key << "mix_file2";
 		emitter << YAML::Value << (int) element.second->mix_file2;
+    	emitter << YAML::Key << "filesteps";
+		emitter << YAML::Value << (int) element.second->filesteps;
+    	emitter << YAML::Key << "file2steps";
+		emitter << YAML::Value << (int) element.second->file2steps;
+    	emitter << YAML::Key << "morphsteps";
+		emitter << YAML::Value << (int) element.second->morphsteps;
 		emitter << YAML::Key << "filepoints";
 		emitter << YAML::BeginSeq;
 		/* frames */
@@ -1004,7 +1033,7 @@ void CaptureFactory::Capture::onScreen()
 {
 	 delay(200);
 	 std::unique_lock<std::mutex> l(m_merging);
-	 cf.on_screen = TMP_DIR + this->getUuid() + ".mp4";
+	 cf.on_screen = TMP_DIR + this->getUuid() + "." + VIDEO_EXT;
 	 cf.loaded = false;
 	 cf.loadme = true;
 	 l.unlock();
@@ -1435,15 +1464,18 @@ void CaptureFactory::Capture::mergeFrames()
 		std::cout << "morphing file and file2 took: " << int_ms.count() << " milliseconds" << endl;
 
 		while (file.size() % VIDEO_FPS != 0) file.push_back(file[(file.size()-1)]);
-		std::copy(file.begin(), file.end(), std::back_inserter(totaal));
+		for (unsigned int i = 0; i < filesteps; i++)
+			std::copy(file.begin(), file.end(), std::back_inserter(totaal));
 		while (morph.size() % VIDEO_FPS != 0) morph.push_back(morph[(morph.size()-1)]);
 		std::copy(morph.begin(), morph.end(), std::back_inserter(totaal));
 		while (file2.size() % VIDEO_FPS != 0) file2.push_back(file2[(file2.size()-1)]);
-		std::copy(file2.begin(), file2.end(), std::back_inserter(totaal));
+		for (unsigned int i = 0; i < file2steps; i++)
+			std::copy(file2.begin(), file2.end(), std::back_inserter(totaal));
 	}
 	else
 	{
-		while (file.size() % VIDEO_FPS != 0) file.push_back(file[(file.size()-1)]);
+		for (unsigned int i = 0; i < filesteps; i++)
+			while (file.size() % VIDEO_FPS != 0) file.push_back(file[(file.size()-1)]);
 
 
 		/*
@@ -1459,12 +1491,71 @@ void CaptureFactory::Capture::mergeFrames()
 	}
 
 	fprintf(stderr,"starting encoding...\n");
-    std::string recordname = TMP_DIR + this->getUuid() + ".mp4";
-    /*
-	  VideoWriter record(recordname, CV_FOURCC('M','P','4','V'),
-			  MOVIE_FRAMERATE, cv::Size(1024,768), true); */
+    std::string recordname = TMP_DIR + this->getUuid() + "." + VIDEO_EXT;
 
-	t1 = high_resolution_clock::now();
+	//av_log_set_level(AV_LOG_DEBUG);
+
+	t1 = high_resolution_clock::now();	t1 = high_resolution_clock::now();
+
+	/*
+    VideoWriter record(recordname, CV_FOURCC('M','P','4','V'),
+			  VIDEO_FPS, cv::Size(1024,768), true);
+
+
+    for (unsigned int i = 0; i < totaal.size(); i++) {
+    	record.write(ImgToMat(&totaal[i]));
+    }
+	*/
+
+	/*
+	fprintf(stderr,"av_register_all call\n");
+
+    av_register_all();
+
+	fprintf(stderr,"avcodec_find_encoder_by_name\n");
+
+    // auto codec = avcodec_find_encoder_by_name( "libx264" ); // works
+    auto codec = avcodec_find_encoder_by_name( "h264_omx" );
+    if( !codec )
+    {
+        throw std::runtime_error( "Unable to find codec" );
+    }
+
+	fprintf(stderr,"avcodec_alloc_context3\n");
+
+    auto context =
+        std::shared_ptr< AVCodecContext >( avcodec_alloc_context3( codec ), freeContext );
+
+    if( !context )
+    {
+        throw std::runtime_error( "Unable to allocate context" );
+    }
+
+    std::cout << "Setting options" << std::endl;
+
+    //context->bit_rate = 400 * 1024;  // 400 KBit/s
+    context->width = 640;
+    context->height = 480;
+    //context->pix_fmt = AV_PIX_FMT_YUV420P;
+    context->time_base.num = 30; // milliseconds
+    context->time_base.den = 1;
+    //context->thread_count = 0;
+    //context->level = 31;
+
+    // av_opt_set( m_context->priv_data, "tune", "zerolatency", 0 );
+    av_opt_set( context->priv_data, "preset", "slow", 0 );
+
+    std::cout << "Opening context" << std::endl;
+
+    auto errorCode = avcodec_open2( context.get(), codec, nullptr );
+    if( errorCode < 0 )
+    {
+        throw std::runtime_error( "Unable to open codec (" + avError( errorCode ) + ")" );
+    }
+
+    std::cout << "Done" << std::endl;
+
+    */
 
     // initialize FFmpeg library
     av_register_all();
@@ -1473,7 +1564,8 @@ void CaptureFactory::Capture::mergeFrames()
 
     const int dst_width = VIDEO_WIDTH;
     const int dst_height = VIDEO_HEIGHT;
-    const AVRational dst_fps = {VIDEO_FPS, 1};
+    const AVRational dst_fps = { VIDEO_FPS,	1 };
+    const AVRational dst_timebase = { 1, VIDEO_FPS };
 
     // allocate cv::Mat with extra bytes (required by AVFrame::data)
     std::vector<uint8_t> imgbuf(dst_height * dst_width * 3 + 16);
@@ -1495,13 +1587,14 @@ void CaptureFactory::Capture::mergeFrames()
     }
 
     // create new video stream
-    AVCodec* vcodec = avcodec_find_encoder(outctx->oformat->video_codec);
-    //AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
+    //AVCodec* vcodec = avcodec_find_encoder(outctx->oformat->video_codec);
+    AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
     if (!vcodec)
     {
     	fprintf(stderr,"Kan codec nie vinden nie \n");
     	return;
     }
+
     AVStream* vstrm = avformat_new_stream(outctx, vcodec);
     if (!vstrm) {
         std::cerr << "fail to avformat_new_stream";
@@ -1511,18 +1604,30 @@ void CaptureFactory::Capture::mergeFrames()
     avcodec_get_context_defaults3(vstrm->codec, vcodec);
     vstrm->codec->width = dst_width;
     vstrm->codec->height = dst_height;
-    vstrm->codec->pix_fmt = vcodec->pix_fmts[0];
-    vstrm->codec->time_base = vstrm->time_base = av_inv_q(dst_fps);
-    vstrm->r_frame_rate = vstrm->avg_frame_rate = dst_fps;
+    //vstrm->codec->level = 32;
+    //vstrm->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    vstrm->codec->pix_fmt = AV_PIX_FMT_YUV420P;
+    //vstrm->codec->pix_fmt = vcodec->pix_fmts[0];
+    //vstrm->codec->time_base = vstrm->time_base = av_inv_q(dst_fps);
+    vstrm->codec->time_base = dst_timebase;
+    vstrm->codec->framerate = dst_fps;
+    //vstrm->codec->max_b_frames = 1;
+    vstrm->codec->gop_size = 10;
+    //vstrm->codec->compression_level = 0;
+    //vstrm->r_frame_rate = vstrm->avg_frame_rate = dst_fps;
+    //vstrm->codec->thread_count = 0;
+    vstrm->codec->bit_rate = 4000 * 1024;
     //vstrm->codec->delay = 0;
     //vstrm->codec->max_b_frames = 0;
     //vstrm->codec->thread_count = 1;
 
-   	av_opt_set(vstrm->codec->priv_data, "preset", "ultrafast", 0);
-   	av_opt_set(vstrm->codec->priv_data, "tune", "fastdecode", 0);
+   	//av_opt_set(vstrm->codec->priv_data, "preset", "slow", 0);
+   	//av_opt_set(vstrm->codec->priv_data, "tune", "film", 0);
+    //av_opt_set(vstrm->codec->priv_data, "crf", "1", AV_OPT_SEARCH_CHILDREN);
+    //av_opt_set(vstrm->codec->priv_data, "qp", "10", 0);
 
     //vstrm->codec->flags &= ~AV_CODEC_CAP_DELAY;
-    fprintf(stderr,"Capabilities %i",vstrm->codec->codec->capabilities);
+    //fprintf(stderr,"Capabilities %i",vstrm->codec->codec->capabilities);
     if (outctx->oformat->flags & AVFMT_GLOBALHEADER)
         vstrm->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
@@ -1576,7 +1681,7 @@ void CaptureFactory::Capture::mergeFrames()
         pkt.size = 0;
         av_init_packet(&pkt);
         ret = avcodec_encode_video2(vstrm->codec, &pkt, frame, &got_pkt);
-        fprintf(stderr, "image size is %i\n",pkt.size);
+        //fprintf(stderr, "image size is %i\n",pkt.size);
         if (ret < 0) {
             std::cerr << "fail to avcodec_encode_video2: ret=" << ret << "\n";
             break;
@@ -1593,7 +1698,6 @@ void CaptureFactory::Capture::mergeFrames()
         }
     }
 
-    /* get the delayed frames */
     do {
         // encode video frame
         AVPacket pkt;
@@ -1937,6 +2041,39 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		mg_printf(conn, ss.str().c_str(), "%s");
 		return true;
 	}
+	if(CivetServer::getParam(conn, "filesteps", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.filesteps = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "file2steps", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.file2steps = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "morphsteps", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.morphsteps = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
 	if(CivetServer::getParam(conn, "filename", value))
 	{
 		CivetServer::getParam(conn,"value", value);
@@ -2055,6 +2192,13 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = _("Video saved!");
+	}
+	if(CivetServer::getParam(conn, "save_file", dummy))
+	{
+		imwrite(MOVIES_DIR "capture.jpg",(*capture.cf.camMat)[0]);
+
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
+		message = _("File saved!");
 	}
 	if(CivetServer::getParam(conn, "capture", dummy))
 	{
@@ -2230,6 +2374,18 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
    		tohead << " $.get( \"" << capture.getUrl() << "\", { mix_file2: 'true', value: $('#mix_file2').val() }, function( data ) {";
    		tohead << "  $( \"#mix_file2\" ).html( data );})";
   	    tohead << "});";
+	    tohead << " $('#filesteps').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { filesteps: 'true', value: $('#filesteps').val() }, function( data ) {";
+   		tohead << "  $( \"#filesteps\" ).html( data );})";
+  	    tohead << "});";
+	    tohead << " $('#file2steps').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { file2steps: 'true', value: $('#file2steps').val() }, function( data ) {";
+   		tohead << "  $( \"#file2steps\" ).html( data );})";
+  	    tohead << "});";
+	    tohead << " $('#morphsteps').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { morphsteps: 'true', value: $('#morphsteps').val() }, function( data ) {";
+   		tohead << "  $( \"#morphsteps\" ).html( data );})";
+  	    tohead << "});";
 	    tohead << " $('#fileonly').on('change', function() {";
    		tohead << " $.get( \"" << capture.getUrl() << "\", { fileonly: 'true', value: $('#fileonly').is(':checked') }, function( data ) {";
    		tohead << "  $( \"#fileonly\" ).html( data );})";
@@ -2249,7 +2405,8 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"capture\" value=\"capture\" id=\"capture_button\">" << _("Input Cam") << "</button>";
 	    ss << "<button type=\"submit\" name=\"capture_next\" value=\"capture_next\" id=\"capture_button_next\">" << _("Next Frame") << "</button>";
-	    ss << "<button type=\"submit\" name=\"detect\" value=\"detect\" id=\"detect_button\">" << _("Detect") << "</button>";
+	    ss << "<button type=\"submit\" name=\"detect\" value=\"detect\" id=\"detect_button\">" << _("Detect") << "</button></br>";
+	    ss << "<button type=\"submit\" name=\"save_file\" value=\"save_file\" id=\"save_file\">" << _("Save as File") << "</button>";
 	    ss << "<button type=\"submit\" name=\"save_video\" value=\"save_video\" id=\"save_video\">" << _("Save as Video") << "</button></br>";
 	    ss << "<button type=\"submit\" name=\"movie\" id=\"movie\">" << _("Input File") << "</button>";
 	    ss << "<button type=\"submit\" name=\"detect_file\" value=\"detect_file\" id=\"detect__file_button\">" << _("Detect File") << "</button>";
@@ -2297,6 +2454,18 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		ss << "<td><input class=\"inside\" id=\"mix_file2\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
 			  capture.mix_file2 << "\"" << " name=\"mix_file2\" /><br>";
 		ss << "</div>";
+		ss << "<label for=\"filesteps\">" << _("Filesteps") << ":</label>";
+		ss << "<td><input class=\"inside\" id=\"filesteps\" type=\"number\" min=\"1\" max=\"100\" placeholder=\"1\" step=\"1\" value=\"" <<
+			  capture.filesteps << "\"" << " name=\"filesteps\" /><br>";
+		ss << "</div>";
+		ss << "<label for=\"file2steps\">" << _("Filesteps") << "2:</label>";
+		ss << "<td><input class=\"inside\" id=\"file2steps\" type=\"number\" min=\"1\" max=\"100\" placeholder=\"1\" step=\"1\" value=\"" <<
+			  capture.file2steps << "\"" << " name=\"file2steps\" /><br>";
+		ss << "</div>";
+		ss << "<label for=\"morphsteps\">" << _("Morphsteps") << ":</label>";
+		ss << "<td><input class=\"inside\" id=\"morphsteps\" type=\"number\" min=\"1\" max=\"100\" placeholder=\"1\" step=\"1\" value=\"" <<
+			  capture.morphsteps << "\"" << " name=\"morphsteps\" /><br>";
+		ss << "</div>";
 		ss << "<br>";
 	    ss << "</br>";
 	    /*
@@ -2328,7 +2497,7 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    }
 	    ss << "<h2>" << _("Video") << ":</h2>";
 	    ss << "<video width=\"" << VIDEO_WIDTH << "\" height=\"" << VIDEO_HEIGHT << "\" controls>";
-	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4?t=" << std::time(0) << "\" type=\"video/mp4\">";
+	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << "." << VIDEO_EXT << "?t=" << std::time(0) << "\" type=\"video/" << VIDEO_EXT << "\">";
 	    ss << "Your browser does not support the video tag";
 		ss << "</video>";
 		ss << "<br>";

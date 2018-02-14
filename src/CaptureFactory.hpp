@@ -46,13 +46,20 @@ extern "C"{
 #include <libswscale/swscale.h>
 #include <libavutil/opt.h>
 #include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/imgutils.h>
+#include <libavutil/mathematics.h>
+#include <libavutil/opt.h>
+#include <libswscale/swscale.h>
+#include <x264.h>
 }
 
 #define CONFIG_FILE_CAPTURE CONFIG_DIR "capturefactory.yaml"
 #define FACE_DOWNSAMPLE_RATIO 2
-#define VIDEO_WIDTH 1024
+#define VIDEO_WIDTH 1032
 #define VIDEO_HEIGHT 768
 #define VIDEO_FPS 10
+#define VIDEO_EXT "mp4"
 
 extern CivetServer* server;
 extern std::stringstream* syslog;
@@ -88,7 +95,10 @@ class CaptureFactory {
 				std::vector<std::vector<std::vector<cv::Point2f>>>* file2points,
 				bool fileonly,
 				unsigned int mix_file,
-				unsigned int mix_file2);
+				unsigned int mix_file2,
+				unsigned int filesteps,
+				unsigned int file2steps,
+				unsigned int morphsteps);
 		~Capture();
 		void captureDetectAndMerge();
 		void mergeToScreen();
@@ -135,6 +145,8 @@ class CaptureFactory {
 
 		unsigned int mix_file = 100;
 		unsigned int mix_file2 = 100;
+		unsigned int filesteps = 1;
+		unsigned int file2steps = 1;
 		unsigned int morphsteps = 10;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints;
 		std::vector<std::vector<std::vector<cv::Point2f>>>* file2Points;
