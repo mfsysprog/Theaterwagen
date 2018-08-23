@@ -14,14 +14,17 @@ sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
 
+gphoto2 installeren (denk ik??):
+sudo apt install libgphoto2-6 libgphoto2-dev
+
 Zelf compileren van opencv:
 git clone https://github.com/opencv/opencv.git
 cd opencv
 mkdir build
 cd build
-cmake -DCMAKE_C_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_CXX_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_BUILD_TYPE=RELEASE -DWITH_JPEG=ON -DWITH_OPENGL=ON -DENABLE_VFPV3=ON -DENABLE_NEON=ON -DWITH_FFMPEG=ON ..
+cmake -DCMAKE_C_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_CXX_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_BUILD_TYPE=RELEASE -DWITH_JPEG=ON -DWITH_OPENGL=ON -DENABLE_VFPV3=ON -DENABLE_NEON=ON -DWITH_FFMPEG=ON -DWITH_GPHOTO2=ON ..
 make
-sudo make install
+sudo make install 
 
 Zelf compileren van sfeMovie:
 git clone https://www.github.com/Yalir/sfeMovie.git
@@ -38,3 +41,7 @@ alle git clone ook uitvoeren op ontwikkel vm en toevoegen:
 /home/erik/sfeMovie/include
 
 de opencv stonden al in het build path
+
+apport disablen om te voorkomen dat melding popup programma onderbreekt:
+sudo nano /etc/default/apport
+verander enabled=1 in enabled=0

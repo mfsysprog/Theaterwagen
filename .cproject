@@ -104,9 +104,10 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.release.532648542.593770474" name="CaptureFactory.hpp" rcbsApplicability="disable" resourcePath="src/CaptureFactory.hpp" toolsToInvoke=""/>
 					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.release.532648542.504318756" name="UploadHandler.hpp" rcbsApplicability="disable" resourcePath="src/UploadHandler.hpp" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="UploadHandler.hpp|UploadHandler.cpp|Schip.h|Schip.cpp|face_dlib.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
+						<entry excluding="CaptureFactory.hpp|CaptureFactory.cpp|UploadHandler.hpp|UploadHandler.cpp|Schip.h|Schip.cpp|face_dlib.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

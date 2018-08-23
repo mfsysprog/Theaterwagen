@@ -31,7 +31,7 @@
 #include "LiftFactory.hpp"
 #include "MotorFactory.hpp"
 #include "ToggleFactory.hpp"
-#include "CaptureFactory.hpp"
+#include "CloneFactory.hpp"
 #include "WebHandler.hpp"
 
 #define CONFIG_FILE_CHASE CONFIG_DIR "chasefactory.yaml"
@@ -109,7 +109,7 @@ class ChaseFactory {
 	void save();
 
 	ButtonFactory* button;
-	CaptureFactory* capture;
+	CloneFactory* clone;
 	FixtureFactory* fixture;
 	SceneFactory* scene;
 	MusicFactory* music;

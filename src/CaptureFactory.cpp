@@ -1559,7 +1559,7 @@ void CaptureFactory::Capture::mergeFrames()
 
     // initialize FFmpeg library
     av_register_all();
-	av_log_set_level(AV_LOG_DEBUG);
+	//av_log_set_level(AV_LOG_DEBUG);
     int ret;
 
     const int dst_width = VIDEO_WIDTH;

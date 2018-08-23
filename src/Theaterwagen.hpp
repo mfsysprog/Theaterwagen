@@ -3,7 +3,7 @@
 
 #define ROOT_DIR "theaterwagen/"
 #define RESOURCES_DIR ROOT_DIR "resources/"
-#define MOVIES_DIR ROOT_DIR "filmpjes/"
+#define FILES_DIR ROOT_DIR "bestanden/"
 #define CAPTURE_DIR ROOT_DIR "captures/"
 #define MUSIC_DIR ROOT_DIR "muziek/"
 #define SOUND_DIR ROOT_DIR "geluiden/"

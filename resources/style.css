@@ -53,7 +53,7 @@ li {
 }
 
 body.home li.home a {background-color: #ff9900;}
-body.capture li.capture a {background-color: #ff9900;}
+body.clone li.clone a {background-color: #ff9900;}
 body.chase li.chase a {background-color: #ff9900;}
 body.toggle li.toggle a {background-color: #ff9900;}
 body.fixture li.fixture a {background-color: #ff9900;}
