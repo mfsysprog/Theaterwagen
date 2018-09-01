@@ -42,7 +42,7 @@ class mythread : public std::thread
 
 static std::vector<cv::Rect> boundRect(Mat* mask, vector<vector<Point> >* contours, vector<Vec4i>* hierarchy)
 {
-	  findContours( *mask, *contours, *hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+	  findContours( *mask, *contours, *hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
 	    std::vector<std::vector<cv::Point>> contours_poly( contours->size() );
 	    std::vector<cv::Rect> rect( contours->size() );
@@ -62,7 +62,7 @@ static std::string matToJPG(cv::Mat* input)
     {
         cv::resize((*input), resized, cv::Size(VIDEO_WIDTH,VIDEO_HEIGHT), 0, 0);
         int params[2] = {0};
-        params[0] = CV_IMWRITE_JPEG_QUALITY;
+        params[0] = IMWRITE_JPEG_QUALITY;
         params[1] = 100;
     	cv::imencode(".jpg", resized, buf, std::vector<int>(params, params+1) );
     }
@@ -104,12 +104,13 @@ static cv::Mat ImgToMat(std::string* input)
     return restored;
 }
 
+/*
 static cv::UMat ImgToUMat(std::string* input)
 {
 	cv::UMat restored;
 	ImgToMat(input).copyTo(restored);
     return restored;
-}
+}*/
 
 static cv::Mat drawEllipses(cv::Mat* input, std::vector<ellipse_s>* ellipses)
 {
@@ -521,12 +522,12 @@ void CloneFactory::Clone::openCap(cloneType type)
 			else
 			if (first_open)
 			{
-				(*syslog) << (const char*)((intptr_t)cap->get(CV_CAP_PROP_GPHOTO2_WIDGET_ENUMERATE)) << endl;
+				(*syslog) << (const char*)((intptr_t)cap->get(cv::CAP_PROP_GPHOTO2_WIDGET_ENUMERATE)) << endl;
 				first_open = false;
 			}
-			cap->set(CAP_PROP_FOURCC ,CV_FOURCC('M', 'J', 'P', 'G') );
-			cap->set(CAP_PROP_FRAME_WIDTH,2304);   // width pixels 2304
-			cap->set(CAP_PROP_FRAME_HEIGHT,1296);   // height pixels 1296
+			cap->set(cv::CAP_PROP_FOURCC , cv::VideoWriter::fourcc('M','J','P','G') );
+			cap->set(cv::CAP_PROP_FRAME_WIDTH,2304);   // width pixels 2304
+			cap->set(cv::CAP_PROP_FRAME_HEIGHT,1296);   // height pixels 1296
 		}
 	}
 	else if (type == CAP_FILE)
@@ -627,11 +628,11 @@ void CloneFactory::Clone::onScreen()
 void CloneFactory::Clone::getFrame(int framenumber, bool draw){
 	std::string photo = TMP_DIR + this->getUuid() + "_file.jpg";
 	std::vector<int> compression_params;
-	compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+	compression_params.push_back(IMWRITE_JPEG_QUALITY);
 	compression_params.push_back(95);
     std::unique_lock<std::mutex> l(m);
 	openCap(CAP_FILE);
-	this->cap->set(CV_CAP_PROP_POS_FRAMES, framenumber - 1);
+	this->cap->set(CAP_PROP_POS_FRAMES, framenumber - 1);
 	cv::Mat input;
 	*cap >> input;
 	closeCap();
@@ -655,7 +656,7 @@ cv::Mat CloneFactory::Clone::cloneFrame(cloneType clonetype){
 		{
 			std::string photo = TMP_DIR + this->getUuid() + "_photo.jpg";
 			std::vector<int> compression_params;
-			compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+			compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
 			compression_params.push_back(95);
 			imwrite(photo.c_str(), input, compression_params);
 		}
@@ -735,8 +736,8 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
       		std::vector<cv::Vec4i> src_hierarchy, tgt_hierarchy;
       		cv::Mat src_gray, tgt_gray;
 
-      		cvtColor( (*cf.camMat), src_gray, CV_BGR2GRAY );
-      		cvtColor( img_file, tgt_gray, CV_BGR2GRAY );
+      		cvtColor( (*cf.camMat), src_gray, cv::COLOR_BGR2GRAY );
+      		cvtColor( img_file, tgt_gray, cv::COLOR_BGR2GRAY );
 
 			Mat src_mask(src_gray.rows, src_gray.cols, CV_8UC1, Scalar(0,0,0));
 			Mat tgt_mask(tgt_gray.rows, tgt_gray.cols, CV_8UC1, Scalar(0,0,0));
@@ -772,8 +773,8 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 			tgtRect = boundRect(&tgt_mask, &tgt_contours, &tgt_hierarchy);
 
 			//Mat drawing = Mat::zeros( src_mask.size(), CV_8UC3 );
-			cvtColor(src_mask,src_mask,CV_GRAY2RGB);
-			cvtColor(tgt_mask,tgt_mask,CV_GRAY2RGB);
+			cvtColor(src_mask,src_mask,cv::COLOR_GRAY2RGB);
+			cvtColor(tgt_mask,tgt_mask,cv::COLOR_GRAY2RGB);
 			for( unsigned int i = 0; i < srcRect.size(); i++ )
 			{
 			   Mat src_resized;
@@ -1662,7 +1663,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 		if (!clone.filename.empty())
 	    {
 	    	clone.openCap(CAP_FILE);
-	    	int number_of_frames = clone.cap->get(CV_CAP_PROP_FRAME_COUNT);
+	    	int number_of_frames = clone.cap->get(CAP_PROP_FRAME_COUNT);
 	    	clone.closeCap();
 	    	//l.unlock();
 			//int number_of_frames = clone.filePoints->size();
