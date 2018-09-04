@@ -659,6 +659,7 @@ cv::Mat CloneFactory::Clone::cloneFrame(cloneType clonetype){
 			std::vector<int> compression_params;
 			compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
 			compression_params.push_back(95);
+			input = drawEllipses(&input, this->ellipses_in);
 			imwrite(photo.c_str(), input, compression_params);
 		}
 	}
@@ -1298,7 +1299,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	std::stringstream tohead;
 
 	/* if parameter submit_action is present we want to add an action */
-	if(CivetServer::getParam(conn, "submit_action", dummy))
+	if(CivetServer::getParam(conn, "add_action", dummy))
 	{
 		   CivetServer::getParam(conn,"centerx", s[0]);
 		   CivetServer::getParam(conn,"centery", s[1]);
@@ -1325,10 +1326,33 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 
 		   meta = "<meta http-equiv=\"refresh\" content=\"0;url=\"" + clone.getUrl() + "\"/>";
 	}
+	if(CivetServer::getParam(conn, "update_action", value))
+	{
+		   CivetServer::getParam(conn,"centerx", s[0]);
+		   CivetServer::getParam(conn,"centery", s[1]);
+		   CivetServer::getParam(conn,"axeheight", s[2]);
+		   CivetServer::getParam(conn,"axewidth", s[3]);
+		   CivetServer::getParam(conn,"centerxo", s[4]);
+		   CivetServer::getParam(conn,"centeryo", s[5]);
+		   CivetServer::getParam(conn,"axeheighto", s[6]);
+		   CivetServer::getParam(conn,"axewidtho", s[7]);
+
+           (*clone.ellipses_in)[atoi(value.c_str())].centerx = atoi(s[0].c_str());
+           (*clone.ellipses_in)[atoi(value.c_str())].centery = atoi(s[1].c_str());
+           (*clone.ellipses_in)[atoi(value.c_str())].axeheight = atof(s[2].c_str());
+           (*clone.ellipses_in)[atoi(value.c_str())].axewidth = atof(s[3].c_str());
+
+           (*clone.ellipses_out)[atoi(value.c_str())].centerx = atoi(s[4].c_str());
+           (*clone.ellipses_out)[atoi(value.c_str())].centery = atoi(s[5].c_str());
+           (*clone.ellipses_out)[atoi(value.c_str())].axeheight = atof(s[6].c_str());
+           (*clone.ellipses_out)[atoi(value.c_str())].axewidth = atof(s[7].c_str());
+
+		   meta = "<meta http-equiv=\"refresh\" content=\"0;url=\"" + clone.getUrl() + "\"/>";
+	}
 	if(CivetServer::getParam(conn, "delete", value))
 	{
-		clone.ellipses_in->erase(clone.ellipses_in->begin() + (atoi(value.c_str()) - 1));
-		clone.ellipses_out->erase(clone.ellipses_out->begin() + (atoi(value.c_str()) - 1));
+		clone.ellipses_in->erase(clone.ellipses_in->begin() + atoi(value.c_str()));
+		clone.ellipses_out->erase(clone.ellipses_out->begin() + atoi(value.c_str()));
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=\"" + clone.getUrl() + "\"/>";
 	}
@@ -1594,30 +1618,64 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	    ss << "<h2>" << _("Ellipse in") << ":</h2>";
 		ss << "<label for=\"centerx\">" << _("centerx") << ":</label>"
 					  "<input class=\"inside\" id=\"centerx\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
-					  "\" name=\"centerx\"/>" << "<br>";
+					  " name=\"centerx\"/>" << "<br>";
 		ss << "<label for=\"centery\">" << _("centery") << ":</label>"
 					  "<input class=\"inside\" id=\"centery\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
-					  "\" name=\"centery\"/>" << "<br>";
+					  " name=\"centery\"/>" << "<br>";
 		ss << "<label for=\"axeheight\">" << _("axeheight") << ":</label>"
-					  "<input class=\"inside\" id=\"axeheight\" type=\"number\" min=\"0\" max=\"10\" placeholder=\"0.00\" step=\"any\" " <<
-					  "\" name=\"axeheight\"/>" << "<br>";
+					  "<input class=\"inside\" id=\"axeheight\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
+					  " name=\"axeheight\"/>" << "<br>";
 		ss << "<label for=\"axewidth\">" << _("axewidth") << ":</label>"
-					  "<input class=\"inside\" id=\"axewidth\" type=\"number\" min=\"0\" max=\"10\" placeholder=\"0.00\" step=\"any\" " <<
-					  "\" name=\"axewidth\"/>" << "<br>";
+					  "<input class=\"inside\" id=\"axewidth\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
+					  " name=\"axewidth\"/>" << "<br>";
 		ss << "<h2>" << _("Ellipse Out") << ":</h2>";
 		ss << "<label for=\"centerxo\">" << _("centerx") << ":</label>"
 					  "<input class=\"inside\" id=\"centerxo\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
-					  "\" name=\"centerxo\"/>" << "<br>";
+					  " name=\"centerxo\"/>" << "<br>";
 		ss << "<label for=\"centeryo\">" << _("centery") << ":</label>"
 					  "<input class=\"inside\" id=\"centeryo\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
-					  "\" name=\"centeryo\"/>" << "<br>";
+					  " name=\"centeryo\"/>" << "<br>";
 		ss << "<label for=\"axeheighto\">" << _("axeheight") << ":</label>"
-					  "<input class=\"inside\" id=\"axeheighto\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0.00\" step=\"any\" " <<
-					  "\" name=\"axeheighto\"/>" << "<br>";
+					  "<input class=\"inside\" id=\"axeheighto\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
+					  " name=\"axeheighto\"/>" << "<br>";
 		ss << "<label for=\"axewidtho\">" << _("axewidth") << ":</label>"
-					  "<input class=\"inside\" id=\"axewidtho\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0.00\" step=\"any\" " <<
-					  "\" name=\"axewidtho\"/>" << "<br>";
-		ss << "<button type=\"submit\" name=\"submit_action\" value=\"submit_action\" id=\"submit\">" << _("Add") << "</button></br>";
+					  "<input class=\"inside\" id=\"axewidtho\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
+					  " name=\"axewidtho\"/>" << "<br>";
+		ss << "<button type=\"submit\" name=\"add_action\" value=\"add_action\" id=\"submit\">" << _("Add") << "</button></br>";
+		ss << "</br>";
+		ss << "</form>";
+	}
+	else
+	if(CivetServer::getParam(conn, "update", value))
+	{
+	  	ss << "<form action=\"" << clone.getUrl() << "\" method=\"POST\">";
+	    ss << "<h2>" << _("Ellipse in") << ":</h2>";
+		ss << "<label for=\"centerx\">" << _("centerx") << ":</label>"
+					  "<input class=\"inside\" id=\"centerx\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
+					  " name=\"centerx\" value=\"" << (*clone.ellipses_in)[(atoi(value.c_str()))].centerx << "\" />" << "<br>";
+		ss << "<label for=\"centery\">" << _("centery") << ":</label>"
+					  "<input class=\"inside\" id=\"centery\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
+					  " name=\"centery\" value=\"" << (*clone.ellipses_in)[(atoi(value.c_str()))].centery << "\" />" << "<br>";
+		ss << "<label for=\"axeheight\">" << _("axeheight") << ":</label>"
+					  "<input class=\"inside\" id=\"axeheight\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
+					  " name=\"axeheight\" value=\"" << (*clone.ellipses_in)[(atoi(value.c_str()))].axeheight << "\" />" << "<br>";
+		ss << "<label for=\"axewidth\">" << _("axewidth") << ":</label>"
+					  "<input class=\"inside\" id=\"axewidth\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
+					  " name=\"axewidth\" value=\"" << (*clone.ellipses_in)[(atoi(value.c_str()))].axewidth << "\" />" << "<br>";
+		ss << "<h2>" << _("Ellipse Out") << ":</h2>";
+		ss << "<label for=\"centerxo\">" << _("centerx") << ":</label>"
+					  "<input class=\"inside\" id=\"centerxo\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
+					  " name=\"centerxo\" value=\"" << (*clone.ellipses_out)[(atoi(value.c_str()))].centerx << "\" />" << "<br>";
+		ss << "<label for=\"centeryo\">" << _("centery") << ":</label>"
+					  "<input class=\"inside\" id=\"centeryo\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
+					  " name=\"centeryo\" value=\"" << (*clone.ellipses_out)[(atoi(value.c_str()))].centery << "\" />" << "<br>";
+		ss << "<label for=\"axeheighto\">" << _("axeheight") << ":</label>"
+					  "<input class=\"inside\" id=\"axeheighto\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
+					  " name=\"axeheighto\" value=\"" << (*clone.ellipses_out)[(atoi(value.c_str()))].axeheight << "\" />" << "<br>";
+		ss << "<label for=\"axewidtho\">" << _("axewidth") << ":</label>"
+					  "<input class=\"inside\" id=\"axewidtho\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
+					  " name=\"axewidtho\" value=\"" << (*clone.ellipses_out)[(atoi(value.c_str()))].axewidth << "\" />" << "<br>";
+		ss << "<button type=\"submit\" name=\"update_action\" value=\"" << value << "\" id=\"submit\">" << _("Update") << "</button></br>";
 		ss << "</br>";
 		ss << "</form>";
 	}
