@@ -62,7 +62,7 @@ static std::string matToJPG(cv::Mat* input)
     {
         cv::resize((*input), resized, cv::Size(VIDEO_WIDTH,VIDEO_HEIGHT), 0, 0);
         int params[2] = {0};
-        params[0] = IMWRITE_JPEG_QUALITY;
+        params[0] = cv::IMWRITE_JPEG_QUALITY;
         params[1] = 100;
     	cv::imencode(".jpg", resized, buf, std::vector<int>(params, params+1) );
     }
@@ -133,6 +133,7 @@ static cv::Mat drawEllipses(cv::Mat* input, std::vector<ellipse_s>* ellipses)
 CloneFactory::CloneFactory(){
     mfh = new CloneFactory::CloneFactoryHandler(*this);
 	server->addHandler("/clonefactory", mfh);
+	camMat = new cv::Mat();
 	load();
 	std::thread t1( [this] {
 		setenv("DISPLAY",":0.0",0);
@@ -153,6 +154,7 @@ CloneFactory::CloneFactory(){
 
 CloneFactory::~CloneFactory(){
 	delete mfh;
+	delete camMat;
 	std::map<std::string, CloneFactory::Clone*>::iterator it = clonemap.begin();
 	if (it != clonemap.end())
 	{
@@ -345,8 +347,7 @@ void CloneFactory::load(){
 
 	YAML::Node node = YAML::LoadFile(CONFIG_FILE_CLONE);
 
-	//we start this loop at 1 to skip previous node
-	for (std::size_t i=1;i<node.size();i++) {
+	for (std::size_t i=0;i<node.size();i++) {
 		std::string uuidstr = node[i]["uuid"].as<std::string>();
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
@@ -742,7 +743,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 			Mat src_mask(src_gray.rows, src_gray.cols, CV_8UC1, Scalar(0,0,0));
 			Mat tgt_mask(tgt_gray.rows, tgt_gray.cols, CV_8UC1, Scalar(0,0,0));
 
-			for (unsigned int i; i < ellipses_in->size(); i++)
+			for (unsigned int i = 0; i < ellipses_in->size(); i++)
 			{
 				ellipse( src_mask, Point( (*ellipses_in)[i].centerx, (*ellipses_in)[i].centery ),
 						 Size( (*ellipses_in)[i].axewidth, (*ellipses_in)[i].axeheight ),
@@ -755,7 +756,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 						(*ellipses_in)[i].linetype);
 			}
 
-			for (unsigned int i; i < ellipses_out->size(); i++)
+			for (unsigned int i = 0; i < ellipses_out->size(); i++)
 			{
 				ellipse( tgt_mask, Point( (*ellipses_out)[i].centerx, (*ellipses_out)[i].centery ),
 						 Size( (*ellipses_out)[i].axewidth, (*ellipses_out)[i].axeheight ),
@@ -781,8 +782,8 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 			   resize((*cf.camMat)(srcRect[i]), src_resized, Size(tgtRect[i].width, tgtRect[i].height));
 			   src_resized.copyTo(img_file(tgtRect[i]),tgt_mask(tgtRect[i]));
 			}
-			totaal.push_back(matToJPG(&img_file));
 		}
+		totaal.push_back(matToJPG(&img_file));
 	}
 	closeCap();
 	return totaal;
@@ -836,6 +837,7 @@ void CloneFactory::Clone::mergeFrames()
 
 		t1 = high_resolution_clock::now();
 		morph = this->morph(ImgToMat(&file[file.size()-1]),ImgToMat(&file2[0]),this->morphsteps);
+
 		t2 = high_resolution_clock::now();
 
 		int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
@@ -845,7 +847,7 @@ void CloneFactory::Clone::mergeFrames()
 		for (unsigned int i = 0; i < filesteps; i++)
 			std::copy(file.begin(), file.end(), std::back_inserter(totaal));
 		while (morph.size() % VIDEO_FPS != 0) morph.push_back(morph[(morph.size()-1)]);
-		std::copy(morph.begin(), morph.end(), std::back_inserter(totaal));
+			std::copy(morph.begin(), morph.end(), std::back_inserter(totaal));
 		while (file2.size() % VIDEO_FPS != 0) file2.push_back(file2[(file2.size()-1)]);
 		for (unsigned int i = 0; i < file2steps; i++)
 			std::copy(file2.begin(), file2.end(), std::back_inserter(totaal));
@@ -1295,6 +1297,41 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	std::string meta="";
 	std::stringstream tohead;
 
+	/* if parameter submit_action is present we want to add an action */
+	if(CivetServer::getParam(conn, "submit_action", dummy))
+	{
+		   CivetServer::getParam(conn,"centerx", s[0]);
+		   CivetServer::getParam(conn,"centery", s[1]);
+		   CivetServer::getParam(conn,"axeheight", s[2]);
+		   CivetServer::getParam(conn,"axewidth", s[3]);
+		   CivetServer::getParam(conn,"centerxo", s[4]);
+		   CivetServer::getParam(conn,"centeryo", s[5]);
+		   CivetServer::getParam(conn,"axeheighto", s[6]);
+		   CivetServer::getParam(conn,"axewidtho", s[7]);
+
+		   ellipse_s elli, ello;
+
+           elli.centerx = atoi(s[0].c_str());
+           elli.centery = atoi(s[1].c_str());
+           elli.axeheight = atof(s[2].c_str());
+           elli.axewidth = atof(s[3].c_str());
+		   clone.ellipses_in->push_back(elli);
+
+           ello.centerx = atoi(s[4].c_str());
+           ello.centery = atoi(s[5].c_str());
+           ello.axeheight = atof(s[6].c_str());
+           ello.axewidth = atof(s[7].c_str());
+		   clone.ellipses_out->push_back(ello);
+
+		   meta = "<meta http-equiv=\"refresh\" content=\"0;url=\"" + clone.getUrl() + "\"/>";
+	}
+	if(CivetServer::getParam(conn, "delete", value))
+	{
+		clone.ellipses_in->erase(clone.ellipses_in->begin() + (atoi(value.c_str()) - 1));
+		clone.ellipses_out->erase(clone.ellipses_out->begin() + (atoi(value.c_str()) - 1));
+
+		meta = "<meta http-equiv=\"refresh\" content=\"0;url=\"" + clone.getUrl() + "\"/>";
+	}
 	if(CivetServer::getParam(conn, "naam", value))
 	{
 		CivetServer::getParam(conn,"value", value);
@@ -1387,6 +1424,34 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		clone.filename2 = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "clonetofile", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		if (value.compare("true") == 0)
+			clone.clone_to_file = true;
+		else
+			clone.clone_to_file = false;
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "clonetofile2", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		if (value.compare("true") == 0)
+			clone.clone_to_file2 = true;
+		else
+			clone.clone_to_file2 = false;
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -1502,6 +1567,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	   if ((dirp = opendir(FILES_DIR)) == NULL) {
 	          (*syslog) << "couldn't open " << FILES_DIR << endl;
 	   }
+	   else
        do {
 	      errno = 0;
 	      if ((dp = readdir(dirp)) != NULL) {
@@ -1520,6 +1586,40 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
        ss << "<button type=\"submit\" name=\"annuleren\" value=\"annuleren\" id=\"annuleren\">" << _("Cancel") << "</button>&nbsp;";
        ss << "</form>";
        (void) closedir(dirp);
+	}
+	else
+	if(CivetServer::getParam(conn, "add", value))
+	{
+	  	ss << "<form action=\"" << clone.getUrl() << "\" method=\"POST\">";
+	    ss << "<h2>" << _("Ellipse in") << ":</h2>";
+		ss << "<label for=\"centerx\">" << _("centerx") << ":</label>"
+					  "<input class=\"inside\" id=\"centerx\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
+					  "\" name=\"centerx\"/>" << "<br>";
+		ss << "<label for=\"centery\">" << _("centery") << ":</label>"
+					  "<input class=\"inside\" id=\"centery\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
+					  "\" name=\"centery\"/>" << "<br>";
+		ss << "<label for=\"axeheight\">" << _("axeheight") << ":</label>"
+					  "<input class=\"inside\" id=\"axeheight\" type=\"number\" min=\"0\" max=\"10\" placeholder=\"0.00\" step=\"any\" " <<
+					  "\" name=\"axeheight\"/>" << "<br>";
+		ss << "<label for=\"axewidth\">" << _("axewidth") << ":</label>"
+					  "<input class=\"inside\" id=\"axewidth\" type=\"number\" min=\"0\" max=\"10\" placeholder=\"0.00\" step=\"any\" " <<
+					  "\" name=\"axewidth\"/>" << "<br>";
+		ss << "<h2>" << _("Ellipse Out") << ":</h2>";
+		ss << "<label for=\"centerxo\">" << _("centerx") << ":</label>"
+					  "<input class=\"inside\" id=\"centerxo\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
+					  "\" name=\"centerxo\"/>" << "<br>";
+		ss << "<label for=\"centeryo\">" << _("centery") << ":</label>"
+					  "<input class=\"inside\" id=\"centeryo\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
+					  "\" name=\"centeryo\"/>" << "<br>";
+		ss << "<label for=\"axeheighto\">" << _("axeheight") << ":</label>"
+					  "<input class=\"inside\" id=\"axeheighto\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0.00\" step=\"any\" " <<
+					  "\" name=\"axeheighto\"/>" << "<br>";
+		ss << "<label for=\"axewidtho\">" << _("axewidth") << ":</label>"
+					  "<input class=\"inside\" id=\"axewidtho\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0.00\" step=\"any\" " <<
+					  "\" name=\"axewidtho\"/>" << "<br>";
+		ss << "<button type=\"submit\" name=\"submit_action\" value=\"submit_action\" id=\"submit\">" << _("Add") << "</button></br>";
+		ss << "</br>";
+		ss << "</form>";
 	}
 	else
 	/* initial page display */
@@ -1570,6 +1670,14 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
    		tohead << " $.get( \"" << clone.getUrl() << "\", { morphsteps: 'true', value: $('#morphsteps').val() }, function( data ) {";
    		tohead << "  $( \"#morphsteps\" ).html( data );})";
   	    tohead << "});";
+	    tohead << " $('#clonetofile').on('change', function() {";
+   		tohead << " $.get( \"" << clone.getUrl() << "\", { clonetofile: 'true', value: $('#clonetofile').is(':checked') }, function( data ) {";
+   		tohead << "  $( \"#clonetofile\" ).html( data );})";
+  	    tohead << "});";
+	    tohead << " $('#clonetofile2').on('change', function() {";
+   		tohead << " $.get( \"" << clone.getUrl() << "\", { clonetofile2: 'true', value: $('#clonetofile2').is(':checked') }, function( data ) {";
+   		tohead << "  $( \"#clonetofile2\" ).html( data );})";
+  	    tohead << "});";
 	    tohead << " $('#fileonly').on('change', function() {";
    		tohead << " $.get( \"" << clone.getUrl() << "\", { fileonly: 'true', value: $('#fileonly').is(':checked') }, function( data ) {";
    		tohead << "  $( \"#fileonly\" ).html( data );})";
@@ -1603,9 +1711,30 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 		ss << "<label for=\"filename\">" << _("Filename") << ":</label>"
 					  "<input class=\"inside\" id=\"filename\" type=\"text\" size=\"50\" value=\"" <<
 					  clone.filename << "\" name=\"filename\"/>" << "</br>";
+		if (clone.clone_to_file)
+		{
+			ss << "<label for=\"clonetofile\">" << _("Clone to file") << ":</label>"
+			   	   	  "<input id=\"clonetofile\" type=\"checkbox\" name=\"clonetofile\" value=\"ja\" checked/>" << "</br></br>";
+		}
+		else
+		{
+			ss << "<label for=\"clonetofile\">" << _("Clone to file") << ":</label>"
+			   	   	  "<input id=\"clonetofile\" type=\"checkbox\" name=\"clonetofile\" value=\"ja\"/>" << "</br></br>";
+		}
 		ss << "<label for=\"filename2\">" << _("Filename") << "2:</label>"
 					  "<input class=\"inside\" id=\"filename2\" type=\"text\" size=\"50\" value=\"" <<
 					  clone.filename2 << "\" name=\"filename2\"/>" << "</br>";
+		if (clone.clone_to_file2)
+		{
+			ss << "<label for=\"clonetofile2\">" << _("Clone to file") << "2:</label>"
+			   	   	  "<input id=\"clonetofile2\" type=\"checkbox\" name=\"clonetofile2\" value=\"ja\" checked/>" << "</br></br>";
+		}
+		else
+		{
+			ss << "<label for=\"clonetofile2\">" << _("Clone to file") << "2:</label>"
+			   	   	  "<input id=\"clonetofile2\" type=\"checkbox\" name=\"clonetofile2\" value=\"ja\"/>" << "</br></br>";
+		}
+
 		if (clone.fileonly)
 		{
 			ss << "<label for=\"fileonly\">" << _("File Only") << ":</label>"
@@ -1638,21 +1767,23 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 		ss << "</div>";
 		ss << "<br>";
 	    ss << "</br>";
+		ss << "<form action=\"" << clone.getUrl() << "\" method=\"POST\">";
 	    ss << "<table class=\"rechts\">";
 	    ss << "<thead><tr><th class=\"kort\"><div class=\"waarde\"><button type=\"submit\" name=\"add\" value=\"-1\" id=\"add\">&#8627;</button></div></th>";
-	    ss << "<th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th><div class=\"waarde\">" << _("Ellipses") << "</div></th><th><div class=\"waarde\">" << _("Ellipse Out") << "</div></th></tr></thead>";
+	    ss << "<th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">" << _("Ellipse Number") << "</div></th><th><div class=\"waarde\">" << _("Ellipse In") << "</div></th><th><div class=\"waarde\">" << _("Ellipse Out") << "</div></th></tr></thead>";
 		for (unsigned int i = 0; i < clone.ellipses_in->size(); i++)
 		{
 			ss << "<tr>";
-			ss << "<td class=\"kort\"><div class=\"waarde\" id=\"number\">" << i+1 << "</td>";
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"add\" value=\"" << i << "\" id=\"add\">&#8627;</button></div></td>";
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"update\" value=\"" << i << "\" id=\"update\">&#x270e;</button></div></td>";
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"delete\" value=\"" << i << "\" id=\"delete\" style=\"font-weight:bold\">&#x2718</button></div></td>";
+			ss << "<td class=\"kort\"><div class=\"waarde\" id=\"number\">" << i+1 << "</td>";
 			ss << "<td class=\"kort\"><div class=\"waarde\" id=\"number\">" << (*clone.ellipses_in)[i].centerx << " x " << (*clone.ellipses_in)[i].centery << "</div></td>";
 			ss << "<td class=\"kort\"><div class=\"waarde\" id=\"number\">" << (*clone.ellipses_out)[i].centerx << " x " << (*clone.ellipses_out)[i].centery << "</div></td>";
 			ss << "<tr>";
 		}
 		ss << "</table>";
+	    ss << "</form>";
 
 	    /*
 	    ss << "<div id=\"clone\">";

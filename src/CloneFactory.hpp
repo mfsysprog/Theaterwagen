@@ -68,16 +68,16 @@ enum cloneType{
 };
 
 struct ellipse_s {
-    int centerx;
-    int centery;
-    float axeheight;
-    float axewidth;
-    double angle;
-    double blue;
-    double green;
-    double red;
-    int thickness;
-    int linetype;
+    int centerx = 0;
+    int centery = 0;
+    float axeheight = 0;
+    float axewidth = 0;
+    double angle = 360;
+    double blue = 255;
+    double green = 255;
+    double red = 255;
+    int thickness = -1;
+    int linetype = 8;
 };
 
 class CloneFactory {

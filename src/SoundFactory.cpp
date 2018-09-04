@@ -325,6 +325,7 @@ bool SoundFactory::SoundFactoryHandler::handleAll(const char *method,
 	   if ((dirp = opendir(SOUND_DIR)) == NULL) {
 	          (*syslog) << "couldn't open " << SOUND_DIR << endl;
 	   }
+	   else
        do {
 	      errno = 0;
 	      if ((dp = readdir(dirp)) != NULL) {
