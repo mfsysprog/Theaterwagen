@@ -76,7 +76,7 @@ struct ellipse_s {
     double blue = 255;
     double green = 255;
     double red = 255;
-    int thickness = -1;
+    int thickness = 2;
     int linetype = 8;
 };
 
@@ -139,8 +139,9 @@ class CloneFactory {
 		CloneHandler* mh;
 		void openCap(cloneType clonetype);
 		void closeCap();
-		cv::Mat cloneFrame(cloneType clonetype);
-		void getFrame(int framenumber, bool drawFaces);
+		cv::Mat cloneFrame(cloneType clonetype, bool draw);
+		void setPhoto(cv::Mat* input, bool draw);
+		void getFrame(cloneType type, int framenumber, bool draw);
 		std::vector<std::string> copyEllipses(cloneType type, unsigned int mix_file, std::vector<ellipse_s>* ellipses_in, std::vector<ellipse_s>* ellipses_out, bool fileonly);
 		void mergeFrames();
 		std::vector<std::string> morph(cv::Mat orig, cv::Mat target, unsigned int morphsteps);

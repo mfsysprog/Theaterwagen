@@ -119,7 +119,7 @@ static cv::Mat drawEllipses(cv::Mat* input, std::vector<ellipse_s>* ellipses)
     for (unsigned i = 0; i < (*ellipses).size(); ++i)
     {
         ellipse( output, Point( (*ellipses)[i].centerx, (*ellipses)[i].centery),
-        		         Size( (*ellipses)[i].axeheight, (*ellipses)[i].axewidth ),
+        		         Size( (*ellipses)[i].axewidth, (*ellipses)[i].axeheight ),
 						 (*ellipses)[i].angle, 0, 360,
 						 Scalar( (*ellipses)[i].blue, (*ellipses)[i].green, (*ellipses)[i].red),
 						 (*ellipses)[i].thickness, (*ellipses)[i].linetype );
@@ -585,7 +585,7 @@ void CloneFactory::Clone::loadFilmpje()
 	std::vector<std::string> jpg;
 	for (;;)
 	{
-	   frame = cloneFrame(CAP_FILE);
+	   frame = cloneFrame(CAP_FILE, false);
 	   if (frame.empty()) break;
 	    jpg.push_back(matToJPG(&frame));
 	}
@@ -625,14 +625,28 @@ void CloneFactory::Clone::onScreen()
 	 l3.unlock();
 	 */
 }
+void CloneFactory::Clone::setPhoto(cv::Mat* input, bool draw){
+	std::string photo = TMP_DIR + this->getUuid() + "_photo.jpg";
+	std::vector<int> compression_params;
+	compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
+	compression_params.push_back(95);
+	if (draw)
+		imwrite(photo.c_str(), drawEllipses(input, this->ellipses_in), compression_params);
+	else
+		imwrite(photo.c_str(), *input, compression_params);
+}
 
-void CloneFactory::Clone::getFrame(int framenumber, bool draw){
-	std::string photo = TMP_DIR + this->getUuid() + "_file.jpg";
+void CloneFactory::Clone::getFrame(cloneType type, int framenumber, bool draw){
+	std::string photo;
+	if (type == CAP_FILE)
+		photo = TMP_DIR + this->getUuid() + "_file.jpg";
+	else
+		photo = TMP_DIR + this->getUuid() + "_file2.jpg";
 	std::vector<int> compression_params;
 	compression_params.push_back(IMWRITE_JPEG_QUALITY);
 	compression_params.push_back(95);
     std::unique_lock<std::mutex> l(m);
-	openCap(CAP_FILE);
+	openCap(type);
 	this->cap->set(CAP_PROP_POS_FRAMES, framenumber - 1);
 	cv::Mat input;
 	*cap >> input;
@@ -643,7 +657,7 @@ void CloneFactory::Clone::getFrame(int framenumber, bool draw){
 	l.unlock();
 }
 
-cv::Mat CloneFactory::Clone::cloneFrame(cloneType clonetype){
+cv::Mat CloneFactory::Clone::cloneFrame(cloneType clonetype, bool draw){
     // Grab a frame
 	cv::Mat input;
 	try
@@ -654,14 +668,7 @@ cv::Mat CloneFactory::Clone::cloneFrame(cloneType clonetype){
 			cv::resize(input,input,cv::Size(VIDEO_WIDTH,VIDEO_HEIGHT));
 		}
 		if (clonetype == CAP_CAM)
-		{
-			std::string photo = TMP_DIR + this->getUuid() + "_photo.jpg";
-			std::vector<int> compression_params;
-			compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
-			compression_params.push_back(95);
-			input = drawEllipses(&input, this->ellipses_in);
-			imwrite(photo.c_str(), input, compression_params);
-		}
+				setPhoto(&input,draw);
 	}
 	catch( cv::Exception& e )
 	{
@@ -706,7 +713,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 	if ((*ellipses_out).size() == 0) {
 		while(true)
 		{
-			img_file = cloneFrame(type);
+			img_file = cloneFrame(type, false);
 			if (img_file.empty()) break;
 
 			totaal.push_back(matToJPG(&img_file));
@@ -719,7 +726,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 	if ((*ellipses_in).size() == 0) {
 		while(true)
 		{
-			img_file = cloneFrame(type);
+			img_file = cloneFrame(type, false);
 			if (img_file.empty()) break;
 
 			totaal.push_back(matToJPG(&img_file));
@@ -730,7 +737,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 	else
 	while (true)
 	{
-		img_file = cloneFrame(type);
+		img_file = cloneFrame(type, false);
 		if (img_file.empty()) break;
 		if ((type == CAP_FILE && clone_to_file) || (type == CAP_FILE2 && clone_to_file2))
 		{
@@ -753,7 +760,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 						 Scalar( (*ellipses_in)[i].red,
 								 (*ellipses_in)[i].green,
 								 (*ellipses_in)[i].blue ),
-						(*ellipses_in)[i].thickness,
+						-1,
 						(*ellipses_in)[i].linetype);
 			}
 
@@ -766,7 +773,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 						 Scalar( (*ellipses_out)[i].red,
 								 (*ellipses_out)[i].green,
 								 (*ellipses_out)[i].blue ),
-						(*ellipses_out)[i].thickness,
+						-1,
 						(*ellipses_out)[i].linetype);
 			}
 
@@ -795,7 +802,7 @@ void CloneFactory::Clone::captureAndMerge()
 	openCap(CAP_CAM);
 	std::unique_lock<std::mutex> l(m);
 	cf.camMat->release();
-	(*cf.camMat) = cloneFrame(CAP_CAM);
+	(*cf.camMat) = cloneFrame(CAP_CAM, false);
 
 	closeCap();
 
@@ -997,7 +1004,7 @@ void CloneFactory::Clone::mergeFrames()
     //vstrm->codec->compression_level = 0;
     //vstrm->r_frame_rate = vstrm->avg_frame_rate = dst_fps;
     //vstrm->codec->thread_count = 0;
-    vstrm->codec->bit_rate = 4000 * 1024;
+    vstrm->codec->bit_rate = 6000 * 1024;
     //vstrm->codec->delay = 0;
     //vstrm->codec->max_b_frames = 0;
     //vstrm->codec->thread_count = 1;
@@ -1502,12 +1509,12 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 		if (value.compare("true") == 0)
 			{
 				CivetServer::getParam(conn,"frames", value);
-				clone.getFrame(atoi(value.c_str()),true);
+				clone.getFrame(CAP_FILE, atoi(value.c_str()),true);
 			}
 		else
 			{
 				CivetServer::getParam(conn,"frames", value);
-				clone.getFrame(atoi(value.c_str()), false);
+				clone.getFrame(CAP_FILE, atoi(value.c_str()), false);
 			}
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
@@ -1521,14 +1528,60 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 		std::string ellipseonframe;
 		CivetServer::getParam(conn,"ellipseonframe", ellipseonframe);
 		if (ellipseonframe.compare("true") == 0)
-					clone.getFrame(atoi(value.c_str()),true);
+					clone.getFrame(CAP_FILE, atoi(value.c_str()),true);
 			else
-					clone.getFrame(atoi(value.c_str()), false);
-		clone.getFrame(atoi(value.c_str()),true);
+					clone.getFrame(CAP_FILE, atoi(value.c_str()), false);
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
 		ss << "tmp/" << clone.getUuid() << "_file.jpg?t=" << std::time(0);
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "ellipseonframe2", value))
+	{
+		if (value.compare("true") == 0)
+			{
+				CivetServer::getParam(conn,"frames2", value);
+				clone.getFrame(CAP_FILE2, atoi(value.c_str()),true);
+			}
+		else
+			{
+				CivetServer::getParam(conn,"frames2", value);
+				clone.getFrame(CAP_FILE2, atoi(value.c_str()), false);
+			}
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << "tmp/" << clone.getUuid() << "_file2.jpg?t=" << std::time(0);
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "frames2", value))
+	{
+		std::string ellipseonframe;
+		CivetServer::getParam(conn,"ellipseonframe2", ellipseonframe);
+		if (ellipseonframe.compare("true") == 0)
+					clone.getFrame(CAP_FILE2, atoi(value.c_str()),true);
+			else
+					clone.getFrame(CAP_FILE2, atoi(value.c_str()),false);
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << "tmp/" << clone.getUuid() << "_file2.jpg?t=" << std::time(0);
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "ellipseoncam", value))
+	{
+		if (value.compare("true") == 0)
+			clone.setPhoto(clone.cf.camMat,true);
+		else
+			clone.setPhoto(clone.cf.camMat,false);
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << "tmp/" << clone.getUuid() << "_photo.jpg?t=" << std::time(0);
 		mg_printf(conn, ss.str().c_str(), "%s");
 		return true;
 	}
@@ -1574,7 +1627,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	{
 		clone.openCap(CAP_CAM);
 		clone.cf.camMat->release();
-		(*clone.cf.camMat) = clone.cloneFrame(CAP_CAM);
+		(*clone.cf.camMat) = clone.cloneFrame(CAP_CAM, false);
 		clone.closeCap();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + clone.getUrl() + "\"/>";
@@ -1748,8 +1801,31 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
    		tohead << " $.get( \"" << clone.getUrl() << "\", { frames: $('#frames').val(), ellipseonframe: $('#ellipseonframe').is(':checked') }, function( data ) {";
    		tohead << "  $( \"#photo\" ).attr( 'src' , data );})";
    		tohead << "});";
+	    tohead << " $('#frames2').on('change', function() {";
+   		tohead << " $.get( \"" << clone.getUrl() << "\", { frames2: $('#frames2').val(), ellipseonframe2: $('#ellipseonframe2').is(':checked') }, function( data ) {";
+   		tohead << "  $( \"#photo2\" ).attr( 'src' , data );})";
+  	    tohead << "});";
+  	    tohead << " $('#ellipseonframe2').on('change', function() {";
+   		tohead << " $.get( \"" << clone.getUrl() << "\", { frames2: $('#frames2').val(), ellipseonframe2: $('#ellipseonframe2').is(':checked') }, function( data ) {";
+   		tohead << "  $( \"#photo2\" ).attr( 'src' , data );})";
+   		tohead << "});";
+  	    tohead << " $('#ellipseoncam').on('change', function() {";
+   		tohead << " $.get( \"" << clone.getUrl() << "\", { ellipseoncam: $('#ellipseoncam').is(':checked') }, function( data ) {";
+   		tohead << "  $( \"#cam\" ).attr( 'src' , data );})";
+   		tohead << "});";
 		tohead << "});";
 		tohead << "</script>";
+		tohead << "<style>";
+		tohead << ".wrap {display: table; width: 100%; height: 100%;}";
+		tohead << ".cell-wrap {display: table-cell; vertical-align: top; height: 100%;}";
+		tohead << ".cell-wrap.links {width: 10%;}";
+		tohead << ".rechts tr:nth-child(even){background-color: #eee;}";
+		tohead << ".waarde {height: 40px; overflow: hidden;}";
+		tohead << ".kort {width:5%; text-align: center;}";
+		tohead << "table {border-collapse: collapse; border-spacing: 0; height: 100%; width: 100%; table-layout: fixed;}";
+		tohead << "table td, table th {border: 1px solid black;text-align: left; width:25%}";
+		tohead << "</style>";
+
 		ss << "<form action=\"" << clone.getUrl() << "\" method=\"POST\">";
 	    ss << "<button type=\"submit\" name=\"refresh\" value=\"refresh\" id=\"refresh\">" << _("Refresh") << "</button><br>";
 	    ss <<  "<br>";
@@ -1825,10 +1901,12 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 		ss << "</div>";
 		ss << "<br>";
 	    ss << "</br>";
+	    ss << "<h2>" << _("Ellipses") << ":</h2>";
 		ss << "<form action=\"" << clone.getUrl() << "\" method=\"POST\">";
+		ss << "<div class=\"cell-wrap rechts\">";
 	    ss << "<table class=\"rechts\">";
 	    ss << "<thead><tr><th class=\"kort\"><div class=\"waarde\"><button type=\"submit\" name=\"add\" value=\"-1\" id=\"add\">&#8627;</button></div></th>";
-	    ss << "<th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">" << _("Ellipse Number") << "</div></th><th><div class=\"waarde\">" << _("Ellipse In") << "</div></th><th><div class=\"waarde\">" << _("Ellipse Out") << "</div></th></tr></thead>";
+	    ss << "<th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">" << _("Number") << "</div></th><th><div class=\"waarde\">" << _("Ellipse In") << "</div></th><th><div class=\"waarde\">" << _("Ellipse Out") << "</div></th></tr></thead>";
 		for (unsigned int i = 0; i < clone.ellipses_in->size(); i++)
 		{
 			ss << "<tr>";
@@ -1836,19 +1914,22 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"update\" value=\"" << i << "\" id=\"update\">&#x270e;</button></div></td>";
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"delete\" value=\"" << i << "\" id=\"delete\" style=\"font-weight:bold\">&#x2718</button></div></td>";
 			ss << "<td class=\"kort\"><div class=\"waarde\" id=\"number\">" << i+1 << "</td>";
-			ss << "<td class=\"kort\"><div class=\"waarde\" id=\"number\">" << (*clone.ellipses_in)[i].centerx << " x " << (*clone.ellipses_in)[i].centery << "</div></td>";
-			ss << "<td class=\"kort\"><div class=\"waarde\" id=\"number\">" << (*clone.ellipses_out)[i].centerx << " x " << (*clone.ellipses_out)[i].centery << "</div></td>";
-			ss << "<tr>";
+			ss << "<td class=\"kort\"><div class=\"waarde\" id=\"number\">" << (*clone.ellipses_in)[i].centerx << " x " << (*clone.ellipses_in)[i].centery << " x " << (*clone.ellipses_in)[i].axeheight << " x " << (*clone.ellipses_in)[i].axewidth << "</div></td>";
+			ss << "<td class=\"kort\"><div class=\"waarde\" id=\"number\">" << (*clone.ellipses_out)[i].centerx << " x " << (*clone.ellipses_out)[i].centery << " x " << (*clone.ellipses_out)[i].axeheight << " x " << (*clone.ellipses_out)[i].axewidth << "</div></td>";
+			ss << "</tr>";
 		}
 		ss << "</table>";
-	    ss << "</form>";
+		ss << "</div>";
+		ss << "</form>";
 
 	    /*
 	    ss << "<div id=\"clone\">";
 	    ss << "<img src=\"" << clone.url << "/?streaming=true\">";
 	    ss << "</div>"; */
-	    ss << "<h2>" << _("Photo") << ":</h2>";
-	    ss << "<img src=\"" << "tmp/" << clone.getUuid() << "_photo.jpg?t=" << std::time(0) << "\"></img><br>";
+	    ss << "<h2>" << _("Cam") << ":</h2>";
+	    ss << "<label for=\"ellipseoncam\">" << _("Render ellipses on cam output") << ":</label>";
+	    ss << "<input id=\"ellipseoncam\" type=\"checkbox\" name=\"ellipseoncam\" value=\"ja\"/>" << "</br>";
+	    ss << "<img id=\"cam\" src=\"" << "tmp/" << clone.getUuid() << "_photo.jpg?t=" << std::time(0) << "\"></img><br>";
 		if (!clone.filename.empty())
 	    {
 	    	clone.openCap(CAP_FILE);
@@ -1864,13 +1945,34 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	    		ss << "<output name=\"result\">1</output><br>";
 	    		ss << "<input class=\"inside\" id=\"frames\" type=\"range\" min=\"1\" max=\"" << number_of_frames << "\" step=\"1\" value=\"1\" name=\"frames\" />";
 	    		ss << "</form>";
-				ss << "<label for=\"ellipseonframe\">" << _("Render faces on frame") << ":</label>"
-				   	   	  "<input id=\"ellipseonframe\" type=\"checkbox\" name=\"ellipseonframe\" value=\"ja\"/>" << "</br>";
-	    		ss << "<img id=\"photo\" src=\"" << "tmp/" << clone.getUuid() << "_file.jpg?t=" << std::time(0) << "\"></img><br>";
+	    	    ss << "<label for=\"ellipseonframe\">" << _("Render ellipses on input file") << ":</label>";
+	    	    ss << "<input id=\"ellipseonframe\" type=\"checkbox\" name=\"ellipseonframe\" value=\"ja\"/>" << "</br>";
+				ss << "<img id=\"photo\" src=\"" << "tmp/" << clone.getUuid() << "_file.jpg?t=" << std::time(0) << "\"></img><br>";
 	    		ss << "<br>";
 	    	}
 	    }
-	    ss << "<h2>" << _("Video") << ":</h2>";
+		if (!clone.filename2.empty())
+	    {
+	    	clone.openCap(CAP_FILE2);
+	    	int number_of_frames = clone.cap->get(CAP_PROP_FRAME_COUNT);
+	    	clone.closeCap();
+	    	//l.unlock();
+			//int number_of_frames = clone.filePoints->size();
+	    	if (number_of_frames)
+	    	{
+	    		ss << "<h2>" << _("File") << "2:</h2>";
+	    		ss << "<form oninput=\"result2.value=parseInt(frames2.value)\">";
+	    		ss << "<label for=\"frames2\">" << _("Frame") << ":</label>";
+	    		ss << "<output name=\"result2\">1</output><br>";
+	    		ss << "<input class=\"inside\" id=\"frames2\" type=\"range\" min=\"1\" max=\"" << number_of_frames << "\" step=\"1\" value=\"1\" name=\"frames2\" />";
+	    		ss << "</form>";
+	    	    ss << "<label for=\"ellipseonframe2\">" << _("Render ellipses on input file") << "2:</label>";
+	    	    ss << "<input id=\"ellipseonframe2\" type=\"checkbox\" name=\"ellipseonframe2\" value=\"ja\"/>" << "</br>";
+				ss << "<img id=\"photo2\" src=\"" << "tmp/" << clone.getUuid() << "_file2.jpg?t=" << std::time(0) << "\"></img><br>";
+	    		ss << "<br>";
+	    	}
+	    }
+	    ss << "<h2>" << _("Merged") << ":</h2>";
 	    ss << "<video width=\"" << VIDEO_WIDTH << "\" height=\"" << VIDEO_HEIGHT << "\" controls>";
 	    ss << " <source src=\"" << "tmp/" << clone.getUuid() << "." << VIDEO_EXT << "?t=" << std::time(0) << "\" type=\"video/" << VIDEO_EXT << "\">";
 	    ss << "Your browser does not support the video tag";
