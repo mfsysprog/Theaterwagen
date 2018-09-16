@@ -950,15 +950,15 @@ bool LiftFactory::Lift::LiftHandler::handleAll(const char *method,
 		ss << "<label for=\"lower_limit\">" << _("Lower Limit") << ":</label>"
 			  "<input class=\"inside\" id=\"lower_limit\" type=\"number\" min=\"0.0\" max=\"500.0\" placeholder=\"0.0\" step=\"0.1\" value=\"" <<
 			  lift.lower_limit << "\" name=\"lower_limit\"/>" << "</br>";
-		if (lift.leftOff && lift.rightOff)
-		{
+		ss << "<h2>";
+		ss << _("Only when both echos are ignored:") << "<br>";
+		ss << "</h2>";
 		ss << "<label for=\"timeUp\">" << _("Timeout moving Up") << ":</label>"
 			  "<input class=\"inside\" id=\"timeUp\" type=\"number\" min=\"0.0\" max=\"60.0\" placeholder=\"0.0\" step=\"0.1\" value=\"" <<
 			  lift.timeUp << "\" name=\"timeUp\"/>" << "</br>";
 		ss << "<label for=\"timeDown\">" << _("Timeout moving Down") << ":</label>"
 			  "<input class=\"inside\" id=\"timeDown\" type=\"number\" min=\"0.0\" max=\"60.0\" placeholder=\"0.0\" step=\"0.1\" value=\"" <<
 			  lift.timeDown << "\" name=\"timeDown\"/>" << "</br>";
-		}
 		ss << "</div>";
 		ss << "<br>";
 	    ss << "<br>";
