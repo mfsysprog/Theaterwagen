@@ -114,6 +114,10 @@ LiftFactory::Lift::Lift(std::string uuidstr,
 	this->gpio_trigger = gpio_trigger;
 	this->upper_limit = upper_limit;
 	this->lower_limit = lower_limit;
+	this->leftOff = leftOff;
+	this->rightOff = rightOff;
+	this->timeUp = timeUp;
+	this->timeDown = timeDown;
 
 	Initialize();
 
