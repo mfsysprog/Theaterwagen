@@ -1,18 +1,19 @@
 /*
- * CaptureFactory.hpp
+ * CloneFactory.hpp
  *
  *  Created on: Mar 21, 2017
  *      Author: erik
  */
 
-#ifndef CAPTUREFACTORY_HPP_
-#define CAPTUREFACTORY_HPP_
+#ifndef CLONEFACTORY_HPP_
+#define CLONEFACTORY_HPP_
 
 #include <string>
 #include <iostream>
 #include <functional>
 #include <sstream>
 #include <fstream>
+#include <vector>
 #include <wiringPi.h>
 #include "CivetServer.h"
 #include <unistd.h>
@@ -29,12 +30,7 @@
 #include <SFML/Graphics.hpp>
 #include <b64/encode.h>
 #include <thread>
-#include <dlib/opencv.h>
-#include <dlib/image_processing/frontal_face_detector.h>
-#include <dlib/image_processing/render_face_detections.h>
-#include <dlib/image_processing.h>
-#include <dlib/image_io.h>
-#include <dlib/gui_widgets.h>
+#include <mutex>
 #include <sfeMovie/Movie.hpp>
 #include "Theaterwagen.hpp"
 
@@ -54,8 +50,7 @@ extern "C"{
 #include <x264.h>
 }
 
-#define CONFIG_FILE_CAPTURE CONFIG_DIR "capturefactory.yaml"
-#define FACE_DOWNSAMPLE_RATIO 2
+#define CONFIG_FILE_CLONE CONFIG_DIR "clonefactory.yaml"
 // video width at 1016 instead of 1024 to avoid 'zerocopy' bug
 // https://github.com/raspberrypi/firmware/issues/851
 #define VIDEO_WIDTH 1016
@@ -66,43 +61,58 @@ extern "C"{
 extern CivetServer* server;
 extern std::stringstream* syslog;
 
-enum captureType{
+enum cloneType{
 	CAP_CAM,
 	CAP_FILE,
 	CAP_FILE2
 };
 
-class CaptureFactory {
+struct ellipse_s {
+    int centerx = 0;
+    int centery = 0;
+    float axeheight = 0;
+    float axewidth = 0;
+    double angle = 360;
+    double blue = 255;
+    double green = 255;
+    double red = 255;
+    int thickness = 2;
+    int linetype = 8;
+};
+
+class CloneFactory {
 	friend class ChaseFactory;
 	private:
-	class CaptureFactoryHandler : public CivetHandler
+	class CloneFactoryHandler : public CivetHandler
 	{
 		public:
-		CaptureFactoryHandler(CaptureFactory& capturefactory);
-		~CaptureFactoryHandler();
+		CloneFactoryHandler(CloneFactory& clonefactory);
+		~CloneFactoryHandler();
 		private:
 		bool handleGet(CivetServer *server, struct mg_connection *conn);
 		bool handlePost(CivetServer *server, struct mg_connection *conn);
 		bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
-		CaptureFactory& capturefactory;
+		CloneFactory& clonefactory;
 	};
-	class Capture {
+	class Clone {
 	public:
-		friend class CaptureFactory;
+		friend class CloneFactory;
 		friend class ChaseFactory;
-		Capture(CaptureFactory& cf, std::string naam, std::string omschrijving);
-		Capture(CaptureFactory& cf, std::string uuidstr, std::string naam,
+		Clone(CloneFactory& cf, std::string naam, std::string omschrijving);
+		Clone(CloneFactory& cf, std::string uuidstr, std::string naam,
 				std::string omschrijving, std::string filename, std::string filename2,
-				std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints,
-				std::vector<std::vector<std::vector<cv::Point2f>>>* file2points,
+				std::vector<ellipse_s>* ellipses_in,
+				std::vector<ellipse_s>* ellipses_out,
 				bool fileonly,
+				bool clone_to_file,
+				bool clone_to_file2,
 				unsigned int mix_file,
 				unsigned int mix_file2,
 				unsigned int filesteps,
 				unsigned int file2steps,
 				unsigned int morphsteps);
-		~Capture();
-		void captureDetectAndMerge();
+		~Clone();
+		void captureAndMerge();
 		void mergeToScreen();
 		void mergeToFile();
 		void onScreen();
@@ -113,30 +123,29 @@ class CaptureFactory {
 		void Stop();
 		void Start();
 		private:
-		class CaptureHandler : public CivetHandler
+		class CloneHandler : public CivetHandler
 		{
 			public:
-			CaptureHandler(Capture& schip);
-			~CaptureHandler();
+			CloneHandler(Clone& schip);
+			~CloneHandler();
 			private:
 			bool handleGet(CivetServer *server, struct mg_connection *conn);
 			bool handlePost(CivetServer *server, struct mg_connection *conn);
 			bool handleAll(const char *method, CivetServer *server, struct mg_connection *conn);
-			Capture& capture;
+			Clone& clone;
 		};
 		private:
-		CaptureFactory& cf;
-		CaptureHandler* mh;
-		void openCap(captureType capturetype);
+		CloneFactory& cf;
+		CloneHandler* mh;
+		void openCap(cloneType clonetype);
 		void closeCap();
-		cv::Mat captureFrame(captureType capturetype);
-		void getFrame(int framenumber, bool drawFaces);
-		std::vector<std::vector<cv::Point2f>> detectFrame(cv::Mat* input, captureType capturetype);
-		std::vector<std::string> mergeFaces(captureType type, unsigned int mix_file, std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints, bool fileonly);
+		cv::Mat cloneFrame(cloneType clonetype, bool draw);
+		void setPhoto(cv::Mat* input, bool draw);
+		void getFrame(cloneType type, int framenumber, bool draw);
+		std::vector<std::string> copyEllipses(cloneType type, unsigned int mix_file, std::vector<ellipse_s>* ellipses_in, std::vector<ellipse_s>* ellipses_out, bool fileonly);
 		void mergeFrames();
 		std::vector<std::string> morph(cv::Mat orig, cv::Mat target, unsigned int morphsteps);
-		void loadModel();
-		void captureLoop();
+		void cloneLoop();
 		void loadFilmpje();
 		//void detectFilmpje();
 		std::string url;
@@ -150,39 +159,33 @@ class CaptureFactory {
 		unsigned int filesteps = 1;
 		unsigned int file2steps = 1;
 		unsigned int morphsteps = 10;
-		std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints;
-		std::vector<std::vector<std::vector<cv::Point2f>>>* file2Points;
+		std::vector<ellipse_s>* ellipses_in;
+		std::vector<ellipse_s>* ellipses_out;
 		uuid_t uuid;
 		cv::VideoCapture* cap;
-		cv::CascadeClassifier* face_cascade;
-		//dlib::frontal_face_detector* detector;
 		bool model_loaded = false;
 		bool fileonly = false;
+		bool clone_to_file = false;
+		bool clone_to_file2 = false;
 	};
 	public:
-	CaptureFactory();
-	~CaptureFactory();
-	CaptureFactory::Capture* addCapture(std::string naam, std::string omschrijving);
-	void deleteCapture(std::string uuid);
+	CloneFactory();
+	~CloneFactory();
+	CloneFactory::Clone* addClone(std::string naam, std::string omschrijving);
+	void deleteClone(std::string uuid);
 	void clearScreen();
 	void load();
 
 	private:
-	dlib::shape_predictor* pose_model;
 	std::string on_screen;
 	volatile bool loadme = false, loaded = false;
 	sf::RenderWindow* window;
-	std::vector<cv::Mat>* camMat;
-	std::vector<std::vector<std::vector<cv::Point2f>>>* camPoints;
+	cv::Mat* camMat;
 	void renderingThread(sf::RenderWindow *window);
 	void save();
-	double scaleFactor = 1.2;
-	int minNeighbors = 4;
-	int minSizeX = 20;
-	int minSizeY = 20;
-	std::map<std::string, CaptureFactory::Capture*> capturemap;
-	CaptureFactoryHandler* mfh;
+	std::map<std::string, CloneFactory::Clone*> clonemap;
+	CloneFactoryHandler* mfh;
 };
 
 
-#endif /* CAPTUREFACTORY_HPP_ */
+#endif /* CLONEFACTORY_HPP_ */

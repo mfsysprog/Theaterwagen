@@ -52,7 +52,6 @@ class mythread : public std::thread
 
 /*
 static cv::Rect dlibRectangleToOpenCV(dlib::rectangle r)
-{
   return cv::Rect(cv::Point2i(r.left(), r.top()), cv::Point2i(r.right() + 1, r.bottom() + 1));
 }
 */
@@ -61,42 +60,17 @@ static dlib::rectangle openCVRectToDlib(cv::Rect r)
   return dlib::rectangle((long)r.tl().x, (long)r.tl().y, (long)r.br().x - 1, (long)r.br().y - 1);
 }
 
-/*
-static std::stringstream matToBase64PNG(cv::Mat* input)
-{
-    std::vector<uchar> buf;
-    cv::imencode(".png", *input, buf, std::vector<int>() );
-
-    // Base64 encode the stringstream
-    base64::encoder E;
-    stringstream encoded;
-    stringstream incoming;
-    copy(buf.begin(), buf.end(),
-         ostream_iterator<uchar>(incoming));
-
-    //incoming << FILE.rdbuf();
-    //std::ofstream fout("test.jpg");
-
-    //fout << incoming.rdbuf();
-
-    E.encode(incoming, encoded);
-
-    std::stringstream png;
-    png << encoded.str();
-    return png;
-}
-*/
-static std::stringstream matToJPG(cv::Mat* input)
+static std::string matToJPG(cv::Mat* input)
 {
     std::vector<uchar> buf;
     cv::Mat resized;
     try
     {
-        cv::resize((*input), resized, cv::Size(320,240), 0, 0);
-        int params[3] = {0};
+        cv::resize((*input), resized, cv::Size(VIDEO_WIDTH,VIDEO_HEIGHT), 0, 0);
+        int params[2] = {0};
         params[0] = CV_IMWRITE_JPEG_QUALITY;
-        params[1] = 60;
-    	cv::imencode(".jpg", resized, buf, std::vector<int>(params, params+2) );
+        params[1] = 100;
+    	cv::imencode(".jpg", resized, buf, std::vector<int>(params, params+1) );
     }
     catch( cv::Exception& e )
     {
@@ -113,10 +87,36 @@ static std::stringstream matToJPG(cv::Mat* input)
 
     //fout << incoming.rdbuf();
 
-    std::stringstream jpg;
-    jpg << incoming.str();
-    return jpg;
+    return incoming.str();
 }
+
+static cv::Mat ImgToMat(std::string* input)
+{
+
+	std::vector<uchar> buf(input->begin(),input->end());
+
+    cv::Mat restored;
+    try
+    {
+        cv::imdecode(buf, cv::IMREAD_UNCHANGED, &restored);
+        //cv::cvtColor(restored, restored, CV_RGB2BGR);
+    }
+    catch( cv::Exception& e )
+    {
+        const char* err_msg = e.what();
+        (*syslog) << "exception caught: " << err_msg << std::endl;
+    }
+
+    return restored;
+}
+
+static cv::UMat ImgToUMat(std::string* input)
+{
+	cv::UMat restored;
+	ImgToMat(input).copyTo(restored);
+    return restored;
+}
+
 
 // Apply affine transform calculated using srcTri and dstTri to src
 void applyAffineTransform(Mat &warpImage, Mat &src, std::vector<Point2f> &srcTri, std::vector<Point2f> &dstTri)
@@ -396,7 +396,8 @@ static cv::Mat drawFaces(cv::Mat* input, std::vector<std::vector<cv::Point2f>>* 
     return output;
 }
 
-static std::stringstream drawToJPG(cv::Mat* input, std::vector<std::vector<cv::Point2f>>* points)
+/*
+static std::string drawToJPG(cv::Mat* input, std::vector<std::vector<cv::Point2f>>* points)
 {
 	cv::Mat output = (*input).clone();
 
@@ -421,7 +422,7 @@ static std::stringstream drawToJPG(cv::Mat* input, std::vector<std::vector<cv::P
     }
 
     return matToJPG(&output);
-}
+} */
 
 /*
  * CaptureFactory Constructor en Destructor
@@ -487,9 +488,9 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 	this->naam = naam;
 	this->omschrijving = omschrijving;
 	this->cap = new cv::VideoCapture();
-	this->off_screen = new std::vector<std::stringstream>();
 
 	filePoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
+	file2Points = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 
 	//cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
 	//cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
@@ -510,23 +511,32 @@ CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string naam, std::stri
 }
 
 CaptureFactory::Capture::Capture(CaptureFactory& cf, std::string uuidstr, std::string naam,
-		                         std::string omschrijving, std::string filename,
+		                         std::string omschrijving, std::string filename, std::string filename2,
 								 std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints,
+								 std::vector<std::vector<std::vector<cv::Point2f>>>* file2points,
 								 bool fileonly,
-								 unsigned int mix_from,
-								 unsigned int mix_to):cf(cf){
+								 unsigned int mix_file,
+								 unsigned int mix_file2,
+								 unsigned int filesteps,
+								 unsigned int file2steps,
+								 unsigned int morphsteps):cf(cf){
 	mh = new CaptureFactory::Capture::CaptureHandler(*this);
 	uuid_parse(uuidstr.c_str(), (unsigned char *)&uuid);
 
 	this->naam = naam;
 	this->omschrijving = omschrijving;
 	this->cap = new cv::VideoCapture();
-	this->off_screen = new std::vector<std::stringstream>();
 	this->filename = filename;
+	this->filename2 = filename2;
 	this->filePoints = filepoints;
+	this->file2Points = file2points;
 	this->fileonly = fileonly;
-	this->mix_from = mix_from;
-	this->mix_to = mix_to;
+	this->mix_file = mix_file;
+	this->mix_file2 = mix_file2;
+	this->filesteps = filesteps;
+	this->file2steps = file2steps;
+	this->morphsteps = morphsteps;
+
 
 	//cv::Mat boodschap(1024,768,CV_8UC3,cv::Scalar(255,255,255));
 	//cv::putText(boodschap, "Gezichtsherkenningsmodel wordt geladen!", Point2f(100,100), FONT_HERSHEY_PLAIN, 2,  Scalar(0,0,255,255));
@@ -551,7 +561,6 @@ CaptureFactory::Capture::~Capture(){
 	delete cap;
 	delete filePoints;
 	//delete detector;
-	delete off_screen;
 }
 
 /*
@@ -708,9 +717,13 @@ void CaptureFactory::load(){
 		std::string naam = node[i]["naam"].as<std::string>();
 		std::string omschrijving = node[i]["omschrijving"].as<std::string>();
 		std::string filename = node[i]["filename"].as<std::string>();
+		std::string filename2 = node[i]["filename2"].as<std::string>();
 		bool fileonly = node[i]["fileonly"].as<bool>();
-		unsigned int mix_from = (unsigned int) node[i]["mix_from"].as<int>();
-		unsigned int mix_to = (unsigned int) node[i]["mix_to"].as<int>();
+		unsigned int mix_file = (unsigned int) node[i]["mix_file"].as<int>();
+		unsigned int mix_file2 = (unsigned int) node[i]["mix_file2"].as<int>();
+		unsigned int filesteps = (unsigned int) node[i]["filesteps"].as<int>();
+		unsigned int file2steps = (unsigned int) node[i]["file2steps"].as<int>();
+		unsigned int morphsteps = (unsigned int) node[i]["morphsteps"].as<int>();
 		std::vector<std::vector<std::vector<cv::Point2f>>>* filepoints = new std::vector<std::vector<std::vector<cv::Point2f>>>();
 		for (std::size_t frame=0;frame < node[i]["filepoints"].size();frame++)
 		{
@@ -729,7 +742,30 @@ void CaptureFactory::load(){
 		  }
 		  filepoints->push_back(faces);
 		}
-		CaptureFactory::Capture * capture = new CaptureFactory::Capture(*this, uuidstr, naam, omschrijving, filename, filepoints, fileonly, mix_from, mix_to);
+		std::vector<std::vector<std::vector<cv::Point2f>>>* file2points = new std::vector<std::vector<std::vector<cv::Point2f>>>();
+		for (std::size_t frame=0;frame < node[i]["file2points"].size();frame++)
+		{
+		  std::vector<std::vector<cv::Point2f>> faces;
+		  for(std::size_t face=0;face < node[i]["file2points"][frame].size();face++)
+		  {
+			 std::vector<cv::Point2f> points;
+			 for(std::size_t point=0;point < node[i]["file2points"][frame][face].size();point++)
+			 {
+				 float x = node[i]["file2points"][frame][face][point]["x"].as<float>();
+				 float y = node[i]["file2points"][frame][face][point]["y"].as<float>();
+				 Point2f point2f(x,y);
+				 points.push_back(point2f);
+			 }
+			 faces.push_back(points);
+		  }
+		  file2points->push_back(faces);
+		}
+		CaptureFactory::Capture * capture =
+			new CaptureFactory::Capture(*this,
+					uuidstr, naam, omschrijving,
+					filename, filename2, filepoints,
+					file2points, fileonly, mix_file,
+					mix_file2, filesteps, file2steps, morphsteps);
 		std::string uuid_str = capture->getUuid();
 		capturemap.insert(std::make_pair(uuid_str,capture));
 	}
@@ -763,12 +799,20 @@ void CaptureFactory::save(){
 		emitter << YAML::Value << element.second->omschrijving;
 		emitter << YAML::Key << "filename";
 		emitter << YAML::Value << element.second->filename;
+		emitter << YAML::Key << "filename2";
+		emitter << YAML::Value << element.second->filename2;
 		emitter << YAML::Key << "fileonly";
 		emitter << YAML::Value << element.second->fileonly;
-		emitter << YAML::Key << "mix_from";
-    	emitter << YAML::Value << (int) element.second->mix_from;
-    	emitter << YAML::Key << "mix_to";
-		emitter << YAML::Value << (int) element.second->mix_to;
+		emitter << YAML::Key << "mix_file";
+    	emitter << YAML::Value << (int) element.second->mix_file;
+    	emitter << YAML::Key << "mix_file2";
+		emitter << YAML::Value << (int) element.second->mix_file2;
+    	emitter << YAML::Key << "filesteps";
+		emitter << YAML::Value << (int) element.second->filesteps;
+    	emitter << YAML::Key << "file2steps";
+		emitter << YAML::Value << (int) element.second->file2steps;
+    	emitter << YAML::Key << "morphsteps";
+		emitter << YAML::Value << (int) element.second->morphsteps;
 		emitter << YAML::Key << "filepoints";
 		emitter << YAML::BeginSeq;
 		/* frames */
@@ -795,6 +839,33 @@ void CaptureFactory::save(){
 		  emitter << YAML::EndSeq;
 		}
 		emitter << YAML::EndSeq;
+		emitter << YAML::Key << "file2points";
+		emitter << YAML::BeginSeq;
+		/* frames */
+		for (unsigned int frame = 0; frame < (*element.second->file2Points).size() ; frame++)
+		{
+		  /* faces */
+	      emitter << YAML::BeginSeq;
+		  for (unsigned int face = 0; face < (*element.second->file2Points)[frame].size() ; face++)
+		  {
+		     /* points */
+             emitter << YAML::Flow;
+			 emitter << YAML::BeginSeq;
+			 for (unsigned int point = 0; point < (*element.second->file2Points)[frame][face].size(); point++)
+			 {
+				 emitter << YAML::BeginMap;
+				 emitter << YAML::Key << "x";
+				 emitter << YAML::Value << (*element.second->file2Points)[frame][face][point].x;
+				 emitter << YAML::Key << "y";
+				 emitter << YAML::Value << (*element.second->file2Points)[frame][face][point].y;
+				 emitter << YAML::EndMap;
+			 }
+			 emitter << YAML::EndSeq;
+		  }
+		  emitter << YAML::EndSeq;
+		}
+		emitter << YAML::EndSeq;
+
 		emitter << YAML::EndMap;
 	}
 	emitter << YAML::EndSeq;
@@ -828,10 +899,16 @@ void CaptureFactory::Capture::openCap(captureType type)
 			cap->set(CAP_PROP_FRAME_HEIGHT,1296);   // height pixels 1296
 		}
 	}
-	else
+	else if (type == CAP_FILE)
 	{
 		if(!cap->isOpened()){   // connect to the camera
 			cap->open(filename);
+		}
+	}
+	else if (type == CAP_FILE2)
+	{
+		if(!cap->isOpened()){   // connect to the camera
+			cap->open(filename2);
 		}
 	}
 }
@@ -881,15 +958,31 @@ void CaptureFactory::Capture::captureDetectAndMerge()
 	closeCap();
 	if (cf.camPoints->empty())
 	{
-		delete off_screen;
-		off_screen = new std::vector<std::stringstream>(loadFilmpje());
+		loadFilmpje();
 		l.unlock();
 		l2.unlock();
 		return;
 	}
 
-	delete off_screen;
-	off_screen = new std::vector<std::stringstream>(mergeFrames());
+	mergeFrames();
+
+	l.unlock();
+	l2.unlock();
+	return;
+	});
+	t1.detach();
+}
+
+void CaptureFactory::Capture::mergeToScreen()
+{
+	std::thread t1( [this] {
+	std::unique_lock<std::mutex> l2(m_merging);
+	std::unique_lock<std::mutex> l(m);
+
+	if (!fileonly)
+	{
+		mergeFrames();
+	}
 
 	l.unlock();
 	l2.unlock();
@@ -906,8 +999,7 @@ void CaptureFactory::Capture::mergeToFile()
 
 	if (fileonly)
 	{
-		delete off_screen;
-		off_screen = new std::vector<std::stringstream>(mergeFrames());
+		mergeFrames();
 	}
 
 	l.unlock();
@@ -917,11 +1009,11 @@ void CaptureFactory::Capture::mergeToFile()
 	t1.detach();
 }
 
-std::vector<std::stringstream> CaptureFactory::Capture::loadFilmpje()
+void CaptureFactory::Capture::loadFilmpje()
 {
     openCap(CAP_FILE);
 	cv::Mat frame;
-	std::vector<std::stringstream> jpg;
+	std::vector<std::string> jpg;
 	for (;;)
 	{
 	   frame = captureFrame(CAP_FILE);
@@ -929,7 +1021,6 @@ std::vector<std::stringstream> CaptureFactory::Capture::loadFilmpje()
 	    jpg.push_back(matToJPG(&frame));
 	}
 	closeCap();
-	return jpg;
 }
 
 void CaptureFactory::clearScreen()
@@ -942,7 +1033,7 @@ void CaptureFactory::Capture::onScreen()
 {
 	 delay(200);
 	 std::unique_lock<std::mutex> l(m_merging);
-	 cf.on_screen = TMP_DIR + this->getUuid() + ".mp4";
+	 cf.on_screen = TMP_DIR + this->getUuid() + "." + VIDEO_EXT;
 	 cf.loaded = false;
 	 cf.loadme = true;
 	 l.unlock();
@@ -991,7 +1082,7 @@ cv::Mat CaptureFactory::Capture::captureFrame(captureType capturetype){
 		*cap >> input;
 		if (!input.empty())
 		{
-			cv::resize(input,input,cv::Size(1024,768));
+			cv::resize(input,input,cv::Size(VIDEO_WIDTH,VIDEO_HEIGHT));
 		}
 		if (capturetype == CAP_CAM)
 		{
@@ -1093,61 +1184,72 @@ std::vector<std::vector<cv::Point2f>> CaptureFactory::Capture::detectFrame(cv::M
        return points;
 }
 
-
-std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
+std::vector<std::string> CaptureFactory::Capture::morph(cv::Mat orig, cv::Mat target, unsigned int morphsteps)
 {
-	std::vector<std::stringstream> totaal;
-	std::string recordname = TMP_DIR + this->getUuid() + ".mp4";
+      std::vector<std::string> totaal;
 
-	//we should not merge to a running video
-	if (recordname.compare(cf.on_screen) == 0) this->cf.clearScreen();
+      cv::Mat resultaat;
+	  unsigned int step = (unsigned int) 100 / morphsteps;
 
-	VideoWriter record(recordname, CV_FOURCC('H','2','6','4'),
-	    10, cv::Size(1024,768), true);
+	  for (unsigned int i = 0; i < morphsteps; i++)
+	  {
+		  float value = ((float)step * (float)i) / 100.0;
+		  addWeighted(orig, 1.0 - value, target, value, 0.0, resultaat);
+		  totaal.push_back(matToJPG(&resultaat));
+	  }
 
-	openCap(CAP_FILE);
+	  return totaal;
+}
+
+std::vector<std::string> CaptureFactory::Capture::mergeFaces(captureType type, unsigned int mix_file, std::vector<std::vector<std::vector<cv::Point2f>>>* filePoints, bool fileonly)
+{
+	std::vector<std::string> totaal;
+
+	openCap(type);
+
+	cv::Mat img_file;
 
 	/*
 	 * if we have no filepoints (faces) in the movie we just copy it asis
-	 */
+	*/
 	if ((*filePoints).size() == 0) {
 		while(true)
 		{
-			cv::Mat img_file = captureFrame(CAP_FILE);
+			img_file = captureFrame(type);
 			if (img_file.empty()) break;
 
-			record.write(img_file);
 			totaal.push_back(matToJPG(&img_file));
 		}
-		closeCap();
-		return totaal;
+		//closeCap();
+		//return totaal;
 	}
+	else
+	//if we have no campoints (faces) at all we just copy the input
+	if ((*cf.camPoints).size() == 0) {
+		while(true)
+		{
+			img_file = captureFrame(type);
+			if (img_file.empty()) break;
 
+			totaal.push_back(matToJPG(&img_file));
+		}
+		//closeCap();
+		//return totaal;
+	}
+	else
 	for (unsigned int frame = 0; frame < (*filePoints).size(); ++frame)
 	{
-		high_resolution_clock::time_point t1 = high_resolution_clock::now();
 		//delete img_file;
-		cv::Mat img_file = captureFrame(CAP_FILE);
-		cv::Mat img_orig = img_file.clone();
+		img_file = captureFrame(type);
 		if (img_file.empty()) break;
+
+		//cv::Mat img_orig = img_file.clone();
 
 		//cv::resize(img_file,img_file,cv::Size(1024,768));
 		//remove frame to keep memory available
 		//(*fileMat).erase((*fileMat).begin() + frame);
 
 		cv::Mat resultaat = img_file.clone();
-		//if we have no faces at all we just copy the input
-		if ((*cf.camPoints).size() == 0) {
-			if ((*filePoints).size() == 1)
-				for (int i = 0; i < 10; i++)
-				{
-				  record.write(resultaat);
-				}
-				else
-				record.write(resultaat);
-			totaal.push_back(matToJPG(&resultaat));
-			continue;
-		}
 
 		cv::Mat img_cam = (*cf.camMat)[frame % ((*cf.camMat).size())].clone();
 
@@ -1268,6 +1370,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	         //cv::seamlessClone(imgtest2,imgtest1, masktest, centertest, output, NORMAL_CLONE);
 	         pasteFacesOnFrame(output, facefromcam, maskfromface);
 		     output.copyTo(resultaat(r));
+             addWeighted(resultaat, mix_file / 100.0, img_file, 1.0 - mix_file / 100.0, 0.0, resultaat);
 	        }
             catch( cv::Exception& e )
 	      	{
@@ -1277,25 +1380,21 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 	      	}
       	    if (fileonly)
       	    {
-      		  float per_frame = ((float) mix_to - (float) mix_from) / (float)(*filePoints).size();
-      		  float mix_frame = ((float) mix_from + (per_frame * (frame + 1))) / 100;
-      		  addWeighted(resultaat, mix_frame, img_orig, 1 - mix_frame, 0.0, resultaat);
-
       		  std::vector<int> compression_params;
       	      compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
       	      compression_params.push_back(95);
       	      std::stringstream filename;
       	      filename << CAPTURE_DIR << std::time(0) << gezicht << ".jpg";
       	      imwrite(filename.str().c_str(), resultaat, compression_params);
-      		  totaal.push_back(matToJPG(&resultaat));
+      		  //TODO Push back hier nodig??
+      	      //totaal.push_back(matToJPG(&resultaat));
       	    }
 		}
 
-	  if (!fileonly)
-	  {
-	    float per_frame = ((float) mix_to - (float) mix_from) / (float)(*filePoints).size();
-	    float mix_frame = ((float) mix_from + (per_frame * (frame + 1))) / 100;
-	    addWeighted(resultaat, mix_frame, img_orig, 1 - mix_frame, 0.0, resultaat);
+	/*
+	  float per_frame = ((float) mix_to - (float) mix_from) / (float)(*filePoints).size();
+			  float mix_frame = ((float) mix_from + (per_frame * (frame + 1))) / 100;
+			  addWeighted(resultaat, mix_frame, img_file2, 1 - mix_frame, 0.0, resultaat);
 	    {
 		  //we fill out 40 frames by default
 		  if ((*filePoints).size() == 1)
@@ -1304,7 +1403,7 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 			  for (int i = 0; i < 40; i++)
 			  {
 				  float mix_frame = ((float) mix_from + (per_frame * (frame + 1 + i))) / 100;
-                  addWeighted(img_file, mix_frame, img_orig, 1 - mix_frame, 0.0, resultaat);
+                  addWeighted(img_file, mix_frame, img_file2, 1 - mix_frame, 0.0, resultaat);
 				  record.write(resultaat);
 			  }
 			  for (int i = 0;i < 60; i++)
@@ -1317,12 +1416,322 @@ std::vector<std::stringstream> CaptureFactory::Capture::mergeFrames()
 		  totaal.push_back(matToJPG(&resultaat));
 	   }
 	  }
-	  high_resolution_clock::time_point t2 = high_resolution_clock::now();
-	  auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-      std::cout << "merging frame took: " << int_ms.count() << " milliseconds" << endl;
+	  */
+	  totaal.push_back(matToJPG(&resultaat));
 	}
+
 	closeCap();
+
 	return totaal;
+}
+
+void CaptureFactory::Capture::mergeFrames()
+{
+
+	std::vector<std::string> totaal;
+	std::vector<std::string> file;
+	std::vector<std::string> file2;
+	std::vector<std::string> morph;
+
+	high_resolution_clock::time_point t1, t2;
+
+	//TODO look at scheduling to see if we can run and merge in background
+	//we should not merge to a running video
+	//TODO refactor into seperate method
+	this->cf.clearScreen();
+
+	t1 = high_resolution_clock::now();
+	file = mergeFaces(CAP_FILE, this->mix_file, this->filePoints, this->fileonly);
+	t2 = high_resolution_clock::now();
+
+	auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+	std::cout << "merging file took: " << int_ms.count() << " milliseconds" << endl;
+
+	if (this->filename2.compare("") != 0)
+	{
+		t1 = high_resolution_clock::now();
+		file2 = mergeFaces(CAP_FILE2, this->mix_file2, this->file2Points, false);
+		t2 = high_resolution_clock::now();
+
+		auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+		std::cout << "merging file2 took: " << int_ms.count() << " milliseconds" << endl;
+
+		t1 = high_resolution_clock::now();
+		morph = this->morph(ImgToMat(&file[file.size()-1]),ImgToMat(&file2[0]),this->morphsteps);
+		t2 = high_resolution_clock::now();
+
+		int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+		std::cout << "morphing file and file2 took: " << int_ms.count() << " milliseconds" << endl;
+
+		while (file.size() % VIDEO_FPS != 0) file.push_back(file[(file.size()-1)]);
+		for (unsigned int i = 0; i < filesteps; i++)
+			std::copy(file.begin(), file.end(), std::back_inserter(totaal));
+		while (morph.size() % VIDEO_FPS != 0) morph.push_back(morph[(morph.size()-1)]);
+		std::copy(morph.begin(), morph.end(), std::back_inserter(totaal));
+		while (file2.size() % VIDEO_FPS != 0) file2.push_back(file2[(file2.size()-1)]);
+		for (unsigned int i = 0; i < file2steps; i++)
+			std::copy(file2.begin(), file2.end(), std::back_inserter(totaal));
+	}
+	else
+	{
+		for (unsigned int i = 0; i < filesteps; i++)
+			while (file.size() % VIDEO_FPS != 0) file.push_back(file[(file.size()-1)]);
+
+
+		/*
+		for (unsigned int i = 0; i < 10; i++)
+		{
+			file.push_back(file[(file.size()-1)]);
+		}*/
+
+		for (unsigned int i = 0; i < file.size(); i++)
+		{
+			std::copy(file.begin(), file.end(), std::back_inserter(totaal));
+		}
+	}
+
+	fprintf(stderr,"starting encoding...\n");
+    std::string recordname = TMP_DIR + this->getUuid() + "." + VIDEO_EXT;
+
+	//av_log_set_level(AV_LOG_DEBUG);
+
+	t1 = high_resolution_clock::now();	t1 = high_resolution_clock::now();
+
+	/*
+    VideoWriter record(recordname, CV_FOURCC('M','P','4','V'),
+			  VIDEO_FPS, cv::Size(1024,768), true);
+
+
+    for (unsigned int i = 0; i < totaal.size(); i++) {
+    	record.write(ImgToMat(&totaal[i]));
+    }
+	*/
+
+	/*
+	fprintf(stderr,"av_register_all call\n");
+
+    av_register_all();
+
+	fprintf(stderr,"avcodec_find_encoder_by_name\n");
+
+    // auto codec = avcodec_find_encoder_by_name( "libx264" ); // works
+    auto codec = avcodec_find_encoder_by_name( "h264_omx" );
+    if( !codec )
+    {
+        throw std::runtime_error( "Unable to find codec" );
+    }
+
+	fprintf(stderr,"avcodec_alloc_context3\n");
+
+    auto context =
+        std::shared_ptr< AVCodecContext >( avcodec_alloc_context3( codec ), freeContext );
+
+    if( !context )
+    {
+        throw std::runtime_error( "Unable to allocate context" );
+    }
+
+    std::cout << "Setting options" << std::endl;
+
+    //context->bit_rate = 400 * 1024;  // 400 KBit/s
+    context->width = 640;
+    context->height = 480;
+    //context->pix_fmt = AV_PIX_FMT_YUV420P;
+    context->time_base.num = 30; // milliseconds
+    context->time_base.den = 1;
+    //context->thread_count = 0;
+    //context->level = 31;
+
+    // av_opt_set( m_context->priv_data, "tune", "zerolatency", 0 );
+    av_opt_set( context->priv_data, "preset", "slow", 0 );
+
+    std::cout << "Opening context" << std::endl;
+
+    auto errorCode = avcodec_open2( context.get(), codec, nullptr );
+    if( errorCode < 0 )
+    {
+        throw std::runtime_error( "Unable to open codec (" + avError( errorCode ) + ")" );
+    }
+
+    std::cout << "Done" << std::endl;
+
+    */
+
+    // initialize FFmpeg library
+    av_register_all();
+	//av_log_set_level(AV_LOG_DEBUG);
+    int ret;
+
+    const int dst_width = VIDEO_WIDTH;
+    const int dst_height = VIDEO_HEIGHT;
+    const AVRational dst_fps = { VIDEO_FPS,	1 };
+    const AVRational dst_timebase = { 1, VIDEO_FPS };
+
+    // allocate cv::Mat with extra bytes (required by AVFrame::data)
+    std::vector<uint8_t> imgbuf(dst_height * dst_width * 3 + 16);
+    cv::Mat image(dst_height, dst_width, CV_8UC3, imgbuf.data(), dst_width * 3);
+
+    // open output format context
+    AVFormatContext* outctx = nullptr;
+    ret = avformat_alloc_output_context2(&outctx, nullptr, nullptr, recordname.c_str());
+    if (ret < 0) {
+        std::cerr << "fail to avformat_alloc_output_context2(" << recordname.c_str() << "): ret=" << ret;
+        return;
+    }
+
+    // open output IO context
+    ret = avio_open2(&outctx->pb, recordname.c_str(), AVIO_FLAG_WRITE, nullptr, nullptr);
+    if (ret < 0) {
+        std::cerr << "fail to avio_open2: ret=" << ret;
+        return;
+    }
+
+    // create new video stream
+    //AVCodec* vcodec = avcodec_find_encoder(outctx->oformat->video_codec);
+    AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
+    if (!vcodec)
+    {
+    	fprintf(stderr,"Kan codec nie vinden nie \n");
+    	return;
+    }
+
+    AVStream* vstrm = avformat_new_stream(outctx, vcodec);
+    if (!vstrm) {
+        std::cerr << "fail to avformat_new_stream";
+        return;
+    }
+
+    avcodec_get_context_defaults3(vstrm->codec, vcodec);
+    vstrm->codec->width = dst_width;
+    vstrm->codec->height = dst_height;
+    //vstrm->codec->level = 32;
+    //vstrm->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    vstrm->codec->pix_fmt = AV_PIX_FMT_YUV420P;
+    //vstrm->codec->pix_fmt = vcodec->pix_fmts[0];
+    //vstrm->codec->time_base = vstrm->time_base = av_inv_q(dst_fps);
+    vstrm->codec->time_base = dst_timebase;
+    vstrm->codec->framerate = dst_fps;
+    //vstrm->codec->max_b_frames = 1;
+    vstrm->codec->gop_size = 10;
+    //vstrm->codec->compression_level = 0;
+    //vstrm->r_frame_rate = vstrm->avg_frame_rate = dst_fps;
+    //vstrm->codec->thread_count = 0;
+    vstrm->codec->bit_rate = 4000 * 1024;
+    //vstrm->codec->delay = 0;
+    //vstrm->codec->max_b_frames = 0;
+    //vstrm->codec->thread_count = 1;
+
+   	//av_opt_set(vstrm->codec->priv_data, "preset", "slow", 0);
+   	//av_opt_set(vstrm->codec->priv_data, "tune", "film", 0);
+    //av_opt_set(vstrm->codec->priv_data, "crf", "1", AV_OPT_SEARCH_CHILDREN);
+    //av_opt_set(vstrm->codec->priv_data, "qp", "10", 0);
+
+    //vstrm->codec->flags &= ~AV_CODEC_CAP_DELAY;
+    //fprintf(stderr,"Capabilities %i",vstrm->codec->codec->capabilities);
+    if (outctx->oformat->flags & AVFMT_GLOBALHEADER)
+        vstrm->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+    // open video encoder
+    ret = avcodec_open2(vstrm->codec, vcodec, nullptr);
+    if (ret < 0) {
+        std::cerr << "fail to avcodec_open2: ret=" << ret;
+        return;
+    }
+
+    std::cout
+        << "outfile: " << recordname.c_str() << "\n"
+        << "format:  " << outctx->oformat->name << "\n"
+        << "vcodec:  " << vcodec->name << "\n"
+        << "size:    " << dst_width << 'x' << dst_height << "\n"
+        << "fps:     " << av_q2d(dst_fps) << "\n"
+        << "pixfmt:  " << av_get_pix_fmt_name(vstrm->codec->pix_fmt) << "\n"
+        << std::flush;
+
+    // initialize sample scaler
+    SwsContext* swsctx = sws_getCachedContext(
+        nullptr, dst_width, dst_height, AV_PIX_FMT_BGR24,
+        dst_width, dst_height, vstrm->codec->pix_fmt, SWS_BICUBIC, nullptr, nullptr, nullptr);
+    if (!swsctx) {
+        std::cerr << "fail to sws_getCachedContext";
+        return;
+    }
+
+    // allocate frame buffer for encoding
+    AVFrame* frame = av_frame_alloc();
+    std::vector<uint8_t> framebuf(avpicture_get_size(vstrm->codec->pix_fmt, dst_width, dst_height));
+    avpicture_fill(reinterpret_cast<AVPicture*>(frame), framebuf.data(), vstrm->codec->pix_fmt, dst_width, dst_height);
+    frame->width = dst_width;
+    frame->height = dst_height;
+    frame->format = static_cast<int>(vstrm->codec->pix_fmt);
+
+    // encoding loop
+    avformat_write_header(outctx, nullptr);
+    int64_t frame_pts = 0;
+    unsigned nb_frames = 0;
+    int got_pkt = 0;
+
+    for (unsigned int i = 0; i < totaal.size(); i++) {
+   		ImgToMat(&totaal[i]).copyTo(image);
+        const int stride[] = { static_cast<int>(image.step[0]) };
+        sws_scale(swsctx, &image.data, stride, 0, image.rows, frame->data, frame->linesize);
+        frame->pts = frame_pts++;
+        // encode video frame
+        AVPacket pkt;
+        pkt.data = nullptr;
+        pkt.size = 0;
+        av_init_packet(&pkt);
+        ret = avcodec_encode_video2(vstrm->codec, &pkt, frame, &got_pkt);
+        //fprintf(stderr, "image size is %i\n",pkt.size);
+        if (ret < 0) {
+            std::cerr << "fail to avcodec_encode_video2: ret=" << ret << "\n";
+            break;
+        }
+        if (got_pkt) {
+            // rescale packet timestamp
+            pkt.duration = 1;
+            av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            // write packet
+            av_write_frame(outctx, &pkt);
+            std::cout << nb_frames << '\r' << std::flush;  // dump progress
+            ++nb_frames;
+            av_free_packet(&pkt);
+        }
+    }
+
+    do {
+        // encode video frame
+        AVPacket pkt;
+        pkt.data = nullptr;
+        pkt.size = 0;
+        av_init_packet(&pkt);
+        ret = avcodec_encode_video2(vstrm->codec, &pkt, NULL, &got_pkt);
+        if (ret < 0) {
+            fprintf(stderr, "Error encoding frame\n");
+            exit(1);
+        }
+        if (got_pkt) {
+            // rescale packet timestamp
+            pkt.duration = 1;
+            av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            // write packet
+            av_write_frame(outctx, &pkt);
+            std::cout << nb_frames << '\r' << std::flush;  // dump progress
+            ++nb_frames;
+            av_free_packet(&pkt);
+        }
+    } while (got_pkt);
+
+    av_write_trailer(outctx);
+    std::cout << nb_frames << " frames encoded" << std::endl;
+
+    av_frame_free(&frame);
+    avcodec_close(vstrm->codec);
+    avio_close(outctx->pb);
+    avformat_free_context(outctx);
+
+    t2 = high_resolution_clock::now();
+	int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+	std::cout << "H264 encoding took: " << int_ms.count() << " milliseconds" << endl;
 }
 
 
@@ -1588,29 +1997,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	std::string meta="";
 	std::stringstream tohead;
 
-	if(CivetServer::getParam(conn, "streaming", dummy))
-	{
-		mg_printf(conn,
-			          "HTTP/1.1 200 OK\r\nContent-Type: "
-			          "multipart/x-mixed-replace; boundary=frame\r\n\r\n");
-		//std::unique_lock<std::mutex> l(m);
-		//ss << capture.manipulated.str();
-		//l.unlock();
-		//ss.seekp(0, ios::end);
-		//stringstream::pos_type offset = ss.tellp();
-		for (unsigned int i = 0; i < capture.off_screen->size(); ++i)
-		{
-			std::stringstream ss;
-			ss << "Content-Type: image/jpeg\r\n\r\n" << (*capture.off_screen)[i].str() << "\r\n--frame\r\n";
-			ss.seekp(0, ios::end);
-			stringstream::pos_type offset = ss.tellp();
-			ss.seekp(0, ios::beg);
-			mg_write(conn, ss.str().c_str(), offset);
-			delay(100);
-		}
-		return true;
-	}
-
 	if(CivetServer::getParam(conn, "naam", value))
 	{
 		CivetServer::getParam(conn,"value", value);
@@ -1633,10 +2019,10 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		mg_printf(conn, ss.str().c_str(), "%s");
 		return true;
 	}
-	if(CivetServer::getParam(conn, "mix_from", value))
+	if(CivetServer::getParam(conn, "mix_file", value))
 	{
 		CivetServer::getParam(conn,"value", value);
-		capture.mix_from = atoi(value.c_str());
+		capture.mix_file = atoi(value.c_str());
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -1644,10 +2030,43 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		mg_printf(conn, ss.str().c_str(), "%s");
 		return true;
 	}
-	if(CivetServer::getParam(conn, "mix_to", value))
+	if(CivetServer::getParam(conn, "mix_file2", value))
 	{
 		CivetServer::getParam(conn,"value", value);
-		capture.mix_to = atoi(value.c_str());
+		capture.mix_file2 = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "filesteps", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.filesteps = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "file2steps", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.file2steps = atoi(value.c_str());
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "morphsteps", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.morphsteps = atoi(value.c_str());
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -1659,6 +2078,17 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	{
 		CivetServer::getParam(conn,"value", value);
 		capture.filename = value.c_str();
+		std::stringstream ss;
+		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
+		ss << "text/html\r\nConnection: close\r\n\r\n";
+		ss << value;
+		mg_printf(conn, ss.str().c_str(), "%s");
+		return true;
+	}
+	if(CivetServer::getParam(conn, "filename2", value))
+	{
+		CivetServer::getParam(conn,"value", value);
+		capture.filename2 = value.c_str();
 		std::stringstream ss;
 		ss << "HTTP/1.1 200 OK\r\nContent-Type: ";
 		ss << "text/html\r\nConnection: close\r\n\r\n";
@@ -1726,39 +2156,23 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
     if(CivetServer::getParam(conn, "merge", dummy))
 	{
 		std::unique_lock<std::mutex> l(m);
-		delete capture.off_screen;
-		capture.off_screen = new std::vector<std::stringstream>(capture.mergeFrames());
+		capture.mergeFrames();
 		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		if (capture.off_screen->size() == 0)
-			message = _("Merge failed!");
-		else
-			message = _("Merged!");
+		message = _("Merged!");
 	}
 	if(CivetServer::getParam(conn, "newmovie", value))
 	{
-		//capture.fileMat->clear();
-		//capture.filePoints->clear();
-		std::unique_lock<std::mutex> l(m);
 		capture.filename = value;
 		std::stringstream ss;
-		capture.openCap(CAP_FILE);
-		cv::Mat frame;
-		std::stringstream jpg;
 
-		delete capture.off_screen;
-		capture.off_screen = new std::vector<std::stringstream>();
-
-		for (;;)
-		{
-			frame = capture.captureFrame(CAP_FILE);
-			if (frame.empty()) break;
-			capture.off_screen->push_back(matToJPG(&frame));
-		}
-		capture.closeCap();
-
-		l.unlock();
+		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + capture.getUrl() + "\"/>";
+	}
+	if(CivetServer::getParam(conn, "newmovie2", value))
+	{
+		capture.filename2 = value;
+		std::stringstream ss;
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + capture.getUrl() + "\"/>";
 	}
@@ -1766,9 +2180,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	{
 		Size S = Size((*capture.cf.camMat)[0].cols,(*capture.cf.camMat)[0].rows);
 		int codec = CV_FOURCC('H', '2', '6', '4');
-		VideoWriter outputVideo(MOVIES_DIR "capture.mp4", codec, 10.0, S, true);
+		VideoWriter outputVideo(MOVIES_DIR "capture.mp4", codec, VIDEO_FPS, S, true);
 
-		if (!(outputVideo.open(MOVIES_DIR "capture.mp4", codec, 10.0, S, true)))
+		if (!(outputVideo.open(MOVIES_DIR "capture.mp4", codec, VIDEO_FPS, S, true)))
 			(*syslog) << "Video open failure!" << endl;
 		for (unsigned int i = 0; i < (*capture.cf.camMat).size(); ++i)
 		{
@@ -1779,6 +2193,13 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = _("Video saved!");
 	}
+	if(CivetServer::getParam(conn, "save_file", dummy))
+	{
+		imwrite(MOVIES_DIR "capture.jpg",(*capture.cf.camMat)[0]);
+
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
+		message = _("File saved!");
+	}
 	if(CivetServer::getParam(conn, "capture", dummy))
 	{
 		capture.openCap(CAP_CAM);
@@ -1786,18 +2207,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.cf.camMat->clear();
 		capture.cf.camMat->push_back(capture.captureFrame(CAP_CAM));
 		capture.closeCap();
-		std::unique_lock<std::mutex> l(m);
-
-		delete capture.off_screen;
-		capture.off_screen = new std::vector<std::stringstream>();
-
-		for (unsigned int i = 0; i < capture.cf.camMat->size(); ++i)
-		{
-			cv::Mat mat  = (*capture.cf.camMat)[i];
-			capture.off_screen->push_back(matToJPG(&mat));
-		}
-
-		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = _("Frame Captured!");
@@ -1812,19 +2221,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			capture.cf.camMat->push_back(capture.captureFrame(CAP_CAM));
 		}
 		capture.closeCap();
-		std::unique_lock<std::mutex> l(m);
-
-		delete capture.off_screen;
-		capture.off_screen = new std::vector<std::stringstream>();
-
-		for (unsigned int i = 0; i < capture.cf.camMat->size(); ++i)
-		{
-			cv::Mat mat  = (*capture.cf.camMat)[i];
-			/* add points of found faces */
-			capture.off_screen->push_back(matToJPG(&mat));
-		}
-
-		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = _("Frames Captured!");
@@ -1834,19 +2230,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		capture.openCap(CAP_CAM);
 		capture.cf.camMat->push_back(capture.captureFrame(CAP_CAM));
 		capture.closeCap();
-		std::unique_lock<std::mutex> l(m);
-
-		delete capture.off_screen;
-		capture.off_screen = new std::vector<std::stringstream>();
-
-		for (unsigned int i = 0; i < capture.cf.camMat->size(); ++i)
-		{
-			cv::Mat mat  = (*capture.cf.camMat)[i];
-			/* add points of found faces */
-			capture.off_screen->push_back(matToJPG(&mat));
-		}
-
-		l.unlock();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
 		message = _("Next Frame Captured!");
@@ -1855,9 +2238,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	{
 		std::vector<std::vector<cv::Point2f>> points;
 		std::unique_lock<std::mutex> l(m);
-
-		delete capture.off_screen;
-		capture.off_screen = new std::vector<std::stringstream>();
 
 		for (unsigned int i = 0; i < capture.cf.camMat->size(); ++i)
 		{
@@ -1872,7 +2252,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			{
 				/* add points of found faces */
 				capture.cf.camPoints->push_back(points);
-				capture.off_screen->push_back(drawToJPG(&mat, &points));
 			}
 		}
 		l.unlock();
@@ -1882,12 +2261,8 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	}
 	if(CivetServer::getParam(conn, "detect_file", dummy))
 	{
-		std::thread t1( [this] {
 		std::vector<std::vector<cv::Point2f>> points;
 		std::unique_lock<std::mutex> l(m);
-
-		delete capture.off_screen;
-		capture.off_screen = new std::vector<std::stringstream>();
 
 		capture.openCap(CAP_FILE);
 		cv::Mat frame;
@@ -1897,7 +2272,6 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			if (frame.empty()) break;
 			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&frame, CAP_FILE);
 			(*syslog) << "Found " << std::dec << points.size() << " faces in fileframe. " << endl;
-			capture.off_screen->push_back(drawToJPG(&frame, &points));
 			capture.filePoints->push_back(points);
 		}
 		capture.closeCap();
@@ -1905,14 +2279,33 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		/* remove frame with no detected faces */
 		//(*capture.fileMat).erase((*capture.fileMat).begin() + i);
 		l.unlock();
-		} );
-
-		mythread::setScheduling(t1, SCHED_IDLE, 0);
-
-		t1.detach();
 
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
-		message = _("Facedetection running in background!");
+		message = _("Face detection done!");
+	}
+	if(CivetServer::getParam(conn, "detect_file2", dummy))
+	{
+		std::vector<std::vector<cv::Point2f>> points;
+		std::unique_lock<std::mutex> l(m);
+
+		capture.openCap(CAP_FILE2);
+		cv::Mat frame;
+		for (;;)
+		{
+			frame = capture.captureFrame(CAP_FILE2);
+			if (frame.empty()) break;
+			std::vector<std::vector<cv::Point2f>> points = capture.detectFrame(&frame, CAP_FILE2);
+			(*syslog) << "Found " << std::dec << points.size() << " faces in fileframe. " << endl;
+			capture.file2Points->push_back(points);
+		}
+		capture.closeCap();
+
+		/* remove frame with no detected faces */
+		//(*capture.fileMat).erase((*capture.fileMat).begin() + i);
+		l.unlock();
+
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + capture.getUrl() + "\"/>";
+		message = _("Face detection done!");
 	}
 
 	std::stringstream ss;
@@ -1934,7 +2327,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    	if (std::strcmp(dp->d_name, ".") == 0) continue;
 	    	if (std::strcmp(dp->d_name, "..") == 0) continue;
 	    	ss << "<button type=\"submit\" name=\"newmovie\" value=\"" << MOVIES_DIR << dp->d_name << "\" ";
-	    	ss << "id=\"newmovie\">" << _("Select") << "</button>&nbsp;";
+	    	ss << "id=\"newmovie\">" << _("File") << "</button>&nbsp;";
+	    	ss << "<button type=\"submit\" name=\"newmovie2\" value=\"" << MOVIES_DIR << dp->d_name << "\" ";
+	    	ss << "id=\"newmovie2\">" << _("File") << " 2</button>&nbsp;";
 	    	ss << "&nbsp;" << dp->d_name << "<br>";
 	        }
 	   } while (dp != NULL);
@@ -1967,13 +2362,29 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		tohead << " $.get( \"" << capture.getUrl() << "\", { filename: 'true', value: $('#filename').val() }, function( data ) {";
 		tohead << "  $( \"#filename\" ).html( data );})";
 	    tohead << "});";
-		tohead << " $('#mix_from').on('change', function() {";
-		tohead << " $.get( \"" << capture.getUrl() << "\", { mix_from: 'true', value: $('#mix_from').val() }, function( data ) {";
-		tohead << "  $( \"#mix_from\" ).html( data );})";
+		tohead << " $('#filename2').on('change', function() {";
+		tohead << " $.get( \"" << capture.getUrl() << "\", { filename2: 'true', value: $('#filename2').val() }, function( data ) {";
+		tohead << "  $( \"#filename2\" ).html( data );})";
 	    tohead << "});";
-	    tohead << " $('#mix_to').on('change', function() {";
-   		tohead << " $.get( \"" << capture.getUrl() << "\", { mix_to: 'true', value: $('#mix_to').val() }, function( data ) {";
-   		tohead << "  $( \"#mix_to\" ).html( data );})";
+		tohead << " $('#mix_file').on('change', function() {";
+		tohead << " $.get( \"" << capture.getUrl() << "\", { mix_file: 'true', value: $('#mix_file').val() }, function( data ) {";
+		tohead << "  $( \"#mix_file\" ).html( data );})";
+	    tohead << "});";
+	    tohead << " $('#mix_file2').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { mix_file2: 'true', value: $('#mix_file2').val() }, function( data ) {";
+   		tohead << "  $( \"#mix_file2\" ).html( data );})";
+  	    tohead << "});";
+	    tohead << " $('#filesteps').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { filesteps: 'true', value: $('#filesteps').val() }, function( data ) {";
+   		tohead << "  $( \"#filesteps\" ).html( data );})";
+  	    tohead << "});";
+	    tohead << " $('#file2steps').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { file2steps: 'true', value: $('#file2steps').val() }, function( data ) {";
+   		tohead << "  $( \"#file2steps\" ).html( data );})";
+  	    tohead << "});";
+	    tohead << " $('#morphsteps').on('change', function() {";
+   		tohead << " $.get( \"" << capture.getUrl() << "\", { morphsteps: 'true', value: $('#morphsteps').val() }, function( data ) {";
+   		tohead << "  $( \"#morphsteps\" ).html( data );})";
   	    tohead << "});";
 	    tohead << " $('#fileonly').on('change', function() {";
    		tohead << " $.get( \"" << capture.getUrl() << "\", { fileonly: 'true', value: $('#fileonly').is(':checked') }, function( data ) {";
@@ -1994,10 +2405,12 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    ss <<  "<br>";
 	    ss << "<button type=\"submit\" name=\"capture\" value=\"capture\" id=\"capture_button\">" << _("Input Cam") << "</button>";
 	    ss << "<button type=\"submit\" name=\"capture_next\" value=\"capture_next\" id=\"capture_button_next\">" << _("Next Frame") << "</button>";
-	    ss << "<button type=\"submit\" name=\"detect\" value=\"detect\" id=\"detect_button\">" << _("Detect") << "</button>";
+	    ss << "<button type=\"submit\" name=\"detect\" value=\"detect\" id=\"detect_button\">" << _("Detect") << "</button></br>";
+	    ss << "<button type=\"submit\" name=\"save_file\" value=\"save_file\" id=\"save_file\">" << _("Save as File") << "</button>";
 	    ss << "<button type=\"submit\" name=\"save_video\" value=\"save_video\" id=\"save_video\">" << _("Save as Video") << "</button></br>";
 	    ss << "<button type=\"submit\" name=\"movie\" id=\"movie\">" << _("Input File") << "</button>";
-	    ss << "<button type=\"submit\" name=\"detect_file\" value=\"detect_file\" id=\"detect__file_button\">" << _("Detect File") << "</button><br>";
+	    ss << "<button type=\"submit\" name=\"detect_file\" value=\"detect_file\" id=\"detect__file_button\">" << _("Detect File") << "</button>";
+	    ss << "<button type=\"submit\" name=\"detect_file2\" value=\"detect_file2\" id=\"detect__file2_button\">" << _("Detect File") << " 2</button><br>";
 	    ss << "<button type=\"submit\" name=\"merge\" id=\"merge\">" << _("Merge") << "</button>";
 	    ss << "<button type=\"submit\" name=\"on_screen\" id=\"on_screen\">" << _("On Screen") << "</button>";
 	    ss << "</form>";
@@ -2020,6 +2433,9 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 		ss << "<label for=\"filename\">" << _("Filename") << ":</label>"
 					  "<input class=\"inside\" id=\"filename\" type=\"text\" size=\"50\" value=\"" <<
 					  capture.filename << "\" name=\"filename\"/>" << "</br>";
+		ss << "<label for=\"filename2\">" << _("Filename") << "2:</label>"
+					  "<input class=\"inside\" id=\"filename2\" type=\"text\" size=\"50\" value=\"" <<
+					  capture.filename2 << "\" name=\"filename2\"/>" << "</br>";
 		if (capture.fileonly)
 		{
 			ss << "<label for=\"fileonly\">" << _("File Only") << ":</label>"
@@ -2031,12 +2447,24 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 			   	   	  "<input id=\"fileonly\" type=\"checkbox\" name=\"fileonly\" value=\"ja\"/>" << "</br>";
 		}
 	    ss << "<br>";
-		ss << "<label for=\"mix_from\">" << _("Mix from") << ":</label>";
-		ss << "<td><input class=\"inside\" id=\"mix_from\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
-			   capture.mix_from << "\"" << " name=\"mix_from\" /><br>";
-		ss << "<label for=\"mix_to\">" << _("Mix to") << ":</label>";
-		ss << "<td><input class=\"inside\" id=\"mix_to\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
-			  capture.mix_to << "\"" << " name=\"mix_to\" /><br>";
+		ss << "<label for=\"mix_file\">" << _("Mix file") << ":</label>";
+		ss << "<td><input class=\"inside\" id=\"mix_file\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
+			   capture.mix_file << "\"" << " name=\"mix_file\" /><br>";
+		ss << "<label for=\"mix_to\">" << _("Mix file") << "2:</label>";
+		ss << "<td><input class=\"inside\" id=\"mix_file2\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
+			  capture.mix_file2 << "\"" << " name=\"mix_file2\" /><br>";
+		ss << "</div>";
+		ss << "<label for=\"filesteps\">" << _("Filesteps") << ":</label>";
+		ss << "<td><input class=\"inside\" id=\"filesteps\" type=\"number\" min=\"1\" max=\"100\" placeholder=\"1\" step=\"1\" value=\"" <<
+			  capture.filesteps << "\"" << " name=\"filesteps\" /><br>";
+		ss << "</div>";
+		ss << "<label for=\"file2steps\">" << _("Filesteps") << "2:</label>";
+		ss << "<td><input class=\"inside\" id=\"file2steps\" type=\"number\" min=\"1\" max=\"100\" placeholder=\"1\" step=\"1\" value=\"" <<
+			  capture.file2steps << "\"" << " name=\"file2steps\" /><br>";
+		ss << "</div>";
+		ss << "<label for=\"morphsteps\">" << _("Morphsteps") << ":</label>";
+		ss << "<td><input class=\"inside\" id=\"morphsteps\" type=\"number\" min=\"1\" max=\"100\" placeholder=\"1\" step=\"1\" value=\"" <<
+			  capture.morphsteps << "\"" << " name=\"morphsteps\" /><br>";
 		ss << "</div>";
 		ss << "<br>";
 	    ss << "</br>";
@@ -2068,8 +2496,8 @@ bool CaptureFactory::Capture::CaptureHandler::handleAll(const char *method,
 	    	}
 	    }
 	    ss << "<h2>" << _("Video") << ":</h2>";
-	    ss << "<video width\"1024\" height=\"768\" controls>";
-	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << ".mp4?t=" << std::time(0) << "\" type=\"video/mp4\">";
+	    ss << "<video width=\"" << VIDEO_WIDTH << "\" height=\"" << VIDEO_HEIGHT << "\" controls>";
+	    ss << " <source src=\"" << "tmp/" << capture.getUuid() << "." << VIDEO_EXT << "?t=" << std::time(0) << "\" type=\"video/" << VIDEO_EXT << "\">";
 	    ss << "Your browser does not support the video tag";
 		ss << "</video>";
 		ss << "<br>";

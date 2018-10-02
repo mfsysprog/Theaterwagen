@@ -119,6 +119,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.670319076" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.option.optimization.level.1435766263" name="Optimization Level" superClass="gnu.c.compiler.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.debugging.level.1549727743" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.dialect.std.1711786035" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1756851904" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.791915818" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
@@ -128,21 +129,21 @@
 									<listOptionValue builtIn="false" value="/home/erik/dlib-19.2"/>
 									<listOptionValue builtIn="false" value="/home/erik/sfeMovie/include"/>
 									<listOptionValue builtIn="false" value="/home/erik/wiringPi/wiringPi"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/include/opencv"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/include/opencv2"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/core/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/core/include/opencv2"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/imgproc/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/flann/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/features2d/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/calib3d/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/photo/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/highgui/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/video/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/videoio/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/objdetect/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0/modules/imgcodecs/include"/>
-									<listOptionValue builtIn="false" value="/home/erik/opencv-3.2.0-release"/>
+									<listOptionValue builtIn="false" value="/home/erik/FFmpeg"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/include/opencv"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/include/opencv2"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/core/include"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/core/include/opencv2"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/imgproc/include"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/flann/include"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/features2d/include"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/calib3d/include"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/photo/include"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/highgui/include"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/videoio/include"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/objdetect/include"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/modules/imgcodecs/include"/>
+									<listOptionValue builtIn="false" value="/home/erik/opencv/build"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.dialect.std.2084623868" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.dialect.flags.1346661582" name="Other dialect flags" superClass="gnu.cpp.compiler.option.dialect.flags" useByScannerDiscovery="true" value="-std=c++14" valueType="string"/>
@@ -167,6 +168,10 @@
 									<listOptionValue builtIn="false" value="wiringPi"/>
 									<listOptionValue builtIn="false" value="crypt"/>
 									<listOptionValue builtIn="false" value="opencv_core"/>
+									<listOptionValue builtIn="false" value="avformat"/>
+									<listOptionValue builtIn="false" value="avcodec"/>
+									<listOptionValue builtIn="false" value="avutil"/>
+									<listOptionValue builtIn="false" value="swscale"/>
 									<listOptionValue builtIn="false" value="opencv_imgproc"/>
 									<listOptionValue builtIn="false" value="opencv_flann"/>
 									<listOptionValue builtIn="false" value="opencv_features2d"/>
@@ -179,6 +184,7 @@
 									<listOptionValue builtIn="false" value="opencv_imgcodecs"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1248030428" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="/mnt/pi/usr/local/lib"/>
 									<listOptionValue builtIn="false" value="/usr/lib"/>
 									<listOptionValue builtIn="false" value="/usr/lib/arm-linux-gnueabihf"/>
 								</option>
@@ -194,13 +200,15 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.release.532648542.650050791" name="CaptureFactory.hpp" rcbsApplicability="disable" resourcePath="src/CaptureFactory.hpp" toolsToInvoke=""/>
 					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.release.532648542.504318756" name="UploadHandler.hpp" rcbsApplicability="disable" resourcePath="src/UploadHandler.hpp" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="UploadHandler.hpp|UploadHandler.cpp|Schip.h|Schip.cpp|face_dlib.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
+						<entry excluding="CaptureFactory.hpp|CaptureFactory.cpp|UploadHandler.hpp|UploadHandler.cpp|Schip.h|Schip.cpp|face_dlib.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+			<storageModule moduleId="packages"/>
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">

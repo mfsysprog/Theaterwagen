@@ -1,0 +1,47 @@
+Zelf compileren van FFMpeg:
+sudo apt-get install libomxil-bellagio-dev -y
+git clone https://github.com/FFmpeg/FFmpeg.git
+cd FFmpeg
+mkdir build
+cd build
+../configure --arch=armel --target-os=linux --enable-gpl --enable-mmal --enable-omx-rpi --enable-nonfree --enable-shared
+make 
+sudo make install
+
+Tijdelijk swapfile maken:
+sudo fallocate -l 512M /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+gphoto2 installeren (denk ik??):
+sudo apt install libgphoto2-6 libgphoto2-dev
+
+Zelf compileren van opencv:
+git clone https://github.com/opencv/opencv.git
+cd opencv
+mkdir build
+cd build
+cmake -DCMAKE_C_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_CXX_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_BUILD_TYPE=RELEASE -DWITH_JPEG=ON -DWITH_OPENGL=ON -DENABLE_VFPV3=ON -DENABLE_NEON=ON -DWITH_FFMPEG=ON -DWITH_GPHOTO2=ON ..
+make
+sudo make install 
+
+Zelf compileren van sfeMovie:
+git clone https://www.github.com/Yalir/sfeMovie.git
+cd sfeMovie
+na starten Xsessie:
+cmake-gui
+zetten juiste opties
+make
+sudo make install
+
+toevoegen aan build path:
+alle git clone ook uitvoeren op ontwikkel vm en toevoegen:
+/home/erik/FFmpeg
+/home/erik/sfeMovie/include
+
+de opencv stonden al in het build path
+
+apport disablen om te voorkomen dat melding popup programma onderbreekt:
+sudo nano /etc/default/apport
+verander enabled=1 in enabled=0

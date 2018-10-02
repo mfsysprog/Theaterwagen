@@ -27,7 +27,7 @@ ChaseFactory::ChaseFactory(){
 	motor = new MotorFactory();
 	toggle = new ToggleFactory();
 	web = new WebHandler();
-	capture = new CaptureFactory();
+	clone = new CloneFactory();
 	lift = new LiftFactory();
 
 	std::map<std::string, ChaseFactory::Chase*>::iterator it = chasemap.begin();
@@ -58,7 +58,7 @@ ChaseFactory::~ChaseFactory(){
 	delete motor;
 	delete toggle;
 	delete web;
-	delete capture;
+	delete clone;
 	delete lift;
 }
 
@@ -171,7 +171,7 @@ void ChaseFactory::saveAll(){
 	sound->save();
 	motor->save();
 	toggle->save();
-	capture->save();
+	clone->save();
 	lift->save();
 	this->save();
 }
@@ -306,16 +306,18 @@ void ChaseFactory::Chase::Action()
 			if (method.compare("Wait") == 0)
 			  cf.button->buttonmap.find((*it).uuid_or_milliseconds)->second->Wait();
 		}
-		if (action.compare("Capture") == 0)
+		if (action.compare("Clone") == 0)
 		{
 			if (method.compare("Photo") == 0)
-			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->captureDetectAndMerge();
+			  cf.clone->clonemap.find((*it).uuid_or_milliseconds)->second->captureAndMerge();
+			if (method.compare("Merge") == 0)
+			  cf.clone->clonemap.find((*it).uuid_or_milliseconds)->second->mergeToScreen();
 			if (method.compare("toFile") == 0)
-			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->mergeToFile();
+			  cf.clone->clonemap.find((*it).uuid_or_milliseconds)->second->mergeToFile();
 			if (method.compare("onScreen") == 0)
-			  cf.capture->capturemap.find((*it).uuid_or_milliseconds)->second->onScreen();
+			  cf.clone->clonemap.find((*it).uuid_or_milliseconds)->second->onScreen();
 			if (method.compare("clearScreen") == 0)
-			  cf.capture->clearScreen();
+			  cf.clone->clearScreen();
 		}
 		if (action.compare("Action") == 0)
 		{
@@ -635,13 +637,13 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
    		   ss << "</select>";
    		}
     	else
-		if (action.compare("Capture") == 0)
+		if (action.compare("Clone") == 0)
 		{
-		   if (!(value.compare("Capture::clearScreen") == 0))
+		   if (!(value.compare("Clone::clearScreen") == 0))
 		   {
 		   ss << "<select id=\"target\" name=\"target\">";
 		   ss << "<option value=\"\"></option>";
-	 	   for (std::pair<std::string, CaptureFactory::Capture*> element  : chase.cf.capture->capturemap)
+	 	   for (std::pair<std::string, CloneFactory::Clone*> element  : chase.cf.clone->clonemap)
 		   {
 	 		   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
 		   }
@@ -831,7 +833,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   tohead << "  if ($(\"#action\").val() == 'Time::Wait') { ";
 	   tohead << "    $(\"#target\").hide();";
 	   tohead << "    $(\"#tijd_div\").show();";
-	   tohead << "   } else if ($(\"#action\").val() == 'Capture::clearScreen') {";
+	   tohead << "   } else if ($(\"#action\").val() == 'Clone::clearScreen') {";
 	   tohead << "    $(\"#target\").hide();";
 	   tohead << "   } else if ($(\"#action\").val() == 'Portret::Before') {";
 	   tohead << "    $(\"#target\").hide();";
@@ -868,10 +870,11 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option></option>";
 	   ss << "  <option value=\"Button::Activate\">" << _("Button::Activate") << "</option>";
 	   ss << "  <option value=\"Button::Wait\">" << _("Button::Wait") << "</option>";
-	   ss << "  <option value=\"Capture::Photo\">" << _("Capture::Photo") << "</option>";
-	   ss << "  <option value=\"Capture::toFile\">" << _("Capture::toFile") << "</option>";
-	   ss << "  <option value=\"Capture::onScreen\">" << _("Capture::onScreen") << "</option>";
-	   ss << "  <option value=\"Capture::clearScreen\">" << _("Capture::clearScreen") << "</option>";
+	   ss << "  <option value=\"Clone::Photo\">" << _("Clone::Photo") << "</option>";
+	   ss << "  <option value=\"Clone::Merge\">" << _("Clone::Merge") << "</option>";
+	   ss << "  <option value=\"Clone::toFile\">" << _("Clone::toFile") << "</option>";
+	   ss << "  <option value=\"Clone::onScreen\">" << _("Clone::onScreen") << "</option>";
+	   ss << "  <option value=\"Clone::clearScreen\">" << _("Clone::clearScreen") << "</option>";
 	   ss << "  <option value=\"Action::Play\">" << _("Action::Play") << "</option>";
 	   ss << "  <option value=\"Action::Stop\">" << _("Action::Stop") << "</option>";
 	   ss << "  <option value=\"Sound::Play\">" << _("Sound::Play") << "</option>";
@@ -1039,16 +1042,16 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				   ss << chase.cf.button->buttonmap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 				}
 			}
-			if (action.compare("Capture") == 0)
+			if (action.compare("Clone") == 0)
 			{
-				if ((*it_list).action.compare("Capture::clearScreen") == 0)
+				if ((*it_list).action.compare("Clone::clearScreen") == 0)
 				{
 					ss << "<td><div class=\"waarde\">";
 					ss << _((*it_list).action.c_str()) << "</div></td>";
 					ss << "<td><div class=\"waarde\"></div></td>";
 				}
 				else
-				if (chase.cf.capture->capturemap.find((*it_list).uuid_or_milliseconds) == chase.cf.capture->capturemap.end())
+				if (chase.cf.clone->clonemap.find((*it_list).uuid_or_milliseconds) == chase.cf.clone->clonemap.end())
 				{
 				   (*it_list).invalid = true;
 				   ss << "<td bgcolor=\"red\"><div class=\"waarde\">";
@@ -1059,8 +1062,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 				{
 					ss << "<td><div class=\"waarde\">";
 					ss << _((*it_list).action.c_str()) << "</div></td>";
-					ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.capture->capturemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
-					ss << chase.cf.capture->capturemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
+					ss << "<td><div class=\"waarde\"><a href=\"" << chase.cf.clone->clonemap.find((*it_list).uuid_or_milliseconds)->second->getUrl() << "\">";
+					ss << chase.cf.clone->clonemap.find((*it_list).uuid_or_milliseconds)->second->naam << "</a></div></td>";
 				}
 			}
 			if (action.compare("Action") == 0)

@@ -6,6 +6,8 @@ vertalen...
 msgfmt --output-file=po/nl/theaterwagen.mo po/nl/theaterwagen.po
 
 scp po/nl/theaterwagen.mo naar /home/theaterwagen/languages/nl/LC_MESSAGES/
+of
+cp po/nl/theaterwagen.mo /mnt/pi/home/theaterwagen/theaterwagen/languages/nl/LC_MESSAGES/
 
 Na aanpassen zelfde stappen, maar dan ipv msginit:
 msgmerge --output-file=po/nl/theaterwagen.po po/nl/theaterwagen.po po/theaterwagen.pot

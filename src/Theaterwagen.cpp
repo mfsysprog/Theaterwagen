@@ -54,7 +54,7 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
 	ss << "<input type=\"checkbox\" id=\"show-menu\" role=\"button\">";
 	ss << "<ul id=\"menu\">";
 	ss << "	<li class=\"home\"><a href=\"/theaterwagen\">" << _("Home") << "</a></li>";
-	ss << "	<li class=\"capture\"><a href=\"/capturefactory\">" << _("Captures") << "</a></li>";
+	ss << "	<li class=\"clone\"><a href=\"/clonefactory\">" << _("Clones") << "</a></li>";
 	ss << "	<li class=\"chase\"><a href=\"/chasefactory\">" << _("Actions") << "</a></li>";
 	ss << "	<li class=\"lift\"><a href=\"/liftfactory\">" << _("Lifts") << "</a></li>";
 	ss << "	<li class=\"motor\"><a href=\"/motorfactory\">" << _("Motors") << "</a></li>";

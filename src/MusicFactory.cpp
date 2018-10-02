@@ -318,6 +318,7 @@ bool MusicFactory::MusicFactoryHandler::handleAll(const char *method,
 	   if ((dirp = opendir(MUSIC_DIR)) == NULL) {
 	          (*syslog) << "couldn't open " << MUSIC_DIR << endl;
 	   }
+	   else
        do {
 	      errno = 0;
 	      if ((dp = readdir(dirp)) != NULL) {
