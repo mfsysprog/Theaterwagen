@@ -137,7 +137,7 @@ class CloneFactory {
 		private:
 		CloneFactory& cf;
 		CloneHandler* mh;
-		void openCap(cloneType clonetype);
+		bool openCap(cloneType clonetype);
 		void closeCap();
 		cv::Mat cloneFrame(cloneType clonetype, bool draw);
 		void setPhoto(cv::Mat* input, bool draw);

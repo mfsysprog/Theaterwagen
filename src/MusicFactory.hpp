@@ -91,6 +91,8 @@ class MusicFactory {
 
 	private:
 	void save();
+	void shakeOff();
+	void shakeOn();
 	std::map<std::string, MusicFactory::Music*> musicmap;
 	MusicFactoryHandler* mfh;
 };

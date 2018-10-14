@@ -160,6 +160,20 @@ void MusicFactory::save(){
 	fout << emitter.c_str();
 }
 
+void MusicFactory::shakeOff(){
+	if (system("pactl set-sink-mute alsa_output.usb-GeneralPlus_USB_Audio_Device-00.analog-stereo 1"))
+		{
+			(*syslog) << "Error setting shakeOff. " << std::endl;
+		};
+}
+
+void MusicFactory::shakeOn(){
+	if (system("pactl set-sink-mute alsa_output.usb-GeneralPlus_USB_Audio_Device-00.analog-stereo 0"))
+		{
+			(*syslog) << "Error setting shakeOn. " << std::endl;
+		};
+}
+
 std::string MusicFactory::Music::getUuid(){
 	char uuid_str[37];
 	uuid_unparse(uuid,uuid_str);
@@ -304,6 +318,19 @@ bool MusicFactory::MusicFactoryHandler::handleAll(const char *method,
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=" + music->getUrl() + "\"/>";
 	}
 
+	if(CivetServer::getParam(conn, "shakeoff", dummy))
+	{
+		this->musicfactory.shakeOff();
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/musicfactory\" />";
+		message = _("Shake Off!");
+	}
+	if(CivetServer::getParam(conn, "shakeon", dummy))
+	{
+        this->musicfactory.shakeOn();
+		meta = "<meta http-equiv=\"refresh\" content=\"1;url=/musicfactory\" />";
+		message = _("Shake On!");
+	}
+
 	if(CivetServer::getParam(conn, "new", dummy))
 	{
 	   DIR *dirp;
@@ -363,6 +390,10 @@ bool MusicFactory::MusicFactoryHandler::handleAll(const char *method,
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/musicfactory\" method=\"POST\">";
 	   	ss << "<button type=\"submit\" name=\"load\" id=\"load\">" << _("Load") << "</button>";
+	    ss << "</form>";
+	    ss << "<form style ='float: left; padding: 0px;' action=\"/musicfactory\" method=\"POST\">";
+		ss << "<button type=\"submit\" name=\"shakeon\" value=\"shakeon\" id=\"shakeon\">" << _("Shake On") << "</button>";
+		ss << "<button type=\"submit\" name=\"shakeoff\" value=\"shakeoff\" id=\"shakeoff\">" << _("Shake Off") << "</button>";
 	    ss << "</form>";
 	    ss << "<br style=\"clear:both\">";
 	}
