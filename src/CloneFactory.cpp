@@ -289,6 +289,8 @@ void CloneFactory::renderingThread(sf::RenderWindow *window)
     			}
     			else
     			{
+    				loaded = false;
+    				loadme = false;
     				(*syslog) << "Videofile kon niet geopend worden!" << endl;
     			}
     		}
@@ -504,12 +506,12 @@ void CloneFactory::save(){
 	fout << emitter.c_str();
 }
 
-void CloneFactory::Clone::openCap(cloneType type)
+bool CloneFactory::Clone::openCap(cloneType type)
 {
 	if (type == CAP_CAM)
 	{
 		if(!cap->isOpened()){
-			cap->open(CAP_GPHOTO2); // connect to the camera
+			cap->open(cv::CAP_GPHOTO2); // connect to the camera
 			if(!cap->isOpened())
 				{
 					if (first_open)
@@ -518,6 +520,11 @@ void CloneFactory::Clone::openCap(cloneType type)
 						first_open = false;
 					}
 					cap->open(0); //if no camera, try webcam on usb0
+					if(!cap->isOpened())
+					{
+						(*syslog) << "Opening webcam also failed." << endl;
+						return false;
+					}
 				}
 			// if camera found output all of its options
 			else
@@ -543,6 +550,7 @@ void CloneFactory::Clone::openCap(cloneType type)
 			cap->open(filename2);
 		}
 	}
+	return true;
 }
 
 void CloneFactory::Clone::closeCap(){
@@ -580,7 +588,7 @@ void CloneFactory::Clone::mergeToFile()
 
 void CloneFactory::Clone::loadFilmpje()
 {
-    openCap(CAP_FILE);
+    if (!(openCap(CAP_FILE))) return;
 	cv::Mat frame;
 	std::vector<std::string> jpg;
 	for (;;)
@@ -646,7 +654,7 @@ void CloneFactory::Clone::getFrame(cloneType type, int framenumber, bool draw){
 	compression_params.push_back(IMWRITE_JPEG_QUALITY);
 	compression_params.push_back(95);
     std::unique_lock<std::mutex> l(m);
-	openCap(type);
+    if (!(openCap(type))) return;
 	this->cap->set(CAP_PROP_POS_FRAMES, framenumber - 1);
 	cv::Mat input;
 	*cap >> input;
@@ -703,7 +711,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 {
 	std::vector<std::string> totaal;
 
-	openCap(type);
+    if (!(openCap(type))) return totaal;
 
 	cv::Mat img_file;
 
@@ -799,7 +807,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 
 void CloneFactory::Clone::captureAndMerge()
 {
-	openCap(CAP_CAM);
+    if (!(openCap(CAP_CAM))) return;
 	std::unique_lock<std::mutex> l(m);
 	cf.camMat->release();
 	(*cf.camMat) = cloneFrame(CAP_CAM, false);
@@ -814,7 +822,6 @@ void CloneFactory::Clone::captureAndMerge()
 
 void CloneFactory::Clone::mergeFrames()
 {
-
 	std::vector<std::string> totaal;
 	std::vector<std::string> file;
 	std::vector<std::string> file2;
@@ -1625,13 +1632,18 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	}
 	if(CivetServer::getParam(conn, "clone", dummy))
 	{
-		clone.openCap(CAP_CAM);
-		clone.cf.camMat->release();
-		(*clone.cf.camMat) = clone.cloneFrame(CAP_CAM, false);
-		clone.closeCap();
-
+	    if (clone.openCap(CAP_CAM))
+	    {
+	    	clone.cf.camMat->release();
+	    	(*clone.cf.camMat) = clone.cloneFrame(CAP_CAM, false);
+	    	clone.closeCap();
+			message = _("Frame Cloned!");
+	    }
+	    else
+	    {
+			message = _("Cam open error!");
+	    }
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + clone.getUrl() + "\"/>";
-		message = _("Frame Cloned!");
 	}
 
 	std::stringstream ss;
@@ -1932,44 +1944,48 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	    ss << "<img id=\"cam\" src=\"" << "tmp/" << clone.getUuid() << "_photo.jpg?t=" << std::time(0) << "\"></img><br>";
 		if (!clone.filename.empty())
 	    {
-	    	clone.openCap(CAP_FILE);
-	    	int number_of_frames = clone.cap->get(CAP_PROP_FRAME_COUNT);
-	    	clone.closeCap();
-	    	//l.unlock();
-			//int number_of_frames = clone.filePoints->size();
-	    	if (number_of_frames)
+	    	if (clone.openCap(CAP_FILE))
 	    	{
-	    		ss << "<h2>" << _("File") << ":</h2>";
-	    		ss << "<form oninput=\"result.value=parseInt(frames.value)\">";
-	    		ss << "<label for=\"frames\">" << _("Frame") << ":</label>";
-	    		ss << "<output name=\"result\">1</output><br>";
-	    		ss << "<input class=\"inside\" id=\"frames\" type=\"range\" min=\"1\" max=\"" << number_of_frames << "\" step=\"1\" value=\"1\" name=\"frames\" />";
-	    		ss << "</form>";
-	    	    ss << "<label for=\"ellipseonframe\">" << _("Render ellipses on input file") << ":</label>";
-	    	    ss << "<input id=\"ellipseonframe\" type=\"checkbox\" name=\"ellipseonframe\" value=\"ja\"/>" << "</br>";
-				ss << "<img id=\"photo\" src=\"" << "tmp/" << clone.getUuid() << "_file.jpg?t=" << std::time(0) << "\"></img><br>";
-	    		ss << "<br>";
+				int number_of_frames = clone.cap->get(CAP_PROP_FRAME_COUNT);
+				clone.closeCap();
+				//l.unlock();
+				//int number_of_frames = clone.filePoints->size();
+				if (number_of_frames)
+				{
+					ss << "<h2>" << _("File") << ":</h2>";
+					ss << "<form oninput=\"result.value=parseInt(frames.value)\">";
+					ss << "<label for=\"frames\">" << _("Frame") << ":</label>";
+					ss << "<output name=\"result\">1</output><br>";
+					ss << "<input class=\"inside\" id=\"frames\" type=\"range\" min=\"1\" max=\"" << number_of_frames << "\" step=\"1\" value=\"1\" name=\"frames\" />";
+					ss << "</form>";
+					ss << "<label for=\"ellipseonframe\">" << _("Render ellipses on input file") << ":</label>";
+					ss << "<input id=\"ellipseonframe\" type=\"checkbox\" name=\"ellipseonframe\" value=\"ja\"/>" << "</br>";
+					ss << "<img id=\"photo\" src=\"" << "tmp/" << clone.getUuid() << "_file.jpg?t=" << std::time(0) << "\"></img><br>";
+					ss << "<br>";
+				}
 	    	}
 	    }
 		if (!clone.filename2.empty())
 	    {
-	    	clone.openCap(CAP_FILE2);
-	    	int number_of_frames = clone.cap->get(CAP_PROP_FRAME_COUNT);
-	    	clone.closeCap();
-	    	//l.unlock();
-			//int number_of_frames = clone.filePoints->size();
-	    	if (number_of_frames)
+	    	if (clone.openCap(CAP_FILE2))
 	    	{
-	    		ss << "<h2>" << _("File") << "2:</h2>";
-	    		ss << "<form oninput=\"result2.value=parseInt(frames2.value)\">";
-	    		ss << "<label for=\"frames2\">" << _("Frame") << ":</label>";
-	    		ss << "<output name=\"result2\">1</output><br>";
-	    		ss << "<input class=\"inside\" id=\"frames2\" type=\"range\" min=\"1\" max=\"" << number_of_frames << "\" step=\"1\" value=\"1\" name=\"frames2\" />";
-	    		ss << "</form>";
-	    	    ss << "<label for=\"ellipseonframe2\">" << _("Render ellipses on input file") << "2:</label>";
-	    	    ss << "<input id=\"ellipseonframe2\" type=\"checkbox\" name=\"ellipseonframe2\" value=\"ja\"/>" << "</br>";
-				ss << "<img id=\"photo2\" src=\"" << "tmp/" << clone.getUuid() << "_file2.jpg?t=" << std::time(0) << "\"></img><br>";
-	    		ss << "<br>";
+				int number_of_frames = clone.cap->get(CAP_PROP_FRAME_COUNT);
+				clone.closeCap();
+				//l.unlock();
+				//int number_of_frames = clone.filePoints->size();
+				if (number_of_frames)
+				{
+					ss << "<h2>" << _("File") << "2:</h2>";
+					ss << "<form oninput=\"result2.value=parseInt(frames2.value)\">";
+					ss << "<label for=\"frames2\">" << _("Frame") << ":</label>";
+					ss << "<output name=\"result2\">1</output><br>";
+					ss << "<input class=\"inside\" id=\"frames2\" type=\"range\" min=\"1\" max=\"" << number_of_frames << "\" step=\"1\" value=\"1\" name=\"frames2\" />";
+					ss << "</form>";
+					ss << "<label for=\"ellipseonframe2\">" << _("Render ellipses on input file") << "2:</label>";
+					ss << "<input id=\"ellipseonframe2\" type=\"checkbox\" name=\"ellipseonframe2\" value=\"ja\"/>" << "</br>";
+					ss << "<img id=\"photo2\" src=\"" << "tmp/" << clone.getUuid() << "_file2.jpg?t=" << std::time(0) << "\"></img><br>";
+					ss << "<br>";
+				}
 	    	}
 	    }
 	    ss << "<h2>" << _("Merged") << ":</h2>";

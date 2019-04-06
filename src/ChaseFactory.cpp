@@ -238,30 +238,30 @@ void ChaseFactory::deleteChase(std::string uuid){
 
 void ChaseFactory::Chase::Stop(){
 	this->running = false;
+	cf.clone->clearScreen();
+	cf.music->shakeOff();
 	std::list<sequence_item>::iterator it;
 	for (it = sequence_list->begin(); it != sequence_list->end(); ++it)
 	{
 		if ((*it).active == true)
-			{
 				(*it).active = false;
-				std::string::size_type pos = (*it).action.find("::");
-				std::string action = (*it).action.substr(0,pos);
+		std::string::size_type pos = (*it).action.find("::");
+		std::string action = (*it).action.substr(0,pos);
 
-				if (action.compare("Toggle") == 0)
-					cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Stop();
-				if (action.compare("Action") == 0)
-                    cf.chasemap.find((*it).uuid_or_milliseconds)->second->Stop();
-				if (action.compare("Sound") == 0)
-			        cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->stop();
-				if (action.compare("Motor") == 0)
-					cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Stop();
-				if (action.compare("Lift") == 0)
-					cf.lift->liftmap.find((*it).uuid_or_milliseconds)->second->Stop();
-				if (action.compare("Music") == 0)
-					cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->stop();
-				if (action.compare("Scene") == 0)
-					cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Stop();
-			}
+		if (action.compare("Toggle") == 0)
+			cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Stop();
+		if (action.compare("Action") == 0)
+			cf.chasemap.find((*it).uuid_or_milliseconds)->second->Stop();
+		if (action.compare("Sound") == 0)
+			cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->stop();
+		if (action.compare("Motor") == 0)
+			cf.motor->motormap.find((*it).uuid_or_milliseconds)->second->Stop();
+		if (action.compare("Lift") == 0)
+			cf.lift->liftmap.find((*it).uuid_or_milliseconds)->second->Stop();
+		if (action.compare("Music") == 0 && (*it).action.find("Music::Shake") == std::string::npos)
+			cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->stop();
+		if (action.compare("Scene") == 0)
+			cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Stop();
 	}
 }
 
@@ -369,6 +369,11 @@ void ChaseFactory::Chase::Action()
 			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->stop();
 			if (method.compare("FadeOut") == 0)
 			  cf.music->musicmap.find((*it).uuid_or_milliseconds)->second->fadeOut();
+			if (method.compare("ShakeOff") == 0)
+			  cf.music->shakeOff();
+			if (method.compare("ShakeOn") == 0)
+			  cf.music->shakeOn();
+
 		}
 		if (action.compare("Portret") == 0)
 		{
@@ -641,19 +646,19 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		{
 		   if (!(value.compare("Clone::clearScreen") == 0))
 		   {
-		   ss << "<select id=\"target\" name=\"target\">";
-		   ss << "<option value=\"\"></option>";
-	 	   for (std::pair<std::string, CloneFactory::Clone*> element  : chase.cf.clone->clonemap)
-		   {
-	 		   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
-		   }
-		   ss << "</select>";
+			   ss << "<select id=\"target\" name=\"target\">";
+			   ss << "<option value=\"\"></option>";
+			   for (std::pair<std::string, CloneFactory::Clone*> element  : chase.cf.clone->clonemap)
+			   {
+				   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+			   }
+			   ss << "</select>";
 		   }
 		   else
 		   {
      		   ss << "<select id=\"target\" name=\"target\">";
 	     	   ss << "<option value=\"n.v.t.\">" << _("N/A") << "</option>";
-	     	  ss << "</select>";
+	     	   ss << "</select>";
 		   }
 		}
 		else
@@ -703,13 +708,22 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		else
 		if (action.compare("Music") == 0)
 		{
-		   ss << "<select id=\"target\" name=\"target\">";
-		   ss << "<option value=\"\"></option>";
-     	   for (std::pair<std::string, MusicFactory::Music*> element  : chase.cf.music->musicmap)
-		   {
-	 		   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
-		   }
-		   ss << "</select>";
+			if (value.find("Music::Shake") ==  std::string::npos)
+			{
+				ss << "<select id=\"target\" name=\"target\">";
+				ss << "<option value=\"\"></option>";
+				for (std::pair<std::string, MusicFactory::Music*> element  : chase.cf.music->musicmap)
+				{
+					ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+				}
+				ss << "</select>";
+			}
+			else
+			{
+			   ss << "<select id=\"target\" name=\"target\">";
+			   ss << "<option value=\"n.v.t.\">" << _("N/A") << "</option>";
+			   ss << "</select>";
+			}
 		}
 		else
 		if (action.compare("Portret") == 0)
@@ -835,6 +849,10 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   tohead << "    $(\"#tijd_div\").show();";
 	   tohead << "   } else if ($(\"#action\").val() == 'Clone::clearScreen') {";
 	   tohead << "    $(\"#target\").hide();";
+	   tohead << "   } else if ($(\"#action\").val() == 'Music::ShakeOff') {";
+	   tohead << "    $(\"#target\").hide();";
+	   tohead << "   } else if ($(\"#action\").val() == 'Music::ShakeOn') {";
+	   tohead << "    $(\"#target\").hide();";
 	   tohead << "   } else if ($(\"#action\").val() == 'Portret::Before') {";
 	   tohead << "    $(\"#target\").hide();";
 	   tohead << "   } else if ($(\"#action\").val() == 'Portret::After') {";
@@ -893,6 +911,8 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option value=\"Music::FadeIn\">" << _("Music::FadeIn") << "</option>";
 	   ss << "  <option value=\"Music::Stop\">" << _("Music::Stop") << "</option>";
 	   ss << "  <option value=\"Music::FadeOut\">" << _("Music::FadeOut") << "</option>";
+	   ss << "  <option value=\"Music::ShakeOff\">" << _("Music::ShakeOff") << "</option>";
+	   ss << "  <option value=\"Music::ShakeOn\">" << _("Music::ShakeOn") << "</option>";
 	   ss << "  <option value=\"Portret::Before\">" << _("Portret::Before") << "</option>";
 	   ss << "  <option value=\"Portret::After\">" << _("Portret::After") << "</option>";
 	   ss << "  <option value=\"Scene::Play\">" << _("Scene::Play") << "</option>";
@@ -1136,6 +1156,20 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 			}
 			if (action.compare("Music") == 0)
 			{
+				if ((*it_list).action.compare("Music::ShakeOff") == 0)
+				{
+					ss << "<td><div class=\"waarde\">";
+					ss << _((*it_list).action.c_str()) << "</div></td>";
+					ss << "<td><div class=\"waarde\"></div></td>";
+				}
+				else
+				if ((*it_list).action.compare("Music::ShakeOn") == 0)
+				{
+					ss << "<td><div class=\"waarde\">";
+					ss << _((*it_list).action.c_str()) << "</div></td>";
+					ss << "<td><div class=\"waarde\"></div></td>";
+				}
+				else
 				if (chase.cf.music->musicmap.find((*it_list).uuid_or_milliseconds) == chase.cf.music->musicmap.end())
 				{
 				   (*it_list).invalid = true;
