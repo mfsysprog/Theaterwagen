@@ -982,7 +982,7 @@ bool MotorFactory::Motor::MotorHandler::handleAll(const char *method,
           CivetServer *server,
           struct mg_connection *conn)
 {
-	std::string s[8] = "";
+	std::string s[8] = {0};
 	std::string dummy;
 	std::string param = "chan";
 	std::string message="&nbsp;";

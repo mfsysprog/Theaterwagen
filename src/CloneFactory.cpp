@@ -1305,7 +1305,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
           CivetServer *server,
           struct mg_connection *conn)
 {
-	std::string s[8] = "";
+	std::string s[8] = {0};
 	std::string dummy;
 	std::string value;
 	std::string message="&nbsp;";
