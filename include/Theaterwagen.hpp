@@ -8,7 +8,6 @@
 #define MUSIC_DIR ROOT_DIR "muziek/"
 #define SOUND_DIR ROOT_DIR "geluiden/"
 #define CONFIG_DIR ROOT_DIR "config/"
-#define MOVIES_DIR ROOT_DIR "filmpjes/"
 #define TMP_DIR ROOT_DIR "tmp/"
 
 #define PORT "8080"

@@ -141,6 +141,7 @@ CloneFactory::CloneFactory(){
 		//this->window = new sf::RenderWindow(sf::VideoMode(1024, 768), "RenderWindow");
 		//sf::RenderWindow window(sf::VideoMode(640, 480), "RenderWindow");
 		sf::VideoMode desktop = sf::VideoMode().getDesktopMode();
+		//sf::VideoMode desktop = sf::VideoMode(1024, 768);
 		this->window = new sf::RenderWindow(desktop, "Theaterwagen", sf::Style::None);
 	    window->setMouseCursorVisible(false);
 	    window->setVerticalSyncEnabled(true);
@@ -983,6 +984,7 @@ void CloneFactory::Clone::mergeFrames()
 
     // create new video stream
     //AVCodec* vcodec = avcodec_find_encoder(outctx->oformat->video_codec);
+    //AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
     AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
     if (!vcodec)
     {
@@ -999,7 +1001,7 @@ void CloneFactory::Clone::mergeFrames()
     avcodec_get_context_defaults3(vstrm->codec, vcodec);
     vstrm->codec->width = dst_width;
     vstrm->codec->height = dst_height;
-    //vstrm->codec->level = 32;
+    vstrm->codec->level = 32;
     //vstrm->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vstrm->codec->pix_fmt = AV_PIX_FMT_YUV420P;
     //vstrm->codec->pix_fmt = vcodec->pix_fmts[0];
@@ -1011,7 +1013,7 @@ void CloneFactory::Clone::mergeFrames()
     //vstrm->codec->compression_level = 0;
     //vstrm->r_frame_rate = vstrm->avg_frame_rate = dst_fps;
     //vstrm->codec->thread_count = 0;
-    vstrm->codec->bit_rate = 6000 * 1024;
+    vstrm->codec->bit_rate = 2000 * 1024;
     //vstrm->codec->delay = 0;
     //vstrm->codec->max_b_frames = 0;
     //vstrm->codec->thread_count = 1;
@@ -1305,7 +1307,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
           CivetServer *server,
           struct mg_connection *conn)
 {
-	std::string s[8] = {0};
+	std::string s[8] = {""};
 	std::string dummy;
 	std::string value;
 	std::string message="&nbsp;";

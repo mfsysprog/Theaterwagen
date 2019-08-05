@@ -15,7 +15,7 @@
 
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
-#include "CivetServer.h"
+#include <CivetServer.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 
@@ -74,7 +74,6 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
 }
 
 /*
- * Lesson 0: Test to make sure SDL is setup properly
  */
 int main(int, char**){
 
@@ -127,6 +126,6 @@ int main(int, char**){
 	{
 		delay(1000);
 	} while(true);
-    delete chase;
+        delete chase;
 	return 0;
 }

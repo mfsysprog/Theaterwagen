@@ -8,7 +8,7 @@
 #include <sstream>
 #include <fstream>
 #include <wiringPi.h>
-#include "CivetServer.h"
+#include <CivetServer.h>
 #include <unistd.h>
 #include <cstring>
 #include <dirent.h>

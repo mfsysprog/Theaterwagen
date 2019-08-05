@@ -15,13 +15,13 @@
 #include <sstream>
 #include <fstream>
 #include <wiringPi.h>
-#include "CivetServer.h"
+#include <CivetServer.h>
 #include <unistd.h>
 #include <cstring>
 #include <dirent.h>
 #include <uuid/uuid.h>
-#include "boost/shared_ptr.hpp"
-#include "yaml-cpp/yaml.h"
+#include <boost/shared_ptr.hpp>
+#include <yaml-cpp/yaml.h>
 
 #define CONFIG_FILE_MOTOR CONFIG_DIR "motorfactory.yaml"
 

@@ -13,12 +13,12 @@
   set(TOOLCHAIN_DIR      ${HOST_DIR}/bin)
 
 #  these are for glibc:
-#  set(CMAKE_C_COMPILER   ${TOOLCHAIN_DIR}/arm-buildroot-linux-gnueabihf-gcc)
-#  set(CMAKE_CXX_COMPILER ${TOOLCHAIN_DIR}/arm-buildroot-linux-gnueabihf-g++)
+  set(CMAKE_C_COMPILER   ${TOOLCHAIN_DIR}/arm-theaterwagen-linux-gnueabihf-gcc)
+  set(CMAKE_CXX_COMPILER ${TOOLCHAIN_DIR}/arm-theaterwagen-linux-gnueabihf-g++)
 
 # these are for uclibc-ng:
-  set(CMAKE_C_COMPILER   ${TOOLCHAIN_DIR}/arm-linux-gcc)
-  set(CMAKE_CXX_COMPILER ${TOOLCHAIN_DIR}/arm-linux-g++)
+#  set(CMAKE_C_COMPILER   ${TOOLCHAIN_DIR}/arm-linux-gcc)
+#  set(CMAKE_CXX_COMPILER ${TOOLCHAIN_DIR}/arm-linux-g++)
 
   set(
     CMAKE_FIND_ROOT_PATH

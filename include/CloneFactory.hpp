@@ -53,7 +53,7 @@ extern "C"{
 #define CONFIG_FILE_CLONE CONFIG_DIR "clonefactory.yaml"
 // video width at 1016 instead of 1024 to avoid 'zerocopy' bug
 // https://github.com/raspberrypi/firmware/issues/851
-#define VIDEO_WIDTH 1016
+#define VIDEO_WIDTH 1024
 #define VIDEO_HEIGHT 768
 #define VIDEO_FPS 10
 #define VIDEO_EXT "mp4"

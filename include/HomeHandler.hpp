@@ -14,7 +14,7 @@
 #include <functional>
 #include <sstream>
 #include <fstream>
-#include "CivetServer.h"
+#include <CivetServer.h>
 #include <unistd.h>
 #include <cstring>
 
