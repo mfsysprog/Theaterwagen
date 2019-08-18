@@ -1682,7 +1682,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "add", value))
 	{
 	  	ss << "<form action=\"" << clone.getUrl() << "\" method=\"POST\">";
-	    ss << "<h2>" << _("Ellipse in") << ":</h2>";
+	    ss << "<h2>" << _("Ellipse in") << ":</h2><br>";
 		ss << "<label for=\"centerx\">" << _("centerx") << ":</label>"
 					  "<input class=\"inside\" id=\"centerx\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
 					  " name=\"centerx\"/>" << "<br>";
@@ -1695,7 +1695,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 		ss << "<label for=\"axewidth\">" << _("axewidth") << ":</label>"
 					  "<input class=\"inside\" id=\"axewidth\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
 					  " name=\"axewidth\"/>" << "<br>";
-		ss << "<h2>" << _("Ellipse Out") << ":</h2>";
+		ss << "<h2>" << _("Ellipse Out") << ":</h2><br>";
 		ss << "<label for=\"centerxo\">" << _("centerx") << ":</label>"
 					  "<input class=\"inside\" id=\"centerxo\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
 					  " name=\"centerxo\"/>" << "<br>";
@@ -1716,7 +1716,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "update", value))
 	{
 	  	ss << "<form action=\"" << clone.getUrl() << "\" method=\"POST\">";
-	    ss << "<h2>" << _("Ellipse in") << ":</h2>";
+	    ss << "<h2>" << _("Ellipse in") << ":</h2><br>";
 		ss << "<label for=\"centerx\">" << _("centerx") << ":</label>"
 					  "<input class=\"inside\" id=\"centerx\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
 					  " name=\"centerx\" value=\"" << (*clone.ellipses_in)[(atoi(value.c_str()))].centerx << "\" />" << "<br>";
@@ -1729,7 +1729,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 		ss << "<label for=\"axewidth\">" << _("axewidth") << ":</label>"
 					  "<input class=\"inside\" id=\"axewidth\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
 					  " name=\"axewidth\" value=\"" << (*clone.ellipses_in)[(atoi(value.c_str()))].axewidth << "\" />" << "<br>";
-		ss << "<h2>" << _("Ellipse Out") << ":</h2>";
+		ss << "<h2>" << _("Ellipse Out") << ":</h2><br>";
 		ss << "<label for=\"centerxo\">" << _("centerx") << ":</label>"
 					  "<input class=\"inside\" id=\"centerxo\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
 					  " name=\"centerxo\" value=\"" << (*clone.ellipses_out)[(atoi(value.c_str()))].centerx << "\" />" << "<br>";
