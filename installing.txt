@@ -14,7 +14,7 @@ cd WiringPi/
 ./build
 
 civetweb:
-git clone https://github.com/civetweb/civetweb.com
+git clone https://github.com/civetweb/civetweb.git
 cd civetweb/
 sudo  make install-slib WITH_CPP=1
 sudo make install headers WITH_CPP=1
