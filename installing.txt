@@ -58,6 +58,8 @@ sudo apt-get install libomxil-bellagio-dev -y
 git clone --depth=1 https://github.com/FFmpeg/FFmpeg.git
 cd FFmpeg
 sudo ./configure --arch=armel --target-os=linux --enable-gpl --enable-omx --enable-omx-rpi --enable-nonfree
+make 
+sudo make install
 
 opencv:
 git clone --depth=1 https://github.com/opencv/opencv.git
