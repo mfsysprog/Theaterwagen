@@ -3,7 +3,7 @@ https://ubuntu-mate.org/raspberry-pi/ubuntu-mate-18.04.2-beta1-desktop-armhf+ras
 
 installeer met user ‘theaterwagen’ en ww 
 
-sudo apt install build-essential cmake
+sudo apt install build-essential cmake git
 
 mkdir build
 cd build
