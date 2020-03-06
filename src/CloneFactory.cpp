@@ -955,7 +955,7 @@ void CloneFactory::Clone::mergeFrames()
 
     // initialize FFmpeg library
     av_register_all();
-	//av_log_set_level(AV_LOG_DEBUG);
+    av_log_set_level(AV_LOG_DEBUG);
     int ret;
 
     const int dst_width = VIDEO_WIDTH;
@@ -986,6 +986,7 @@ void CloneFactory::Clone::mergeFrames()
     //AVCodec* vcodec = avcodec_find_encoder(outctx->oformat->video_codec);
     //AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
     AVCodec* vcodec = avcodec_find_encoder_by_name("h264_v4l2m2m");
+    //AVCodec* vcodec = avcodec_find_encoder_by_name("libx264");
     if (!vcodec)
     {
     	fprintf(stderr,"Kan codec nie vinden nie \n");
@@ -1030,6 +1031,13 @@ void CloneFactory::Clone::mergeFrames()
     if (outctx->oformat->flags & AVFMT_GLOBALHEADER)
         vstrm->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
+	/*
+    ret = avcodec_parameters_from_context(vstrm->codecpar, vstrm->codec);
+    if (ret < 0) {
+        std::cerr << "fail to avcodec_parameters_from_context: ret=" << ret;
+        return;
+    } */
+
     // open video encoder
     ret = avcodec_open2(vstrm->codec, vcodec, nullptr);
     if (ret < 0) {
@@ -1057,11 +1065,12 @@ void CloneFactory::Clone::mergeFrames()
 
     // allocate frame buffer for encoding
     AVFrame* frame = av_frame_alloc();
-    std::vector<uint8_t> framebuf(avpicture_get_size(vstrm->codec->pix_fmt, dst_width, dst_height));
-    avpicture_fill(reinterpret_cast<AVPicture*>(frame), framebuf.data(), vstrm->codec->pix_fmt, dst_width, dst_height);
+    //std::vector<uint8_t> framebuf(avpicture_get_size(vstrm->codec->pix_fmt, dst_width, dst_height));
+    //avpicture_fill(reinterpret_cast<AVPicture*>(frame), framebuf.data(), vstrm->codec->pix_fmt, dst_width, dst_height);
     frame->width = dst_width;
     frame->height = dst_height;
     frame->format = static_cast<int>(vstrm->codec->pix_fmt);
+    av_frame_get_buffer(frame,32);
 
     // encoding loop
     avformat_write_header(outctx, nullptr);
@@ -1080,6 +1089,7 @@ void CloneFactory::Clone::mergeFrames()
         pkt.size = 0;
         av_init_packet(&pkt);
         //ret = avcodec_encode_video2(vstrm->codec, &pkt, frame, &got_pkt);
+        std::cout << "sending frame " << frame->pts << "\n";
 	avcodec_send_frame(vstrm->codec, frame);
         //fprintf(stderr, "image size is %i\n",pkt.size);
         if (ret < 0) {
@@ -1090,6 +1100,7 @@ void CloneFactory::Clone::mergeFrames()
             // rescale packet timestamp
             pkt.duration = 1;
             av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            std::cout << "receive packed for frame " << frame->pts << "\n";
             // write packet
             av_write_frame(outctx, &pkt);
             std::cout << nb_frames << '\r' << std::flush;  // dump progress
@@ -1108,19 +1119,16 @@ void CloneFactory::Clone::mergeFrames()
             fprintf(stderr, "Error encoding frame\n");
             exit(1);
         }
-    do {
-            ret = avcodec_receive_packet(vstrm->codec, &pkt);
-            // rescale packet timestamp
-            if (ret < 0) break;
+    while (avcodec_receive_packet(vstrm->codec, &pkt) >= 0) {
             pkt.duration = 1;
             av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            std::cout << "receive packed for frame " << frame->pts << "\n";
             // write packet
             av_write_frame(outctx, &pkt);
             std::cout << nb_frames << '\r' << std::flush;  // dump progress
             ++nb_frames;
             av_free_packet(&pkt);
         }
-    while (1==1);
 
     av_write_trailer(outctx);
     std::cout << nb_frames << " frames encoded" << std::endl;
