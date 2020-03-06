@@ -998,6 +998,8 @@ void CloneFactory::Clone::mergeFrames()
         return;
     }
 
+    vstrm->codec = avcodec_alloc_context3(vcodec);
+
     avcodec_get_context_defaults3(vstrm->codec, vcodec);
     vstrm->codec->width = dst_width;
     vstrm->codec->height = dst_height;
