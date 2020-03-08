@@ -911,7 +911,6 @@ void CloneFactory::Clone::mergeFrames()
 	fprintf(stderr,"avcodec_find_encoder_by_name\n");
 
     // auto codec = avcodec_find_encoder_by_name( "libx264" ); // works
-    auto codec = avcodec_find_encoder_by_name( "h264_omx" );
     if( !codec )
     {
         throw std::runtime_error( "Unable to find codec" );
@@ -985,8 +984,9 @@ void CloneFactory::Clone::mergeFrames()
     // create new video stream
     //AVCodec* vcodec = avcodec_find_encoder(outctx->oformat->video_codec);
     //AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
-    AVCodec* vcodec = avcodec_find_encoder_by_name("h264_v4l2m2m");
-    //AVCodec* vcodec = avcodec_find_encoder_by_name("libx264");
+    //AVCodec* vcodec = avcodec_find_encoder_by_name("h264_v4l2m2m");
+    AVCodec* vcodec = avcodec_find_encoder_by_name("libx264");
+    //AVCodec* vcodec = avcodec_find_encoder_by_name("mpeg4");
     if (!vcodec)
     {
     	fprintf(stderr,"Kan codec nie vinden nie \n");
@@ -1028,6 +1028,9 @@ void CloneFactory::Clone::mergeFrames()
 
     //vstrm->codec->flags &= ~AV_CODEC_CAP_DELAY;
     //fprintf(stderr,"Capabilities %i",vstrm->codec->codec->capabilities);
+    
+    av_dump_format(outctx, 0 , recordname.c_str(), 1);
+
     if (outctx->oformat->flags & AVFMT_GLOBALHEADER)
         vstrm->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
@@ -1096,11 +1099,15 @@ void CloneFactory::Clone::mergeFrames()
             std::cerr << "fail to avcodec_encode_video2: ret=" << ret << "\n";
             break;
         }
-        if (avcodec_receive_packet(vstrm->codec, &pkt)) {
+        if (avcodec_receive_packet(vstrm->codec, &pkt) >= 0) {
             // rescale packet timestamp
             pkt.duration = 1;
-            av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
-            std::cout << "receive packed for frame " << frame->pts << "\n";
+            //av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            int64_t scaled_pts = av_rescale_q(pkt.pts, vstrm->codec->time_base, vstrm->time_base);
+            int64_t scaled_dts = av_rescale_q(pkt.dts, vstrm->codec->time_base, vstrm->time_base);
+            pkt.pts = scaled_pts;
+            pkt.dts = scaled_dts;
+            std::cout << "receive packed for frame " << pkt.pts << " with size " << pkt.size << "\n";
             // write packet
             av_write_frame(outctx, &pkt);
             std::cout << nb_frames << '\r' << std::flush;  // dump progress
@@ -1113,22 +1120,30 @@ void CloneFactory::Clone::mergeFrames()
         pkt.data = nullptr;
         pkt.size = 0;
         av_init_packet(&pkt);
+        std::cout << "sending flush frame \n";
 	ret = avcodec_send_frame(vstrm->codec, NULL);
         //ret = avcodec_encode_video2(vstrm->codec, &pkt, NULL, &got_pkt);
         if (ret < 0) {
             fprintf(stderr, "Error encoding frame\n");
             exit(1);
         }
-    while (avcodec_receive_packet(vstrm->codec, &pkt) >= 0) {
-            pkt.duration = 1;
-            av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
-            std::cout << "receive packed for frame " << frame->pts << "\n";
+    do {
+            ret = avcodec_receive_packet(vstrm->codec, &pkt);
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+            if (pkt.size == 0) break;
+	    pkt.duration = 1;
+            //av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            int64_t scaled_pts = av_rescale_q(pkt.pts, vstrm->codec->time_base, vstrm->time_base);
+            int64_t scaled_dts = av_rescale_q(pkt.dts, vstrm->codec->time_base, vstrm->time_base);
+            pkt.pts = scaled_pts;
+            pkt.dts = scaled_dts;
+            std::cout << "receive packed for frame " << pkt.pts << " with size " << pkt.size << "\n";
             // write packet
             av_write_frame(outctx, &pkt);
             std::cout << nb_frames << '\r' << std::flush;  // dump progress
             ++nb_frames;
             av_free_packet(&pkt);
-        }
+        } while (1==1);
 
     av_write_trailer(outctx);
     std::cout << nb_frames << " frames encoded" << std::endl;
