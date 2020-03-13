@@ -983,9 +983,9 @@ void CloneFactory::Clone::mergeFrames()
 
     // create new video stream
     //AVCodec* vcodec = avcodec_find_encoder(outctx->oformat->video_codec);
-    //AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
+    AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
     //AVCodec* vcodec = avcodec_find_encoder_by_name("h264_v4l2m2m");
-    AVCodec* vcodec = avcodec_find_encoder_by_name("libx264");
+    //AVCodec* vcodec = avcodec_find_encoder_by_name("libx264");
     //AVCodec* vcodec = avcodec_find_encoder_by_name("mpeg4");
     if (!vcodec)
     {
@@ -1001,12 +1001,15 @@ void CloneFactory::Clone::mergeFrames()
 
     AVCodecContext *avctx = NULL;
 
-    avctx = avcodec_alloc_context3(vcodec);
+    //avctx = avcodec_alloc_context3(vcodec);
 
-    vstrm->codec = avcodec_alloc_context3(vcodec);
+    // vstrm->codec = avcodec_alloc_context3(vcodec);
 
-    avcodec_get_context_defaults3(avctx, vcodec);
+    //avcodec_get_context_defaults3(avctx, vcodec);
+    avctx = vstrm->codec;
+    //vstrm->codec->width = dst_width;
     avctx->width = dst_width;
+    //vstrm->codec->height = dst_height;
     avctx->height = dst_height;
     avctx->level = 32;
     //vstrm->codec->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -1014,7 +1017,7 @@ void CloneFactory::Clone::mergeFrames()
     //vstrm->codec->pix_fmt = vcodec->pix_fmts[0];
     //vstrm->codec->time_base = vstrm->time_base = av_inv_q(dst_fps);
     avctx->time_base = dst_timebase;
-    vstrm->codec->time_base = dst_timebase;
+    //vstrm->codec->time_base = dst_timebase;
     avctx->framerate = dst_fps;
     //vstrm->codec->max_b_frames = 1;
     avctx->gop_size = 10;
@@ -1023,7 +1026,7 @@ void CloneFactory::Clone::mergeFrames()
     //vstrm->codec->thread_count = 0;
     //vstrm->codec->bit_rate = 2000 * 1024;
     avctx->profile = FF_PROFILE_H264_HIGH;
-    avctx->bit_rate = 2000 * 1024;
+    avctx->bit_rate = (1024 * 768 * 10 * 95) >> 8;
     //vstrm->codec->delay = 0;
     //vstrm->codec->max_b_frames = 0;
     //vstrm->codec->thread_count = 1;
