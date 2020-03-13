@@ -999,24 +999,31 @@ void CloneFactory::Clone::mergeFrames()
         return;
     }
 
+    AVCodecContext *avctx = NULL;
+
+    avctx = avcodec_alloc_context3(vcodec);
+
     vstrm->codec = avcodec_alloc_context3(vcodec);
 
-    avcodec_get_context_defaults3(vstrm->codec, vcodec);
-    vstrm->codec->width = dst_width;
-    vstrm->codec->height = dst_height;
-    vstrm->codec->level = 32;
+    avcodec_get_context_defaults3(avctx, vcodec);
+    avctx->width = dst_width;
+    avctx->height = dst_height;
+    avctx->level = 32;
     //vstrm->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vstrm->codec->pix_fmt = AV_PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     //vstrm->codec->pix_fmt = vcodec->pix_fmts[0];
     //vstrm->codec->time_base = vstrm->time_base = av_inv_q(dst_fps);
+    avctx->time_base = dst_timebase;
     vstrm->codec->time_base = dst_timebase;
-    vstrm->codec->framerate = dst_fps;
+    avctx->framerate = dst_fps;
     //vstrm->codec->max_b_frames = 1;
-    vstrm->codec->gop_size = 10;
+    avctx->gop_size = 10;
     //vstrm->codec->compression_level = 0;
     //vstrm->r_frame_rate = vstrm->avg_frame_rate = dst_fps;
     //vstrm->codec->thread_count = 0;
-    vstrm->codec->bit_rate = 2000 * 1024;
+    //vstrm->codec->bit_rate = 2000 * 1024;
+    avctx->profile = FF_PROFILE_H264_HIGH;
+    avctx->bit_rate = 2000 * 1024;
     //vstrm->codec->delay = 0;
     //vstrm->codec->max_b_frames = 0;
     //vstrm->codec->thread_count = 1;
@@ -1028,11 +1035,11 @@ void CloneFactory::Clone::mergeFrames()
 
     //vstrm->codec->flags &= ~AV_CODEC_CAP_DELAY;
     //fprintf(stderr,"Capabilities %i",vstrm->codec->codec->capabilities);
-    
+
     av_dump_format(outctx, 0 , recordname.c_str(), 1);
 
     if (outctx->oformat->flags & AVFMT_GLOBALHEADER)
-        vstrm->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        avctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 	/*
     ret = avcodec_parameters_from_context(vstrm->codecpar, vstrm->codec);
@@ -1042,7 +1049,7 @@ void CloneFactory::Clone::mergeFrames()
     } */
 
     // open video encoder
-    ret = avcodec_open2(vstrm->codec, vcodec, nullptr);
+    ret = avcodec_open2(avctx, vcodec, nullptr);
     if (ret < 0) {
         std::cerr << "fail to avcodec_open2: ret=" << ret;
         return;
@@ -1054,13 +1061,13 @@ void CloneFactory::Clone::mergeFrames()
         << "vcodec:  " << vcodec->name << "\n"
         << "size:    " << dst_width << 'x' << dst_height << "\n"
         << "fps:     " << av_q2d(dst_fps) << "\n"
-        << "pixfmt:  " << av_get_pix_fmt_name(vstrm->codec->pix_fmt) << "\n"
+        << "pixfmt:  " << av_get_pix_fmt_name(avctx->pix_fmt) << "\n"
         << std::flush;
 
     // initialize sample scaler
     SwsContext* swsctx = sws_getCachedContext(
         nullptr, dst_width, dst_height, AV_PIX_FMT_BGR24,
-        dst_width, dst_height, vstrm->codec->pix_fmt, SWS_BICUBIC, nullptr, nullptr, nullptr);
+        dst_width, dst_height, avctx->pix_fmt, SWS_BICUBIC, nullptr, nullptr, nullptr);
     if (!swsctx) {
         std::cerr << "fail to sws_getCachedContext";
         return;
@@ -1072,7 +1079,7 @@ void CloneFactory::Clone::mergeFrames()
     //avpicture_fill(reinterpret_cast<AVPicture*>(frame), framebuf.data(), vstrm->codec->pix_fmt, dst_width, dst_height);
     frame->width = dst_width;
     frame->height = dst_height;
-    frame->format = static_cast<int>(vstrm->codec->pix_fmt);
+    frame->format = static_cast<int>(avctx->pix_fmt);
     av_frame_get_buffer(frame,32);
 
     // encoding loop
@@ -1093,18 +1100,18 @@ void CloneFactory::Clone::mergeFrames()
         av_init_packet(&pkt);
         //ret = avcodec_encode_video2(vstrm->codec, &pkt, frame, &got_pkt);
         std::cout << "sending frame " << frame->pts << "\n";
-	avcodec_send_frame(vstrm->codec, frame);
+	avcodec_send_frame(avctx, frame);
         //fprintf(stderr, "image size is %i\n",pkt.size);
         if (ret < 0) {
             std::cerr << "fail to avcodec_encode_video2: ret=" << ret << "\n";
             break;
         }
-        if (avcodec_receive_packet(vstrm->codec, &pkt) >= 0) {
+        if (avcodec_receive_packet(avctx, &pkt) >= 0) {
             // rescale packet timestamp
             pkt.duration = 1;
             //av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
-            int64_t scaled_pts = av_rescale_q(pkt.pts, vstrm->codec->time_base, vstrm->time_base);
-            int64_t scaled_dts = av_rescale_q(pkt.dts, vstrm->codec->time_base, vstrm->time_base);
+            int64_t scaled_pts = av_rescale_q(pkt.pts, avctx->time_base, vstrm->time_base);
+            int64_t scaled_dts = av_rescale_q(pkt.dts, avctx->time_base, vstrm->time_base);
             pkt.pts = scaled_pts;
             pkt.dts = scaled_dts;
             std::cout << "receive packed for frame " << pkt.pts << " with size " << pkt.size << "\n";
@@ -1121,20 +1128,20 @@ void CloneFactory::Clone::mergeFrames()
         pkt.size = 0;
         av_init_packet(&pkt);
         std::cout << "sending flush frame \n";
-	ret = avcodec_send_frame(vstrm->codec, NULL);
+	ret = avcodec_send_frame(avctx, NULL);
         //ret = avcodec_encode_video2(vstrm->codec, &pkt, NULL, &got_pkt);
         if (ret < 0) {
             fprintf(stderr, "Error encoding frame\n");
             exit(1);
         }
     do {
-            ret = avcodec_receive_packet(vstrm->codec, &pkt);
+            ret = avcodec_receive_packet(avctx, &pkt);
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
             if (pkt.size == 0) break;
 	    pkt.duration = 1;
             //av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
-            int64_t scaled_pts = av_rescale_q(pkt.pts, vstrm->codec->time_base, vstrm->time_base);
-            int64_t scaled_dts = av_rescale_q(pkt.dts, vstrm->codec->time_base, vstrm->time_base);
+            int64_t scaled_pts = av_rescale_q(pkt.pts, avctx->time_base, vstrm->time_base);
+            int64_t scaled_dts = av_rescale_q(pkt.dts, avctx->time_base, vstrm->time_base);
             pkt.pts = scaled_pts;
             pkt.dts = scaled_dts;
             std::cout << "receive packed for frame " << pkt.pts << " with size " << pkt.size << "\n";
