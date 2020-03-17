@@ -61,10 +61,10 @@ static std::string matToJPG(cv::Mat* input)
     try
     {
         cv::resize((*input), resized, cv::Size(VIDEO_WIDTH,VIDEO_HEIGHT), 0, 0);
-        int params[2] = {0};
-        params[0] = cv::IMWRITE_JPEG_QUALITY;
-        params[1] = 100;
-    	cv::imencode(".jpg", resized, buf, std::vector<int>(params, params+1) );
+        std::vector<int> params;
+        params.push_back(cv::IMWRITE_JPEG_QUALITY);
+        params.push_back(90);
+    	cv::imencode(".jpg", resized, buf, params);
     }
     catch( cv::Exception& e )
     {
@@ -92,7 +92,7 @@ static cv::Mat ImgToMat(std::string* input)
     cv::Mat restored;
     try
     {
-        cv::imdecode(buf, cv::IMREAD_UNCHANGED, &restored);
+        cv::imdecode(buf, cv::IMREAD_COLOR, &restored);
         //cv::cvtColor(restored, restored, CV_RGB2BGR);
     }
     catch( cv::Exception& e )
@@ -747,6 +747,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 	while (true)
 	{
 		img_file = cloneFrame(type, false);
+
 		if (img_file.empty()) break;
 		if ((type == CAP_FILE && clone_to_file) || (type == CAP_FILE2 && clone_to_file2))
 		{
@@ -797,6 +798,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 			{
 			   Mat src_resized;
 			   resize((*cf.camMat)(srcRect[i]), src_resized, Size(tgtRect[i].width, tgtRect[i].height));
+                           addWeighted(img_file(tgtRect[i]), 1.0 - mix_file / 100.0, src_resized, mix_file / 100.0, 0.0, src_resized);
 			   src_resized.copyTo(img_file(tgtRect[i]),tgt_mask(tgtRect[i]));
 			}
 		}
@@ -840,7 +842,7 @@ void CloneFactory::Clone::mergeFrames()
 	t2 = high_resolution_clock::now();
 
 	auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-	std::cout << "merging file took: " << int_ms.count() << " milliseconds" << endl;
+	// std::cout << "merging file took: " << int_ms.count() << " milliseconds" << endl;
 
 	if (this->filename2.compare("") != 0)
 	{
@@ -849,7 +851,7 @@ void CloneFactory::Clone::mergeFrames()
 		t2 = high_resolution_clock::now();
 
 		auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-		std::cout << "merging file2 took: " << int_ms.count() << " milliseconds" << endl;
+		// std::cout << "merging file2 took: " << int_ms.count() << " milliseconds" << endl;
 
 		t1 = high_resolution_clock::now();
 		morph = this->morph(ImgToMat(&file[file.size()-1]),ImgToMat(&file2[0]),this->morphsteps);
@@ -857,7 +859,7 @@ void CloneFactory::Clone::mergeFrames()
 		t2 = high_resolution_clock::now();
 
 		int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-		std::cout << "morphing file and file2 took: " << int_ms.count() << " milliseconds" << endl;
+		// std::cout << "morphing file and file2 took: " << int_ms.count() << " milliseconds" << endl;
 
 		while (file.size() % VIDEO_FPS != 0) file.push_back(file[(file.size()-1)]);
 		for (unsigned int i = 0; i < filesteps; i++)
@@ -886,75 +888,16 @@ void CloneFactory::Clone::mergeFrames()
 		}
 	}
 
-	fprintf(stderr,"starting encoding...\n");
+	// fprintf(stderr,"starting encoding...\n");
     std::string recordname = TMP_DIR + this->getUuid() + "." + VIDEO_EXT;
 
 	//av_log_set_level(AV_LOG_DEBUG);
 
 	t1 = high_resolution_clock::now();	t1 = high_resolution_clock::now();
 
-	/*
-    VideoWriter record(recordname, CV_FOURCC('M','P','4','V'),
-			  VIDEO_FPS, cv::Size(1024,768), true);
-
-
-    for (unsigned int i = 0; i < totaal.size(); i++) {
-    	record.write(ImgToMat(&totaal[i]));
-    }
-	*/
-
-	/*
-	fprintf(stderr,"av_register_all call\n");
-
-    av_register_all();
-
-	fprintf(stderr,"avcodec_find_encoder_by_name\n");
-
-    // auto codec = avcodec_find_encoder_by_name( "libx264" ); // works
-    if( !codec )
-    {
-        throw std::runtime_error( "Unable to find codec" );
-    }
-
-	fprintf(stderr,"avcodec_alloc_context3\n");
-
-    auto context =
-        std::shared_ptr< AVCodecContext >( avcodec_alloc_context3( codec ), freeContext );
-
-    if( !context )
-    {
-        throw std::runtime_error( "Unable to allocate context" );
-    }
-
-    std::cout << "Setting options" << std::endl;
-
-    //context->bit_rate = 400 * 1024;  // 400 KBit/s
-    context->width = 640;
-    context->height = 480;
-    //context->pix_fmt = AV_PIX_FMT_YUV420P;
-    context->time_base.num = 30; // milliseconds
-    context->time_base.den = 1;
-    //context->thread_count = 0;
-    //context->level = 31;
-
-    // av_opt_set( m_context->priv_data, "tune", "zerolatency", 0 );
-    av_opt_set( context->priv_data, "preset", "slow", 0 );
-
-    std::cout << "Opening context" << std::endl;
-
-    auto errorCode = avcodec_open2( context.get(), codec, nullptr );
-    if( errorCode < 0 )
-    {
-        throw std::runtime_error( "Unable to open codec (" + avError( errorCode ) + ")" );
-    }
-
-    std::cout << "Done" << std::endl;
-
-    */
-
     // initialize FFmpeg library
     av_register_all();
-    av_log_set_level(AV_LOG_DEBUG);
+    //av_log_set_level(AV_LOG_DEBUG);
     int ret;
 
     const int dst_width = VIDEO_WIDTH;
@@ -1026,20 +969,21 @@ void CloneFactory::Clone::mergeFrames()
     //vstrm->codec->thread_count = 0;
     //vstrm->codec->bit_rate = 2000 * 1024;
     avctx->profile = FF_PROFILE_H264_HIGH;
-    avctx->bit_rate = (1024 * 768 * 10 * 95) >> 8;
+    //avctx->crf = 0;
+    avctx->bit_rate = dst_height * dst_width * 3;
     //vstrm->codec->delay = 0;
     //vstrm->codec->max_b_frames = 0;
     //vstrm->codec->thread_count = 1;
 
    	//av_opt_set(vstrm->codec->priv_data, "preset", "slow", 0);
    	//av_opt_set(vstrm->codec->priv_data, "tune", "film", 0);
-    //av_opt_set(vstrm->codec->priv_data, "crf", "1", AV_OPT_SEARCH_CHILDREN);
+    //av_opt_set(avctx->priv_data, "crf", "1", AV_OPT_SEARCH_CHILDREN);
     //av_opt_set(vstrm->codec->priv_data, "qp", "10", 0);
 
     //vstrm->codec->flags &= ~AV_CODEC_CAP_DELAY;
     //fprintf(stderr,"Capabilities %i",vstrm->codec->codec->capabilities);
 
-    av_dump_format(outctx, 0 , recordname.c_str(), 1);
+    //av_dump_format(outctx, 0 , recordname.c_str(), 1);
 
     if (outctx->oformat->flags & AVFMT_GLOBALHEADER)
         avctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -1057,7 +1001,7 @@ void CloneFactory::Clone::mergeFrames()
         std::cerr << "fail to avcodec_open2: ret=" << ret;
         return;
     }
-
+    /*
     std::cout
         << "outfile: " << recordname.c_str() << "\n"
         << "format:  " << outctx->oformat->name << "\n"
@@ -1066,11 +1010,12 @@ void CloneFactory::Clone::mergeFrames()
         << "fps:     " << av_q2d(dst_fps) << "\n"
         << "pixfmt:  " << av_get_pix_fmt_name(avctx->pix_fmt) << "\n"
         << std::flush;
-
+    */
     // initialize sample scaler
-    SwsContext* swsctx = sws_getCachedContext(
-        nullptr, dst_width, dst_height, AV_PIX_FMT_BGR24,
-        dst_width, dst_height, avctx->pix_fmt, SWS_BICUBIC, nullptr, nullptr, nullptr);
+    //SwsContext* swsctx = sws_getCachedContext(
+    SwsContext* swsctx = sws_getContext(
+        dst_width, dst_height, AV_PIX_FMT_BGR24,
+        dst_width, dst_height, avctx->pix_fmt, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
     if (!swsctx) {
         std::cerr << "fail to sws_getCachedContext";
         return;
@@ -1102,7 +1047,7 @@ void CloneFactory::Clone::mergeFrames()
         pkt.size = 0;
         av_init_packet(&pkt);
         //ret = avcodec_encode_video2(vstrm->codec, &pkt, frame, &got_pkt);
-        std::cout << "sending frame " << frame->pts << "\n";
+        //std::cout << "sending frame " << frame->pts << "\n";
 	avcodec_send_frame(avctx, frame);
         //fprintf(stderr, "image size is %i\n",pkt.size);
         if (ret < 0) {
@@ -1117,7 +1062,7 @@ void CloneFactory::Clone::mergeFrames()
             int64_t scaled_dts = av_rescale_q(pkt.dts, avctx->time_base, vstrm->time_base);
             pkt.pts = scaled_pts;
             pkt.dts = scaled_dts;
-            std::cout << "receive packed for frame " << pkt.pts << " with size " << pkt.size << "\n";
+            //std::cout << "receive packed for frame " << pkt.pts << " with size " << pkt.size << "\n";
             // write packet
             av_write_frame(outctx, &pkt);
             std::cout << nb_frames << '\r' << std::flush;  // dump progress
@@ -1130,7 +1075,7 @@ void CloneFactory::Clone::mergeFrames()
         pkt.data = nullptr;
         pkt.size = 0;
         av_init_packet(&pkt);
-        std::cout << "sending flush frame \n";
+        //std::cout << "sending flush frame \n";
 	ret = avcodec_send_frame(avctx, NULL);
         //ret = avcodec_encode_video2(vstrm->codec, &pkt, NULL, &got_pkt);
         if (ret < 0) {
@@ -1147,7 +1092,7 @@ void CloneFactory::Clone::mergeFrames()
             int64_t scaled_dts = av_rescale_q(pkt.dts, avctx->time_base, vstrm->time_base);
             pkt.pts = scaled_pts;
             pkt.dts = scaled_dts;
-            std::cout << "receive packed for frame " << pkt.pts << " with size " << pkt.size << "\n";
+            //std::cout << "receive packed for frame " << pkt.pts << " with size " << pkt.size << "\n";
             // write packet
             av_write_frame(outctx, &pkt);
             std::cout << nb_frames << '\r' << std::flush;  // dump progress
@@ -1156,7 +1101,7 @@ void CloneFactory::Clone::mergeFrames()
         } while (1==1);
 
     av_write_trailer(outctx);
-    std::cout << nb_frames << " frames encoded" << std::endl;
+    //std::cout << nb_frames << " frames encoded" << std::endl;
 
     av_frame_free(&frame);
     avcodec_close(vstrm->codec);
@@ -1165,7 +1110,7 @@ void CloneFactory::Clone::mergeFrames()
 
     t2 = high_resolution_clock::now();
 	int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-	std::cout << "H264 encoding took: " << int_ms.count() << " milliseconds" << endl;
+	//std::cout << "H264 encoding took: " << int_ms.count() << " milliseconds" << endl;
 }
 
 

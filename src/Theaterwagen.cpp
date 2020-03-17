@@ -88,7 +88,8 @@ int main(int, char**){
 	textdomain ("theaterwagen");
 
 	const char *options[] = {"cgi_interpreter", "/usr/bin/php-cgi",
-//			"access_log_file", "access.log",
+	//		"access_log_file", "access.log",
+	//		"error_log_file", "error.log",
 		    "document_root", home.c_str(), "listening_ports", PORT, 0};
 
 	    std::vector<std::string> cpp_options;

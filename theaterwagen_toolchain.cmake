@@ -32,6 +32,10 @@
     ${HOST_DIR}/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include
   )
 
+  message(STATUS "Cross-compiling using the buildroot toolchain")
+  message(STATUS "          Toolchain location: ${TOOLCHAIN_DIR}")
+  message(STATUS "              C/C++ compiler: ${CMAKE_C_COMPILER}")
+
   set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
   set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
   set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
