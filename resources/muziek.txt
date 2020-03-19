@@ -1,2 +1,0 @@
-De wav bestanden kunnen worden omgezet naar ogg met:
-find . -type f -name '*.wav' -exec bash -c 'oggenc -q 6 "$0" -o "${0/%wav/ogg}"' '{}' \;

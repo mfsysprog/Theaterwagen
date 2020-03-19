@@ -1,9 +1,0 @@
-sudo apt install libusb-dev
-git clone https://github.com/markusb/uDMX-linux
-cd uDMX-linux
-mkdir build
-cd build
-make ..
-
-
-sudo apt install libusb-dev:armhf
