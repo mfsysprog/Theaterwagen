@@ -44,6 +44,7 @@ bool HomeHandler::handleAll(const char *method,
 		  CivetServer::getParam(conn,"taal", value);
 
 		  /* Change language.  */
+		  setenv ("LANG", value.c_str() , 1);
 		  setenv ("LANGUAGE", value.c_str() , 1);
 
 		  /* Make change known.  */
@@ -120,6 +121,7 @@ bool HomeHandler::handleAll(const char *method,
 HomeHandler::HomeHandler() {
 	if (getenv("LANGUAGE") == NULL)
 	{
+    	setenv("LANG", "en_US" , 1);
     	setenv("LANGUAGE", "en_US" , 1);
 			  {
 			    extern int  _nl_msg_cat_cntr;
