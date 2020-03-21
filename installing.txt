@@ -1,0 +1,99 @@
+download 32 bit ubuntu mate 18.04:
+https://ubuntu-mate.org/raspberry-pi/ubuntu-mate-18.04.2-beta1-desktop-armhf+raspi-ext4.img.xz.torrent
+
+installeer met user ‘theaterwagen’ en ww 
+
+sudo apt install build-essential cmake git
+
+mkdir build
+cd build
+
+wiringpi:
+git clone https://github.com/wiringPi/WiringPi.git
+cd WiringPi/
+./build
+
+civetweb:
+git clone https://github.com/civetweb/civetweb.git
+cd civetweb/
+sudo  make install-slib WITH_CPP=1
+sudo make install headers WITH_CPP=1
+corrigeer symbolic links
+
+uuid:
+sudo apt install uuid*
+
+boost:
+sudo apt install libboost-serialization-dev
+
+yaml-cpp:
+https://github.com/jbeder/yaml-cpp.git
+cd yaml-cpp/
+mkdir build
+cd build
+cmake .. -DBUILD_SHARED_LIBS=ON
+make
+sudo make install
+
+sfml (pi enhanced without X11 dependencies):
+git clone https://github.com/mickelson/sfml-pi.git
+cd sfml-pi\
+mkdir build
+cd build 
+sudo apt-get install cmake libflac-dev libogg-dev libvorbis-dev libopenal-dev libjpeg8-dev libfreetype6-dev libudev-dev libraspberrypi-dev
+cmake .. -DSFML_RPI=1 -DEGL_INCLUDE_DIR=/opt/vc/include -DEGL_LIBRARY=/opt/vc/lib/libbrcmEGL.so -DGLES_INCLUDE_DIR=/opt/vc/include -DGLES_LIBRARY=/opt/vc/lib/libbrcmGLESv2.so
+sudo make install
+sudo ldconfig
+
+libusb:
+sudo apt install libusb-dev
+
+gphoto2:
+sudo apt install gphoto2 (support tools)
+sudo apt install libgphoto2-dev
+
+ffmpeg:
+https://github.com/legotheboss/YouTube-files/wiki/(RPi)-Compile-FFmpeg-with-the-OpenMAX-H.264-GPU-acceleration
+sudo apt-get install libomxil-bellagio-dev -y
+git clone --depth=1 https://github.com/FFmpeg/FFmpeg.git
+cd FFmpeg
+sudo ./configure --arch=armel --target-os=linux --enable-gpl --enable-omx --enable-omx-rpi --enable-nonfree
+make 
+sudo make install
+
+opencv:
+git clone --depth=1 https://github.com/opencv/opencv.git
+sudo apt-get install libjpeg-dev libpng-dev libtiff-dev
+sudo apt-get install libv4l-dev
+sudo apt-get install libxvidcore-dev libx264-dev
+sudo apt-get install libgtk-3-dev
+cd opencv
+mkdir build
+cd build
+cmake -DCMAKE_C_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_CXX_FLAGS="-O3 -pipe -fPIC -mfpu=neon-fp-armv8 -funsafe-math-optimizations -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard" -DCMAKE_BUILD_TYPE=RELEASE -DWITH_JPEG=ON -DWITH_OPENGL=ON -DENABLE_VFPV3=ON -DENABLE_NEON=ON -DWITH_FFMPEG=ON -DWITH_GPHOTO2=ON -DCMAKE_PREFIX_PATH=/opt/vc/lib ..
+make -j 4
+sudo make install
+
+b64:
+sudo apt install libb64-dev
+
+sfeMovie:
+git clone https://github.com/Yalir/sfeMovie.git
+sudo apt install yasm 
+cd sfeMovie\
+mkdir build
+cmake .. -DSFEMOVIE_BUILD_FFMPEG=FALSE -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link,$(STAGING_DIR)/opt/vc/lib" 
+make
+
+x264:
+ sudo apt-get install libx264-dev
+
+
+
+ 
+TODO 
+php:
+sudo apt install php
+
+
+
