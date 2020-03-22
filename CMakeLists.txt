@@ -18,3 +18,5 @@ add_executable(theaterwagen ${SOURCES})
 #uclibc-ng requires inlt
 #target_link_libraries( theaterwagen -pthread intl b64 yaml-cpp uuid sfeMovie sfml-system sfml-window sfml-graphics sfml-audio usb dl X11 wiringPi crypt opencv_core avformat avcodec avutil swscale opencv_imgproc opencv_videoio opencv_objdetect opencv_imgcodecs civetweb)
 target_link_libraries( theaterwagen -pthread b64 yaml-cpp uuid sfeMovie sfml-system sfml-window sfml-graphics sfml-audio usb dl wiringPi crypt opencv_core avformat avcodec avutil swscale opencv_imgproc opencv_videoio opencv_objdetect opencv_imgcodecs civetweb)
+
+install(TARGETS theaterwagen RUNTIME DESTINATION /home/theaterwagen/theaterwagen)
