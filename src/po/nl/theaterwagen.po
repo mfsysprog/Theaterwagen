@@ -151,27 +151,27 @@ msgstr "Clonen naar bestand"
 
 #: ChaseFactory.cpp:892
 msgid "Clone::Merge"
-msgstr "Kloon::Samenvoegen"
+msgstr "Foto::Samenvoegen"
 
 #: ChaseFactory.cpp:891
 msgid "Clone::Photo"
-msgstr "Kloon::Foto"
+msgstr "Foto::maken"
 
 #: ChaseFactory.cpp:895
 msgid "Clone::clearScreen"
-msgstr "Kloon::schermLeegmaken"
+msgstr "Foto::schermLeegmaken"
 
 #: ChaseFactory.cpp:894
 msgid "Clone::onScreen"
-msgstr "Kloon::opScherm"
+msgstr "Foto::opScherm"
 
 #: ChaseFactory.cpp:893
 msgid "Clone::toFile"
-msgstr "Kloon::naarBestand"
+msgstr "Foto::naarBestand"
 
 #: Theaterwagen.cpp:57
 msgid "Clones"
-msgstr "Klonen"
+msgstr "Foto's"
 
 #: ButtonFactory.cpp:601 ButtonFactory.cpp:629 ButtonFactory.cpp:797
 #: ChaseFactory.cpp:503 ChaseFactory.cpp:520 ChaseFactory.cpp:981
@@ -288,7 +288,7 @@ msgstr "Frame"
 
 #: CloneFactory.cpp:1624
 msgid "Frame Cloned!"
-msgstr "Frame Gekloond!"
+msgstr "Frame GeFotod!"
 
 #: LiftFactory.cpp:886
 msgid "Get Position"
@@ -339,7 +339,7 @@ msgstr "Linkse Knop"
 
 #: MotorFactory.cpp:934
 msgid "Left Toggle"
-msgstr "Links Aan/Uit"
+msgstr "Linkse Schakelaar"
 
 #: ChaseFactory.cpp:903
 msgid "Lift::Down"
@@ -619,7 +619,7 @@ msgstr "Rechtse Knop"
 
 #: MotorFactory.cpp:936
 msgid "Right Toggle"
-msgstr "Rechtse Aan/Uit"
+msgstr "Rechtse Schakelaar"
 
 #: ButtonFactory.cpp:645 ChaseFactory.cpp:536 CloneFactory.cpp:1270
 #: FixtureFactory.cpp:265 LiftFactory.cpp:618 MotorFactory.cpp:968
@@ -661,7 +661,7 @@ msgstr "Scene::Afspelen"
 
 #: Theaterwagen.cpp:64
 msgid "Scenes"
-msgstr "Scenes"
+msgstr "Scene's"
 
 #: CloneFactory.cpp:1215
 msgid "Screen empty!"
@@ -777,35 +777,35 @@ msgstr "Naar Rechts!"
 
 #: ToggleFactory.cpp:285 ToggleFactory.cpp:420 ToggleFactory.cpp:429
 msgid "Toggle"
-msgstr "Aan/Uit"
+msgstr "Schakelaar"
 
 #: MotorFactory.cpp:1127 MotorFactory.cpp:1143
 msgid "Toggle Left"
-msgstr "Aan/Uit Links"
+msgstr "Schakelaar Links"
 
 #: MotorFactory.cpp:1128 MotorFactory.cpp:1146
 msgid "Toggle Right"
-msgstr "Aan/Uit Rechts"
+msgstr "Schakelaar Rechts"
 
 #: ToggleFactory.cpp:391
 msgid "Toggle off!"
-msgstr "Aan/Uit uit!"
+msgstr "Schakelaar uit!"
 
 #: ToggleFactory.cpp:384
 msgid "Toggle on!"
-msgstr "Aan/Uit aan!"
+msgstr "Schakelaar aan!"
 
 #: ChaseFactory.cpp:922
 msgid "Toggle::Off"
-msgstr "Aan/Uit::Uit"
+msgstr "Schakelaar::Uit"
 
 #: ChaseFactory.cpp:921
 msgid "Toggle::On"
-msgstr "Aan/Uit::Aan"
+msgstr "Schakelaar::Aan"
 
 #: Theaterwagen.cpp:62
 msgid "Toggles"
-msgstr "Aan/Uit"
+msgstr "Schakelaars"
 
 #: LiftFactory.cpp:583 LiftFactory.cpp:920
 msgid "Trigger"

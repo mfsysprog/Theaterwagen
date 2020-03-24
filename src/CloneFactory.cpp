@@ -513,6 +513,9 @@ bool CloneFactory::Clone::openCap(cloneType type)
 	{
 		if(!cap->isOpened()){
 			cap->open(cv::CAP_GPHOTO2); // connect to the camera
+			//opencv seems to destroy locale settings...
+		        setlocale (LC_ALL, getenv("LANGUAGE"));
+		        setlocale (LC_NUMERIC, "C");
 			if(!cap->isOpened())
 				{
 					if (first_open)
@@ -1618,7 +1621,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	{
 	    if (clone.openCap(CAP_CAM))
 	    {
-	    	clone.cf.camMat->release();
+		clone.cf.camMat->release();
 	    	(*clone.cf.camMat) = clone.cloneFrame(CAP_CAM, false);
 	    	clone.closeCap();
 			message = _("Frame Cloned!");
