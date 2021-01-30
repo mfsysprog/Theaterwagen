@@ -270,6 +270,8 @@ void ChaseFactory::Chase::Start(){
 	{
 		std::thread( [this] { Action(); } ).detach();
 	}
+        else
+	(*syslog) << "Action " << this->naam << " already running. " << std::endl;
 }
 
 void ChaseFactory::Chase::Action()
