@@ -321,6 +321,8 @@ void ChaseFactory::Chase::Action()
 		}
 		if (action.compare("Action") == 0)
 		{
+			if (method.compare("Parallel") == 0)
+			  cf.chasemap.find((*it).uuid_or_milliseconds)->second->Start();
 			if (method.compare("Play") == 0)
 			  cf.chasemap.find((*it).uuid_or_milliseconds)->second->Action();
 			if (method.compare("Stop") == 0)
@@ -893,6 +895,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option value=\"Clone::toFile\">" << _("Clone::toFile") << "</option>";
 	   ss << "  <option value=\"Clone::onScreen\">" << _("Clone::onScreen") << "</option>";
 	   ss << "  <option value=\"Clone::clearScreen\">" << _("Clone::clearScreen") << "</option>";
+	   ss << "  <option value=\"Action::Parallel\">" << _("Action::Parallel") << "</option>";
 	   ss << "  <option value=\"Action::Play\">" << _("Action::Play") << "</option>";
 	   ss << "  <option value=\"Action::Stop\">" << _("Action::Stop") << "</option>";
 	   ss << "  <option value=\"Sound::Play\">" << _("Sound::Play") << "</option>";

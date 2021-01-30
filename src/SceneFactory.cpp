@@ -688,10 +688,11 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" value=\"" <<
 					  scene.getOmschrijving() << "\"" << " name=\"omschrijving\"/>" << "</br>";
 		ss << "<br>";
-		ss << "<label for=\"fadesteps\">" << _("Fade Steps") << ":</label>";
+		ss << "<label for=\"fadesteps\">" << _("Fade Steps (~60ms per step)") << ":</label>";
 		ss << "<td><input class=\"inside\" id=\"fadesteps\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
 			  scene.getFadeSteps() << "\"" << " name=\"fadesteps\" />";
-		ss << "</tr>";
+    		ss << "<td style=\"text-align:center;\"><output for=\"fadesteps\" id=\"fadeinfo\">" << std::to_string((scene.getFadeSteps() * 60)).c_str() << "</output></td><td>ms</td>";
+                ss << "</tr>";
 		ss << "</div>";
 		ss << "<br>";
 		ss << "<br>";
@@ -707,7 +708,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    tohead << "});";
 		tohead << " $('#fadesteps').on('change', function() {";
 		tohead << " $.get( \"" << scene.getUrl() << "\", { fadesteps: 'true', value: $('#fadesteps').val() }, function( data ) {";
-		tohead << "  $( \"#fadesteps\" ).html( data );})";
+		tohead << "  $( \"#fadesteps\" ).html( data );  $( \"#fadeinfo\" ).html( data * 60 );})";
 	    tohead << "});";
 
 
