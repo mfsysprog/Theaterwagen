@@ -236,6 +236,10 @@ void ChaseFactory::deleteChase(std::string uuid){
 	}
 }
 
+bool ChaseFactory::Chase::isRunning(){
+	return this->running;
+}
+
 void ChaseFactory::Chase::Stop(){
 	this->running = false;
 	cf.clone->clearScreen();
@@ -250,7 +254,7 @@ void ChaseFactory::Chase::Stop(){
 
 		if (action.compare("Toggle") == 0)
 			cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Stop();
-		if (action.compare("Action") == 0)
+		if (action.compare("Action") == 0 && cf.chasemap.find((*it).uuid_or_milliseconds)->second->isRunning())
 			cf.chasemap.find((*it).uuid_or_milliseconds)->second->Stop();
 		if (action.compare("Sound") == 0)
 			cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->stop();
@@ -390,8 +394,12 @@ void ChaseFactory::Chase::Action()
 		{
 			if (method.compare("Play") == 0)
 			  cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Play();
+                        if (method.compare("Stop") == 0)
+                          cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Stop();
 			if (method.compare("FadeIn") == 0)
 			  cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->fadeIn();
+                        if (method.compare("FadeInto") == 0)
+                          cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->fadeInto();
 			if (method.compare("FadeOut") == 0)
 			  cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->fadeOut();
 		}
@@ -921,7 +929,9 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option value=\"Portret::Before\">" << _("Portret::Before") << "</option>";
 	   ss << "  <option value=\"Portret::After\">" << _("Portret::After") << "</option>";
 	   ss << "  <option value=\"Scene::Play\">" << _("Scene::Play") << "</option>";
+	   ss << "  <option value=\"Scene::Stop\">" << _("Scene::Stop") << "</option>";
 	   ss << "  <option value=\"Scene::FadeIn\">" << _("Scene::FadeIn") << "</option>";
+	   ss << "  <option value=\"Scene::FadeInto\">" << _("Scene::FadeInto") << "</option>";
 	   ss << "  <option value=\"Scene::FadeOut\">" << _("Scene::FadeOut") << "</option>";
 	   ss << "  <option value=\"Toggle::On\">" << _("Toggle::On") << "</option>";
 	   ss << "  <option value=\"Toggle::Off\">" << _("Toggle::Off") << "</option>";

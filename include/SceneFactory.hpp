@@ -60,6 +60,7 @@ class SceneFactory {
 		~Scene();
 		void Stop();
 		void Play();
+                void fadeInto();
 		void fadeOut();
 		void fadeIn();
 		std::string getUuid();

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-01-30 13:05+0100\n"
+"POT-Creation-Date: 2021-01-31 13:36+0100\n"
 "PO-Revision-Date: 2020-03-19 20:28+0100\n"
 "Last-Translator: erik <eaw.janssen@chello.nl>\n"
 "Language-Team: Dutch\n"
@@ -33,21 +33,21 @@ msgstr "0 - Knop actief"
 msgid "1 - Button inactive"
 msgstr "1 - Knop inactief"
 
-#: ButtonFactory.cpp:608 ButtonFactory.cpp:806 ChaseFactory.cpp:1023
+#: ButtonFactory.cpp:608 ButtonFactory.cpp:806 ChaseFactory.cpp:1035
 msgid "Action"
 msgstr "Actie"
 
-#: ChaseFactory.cpp:898
+#: ChaseFactory.cpp:908
 msgid "Action::Parallel"
 msgstr "Actie::Parallel"
 
-#: ChaseFactory.cpp:899
+#: ChaseFactory.cpp:909
 msgid "Action::Play"
 msgstr "Actie::Afspelen"
 
-#: ChaseFactory.cpp:900
+#: ChaseFactory.cpp:910
 msgid "Action::Stop"
-msgstr "Actie::Stop"
+msgstr "Actie::Stoppen"
 
 #: Theaterwagen.cpp:58
 msgid "Actions"
@@ -57,26 +57,26 @@ msgstr "Acties"
 msgid "Activate"
 msgstr "Activeer"
 
-#: ChaseFactory.cpp:1005
+#: ChaseFactory.cpp:1017
 msgid "Active"
 msgstr "Actief"
 
-#: ButtonFactory.cpp:617 ChaseFactory.cpp:510 ChaseFactory.cpp:933
+#: ButtonFactory.cpp:617 ChaseFactory.cpp:520 ChaseFactory.cpp:945
 #: CloneFactory.cpp:1245 CloneFactory.cpp:1696 FixtureFactory.cpp:238
-#: LiftFactory.cpp:591 MotorFactory.cpp:940 SceneFactory.cpp:520
+#: LiftFactory.cpp:591 MotorFactory.cpp:940 SceneFactory.cpp:568
 #: ToggleFactory.cpp:289
 msgid "Add"
 msgstr "Toevoegen"
 
-#: ChaseFactory.cpp:449
+#: ChaseFactory.cpp:459
 msgid "All saved!"
 msgstr "Alles opgeslagen!"
 
-#: ChaseFactory.cpp:507 ChaseFactory.cpp:989 ChaseFactory.cpp:994
+#: ChaseFactory.cpp:517 ChaseFactory.cpp:1001 ChaseFactory.cpp:1006
 msgid "Automatic Start"
 msgstr "Automatisch Starten"
 
-#: FixtureFactory.cpp:232 FixtureFactory.cpp:354 SceneFactory.cpp:717
+#: FixtureFactory.cpp:232 FixtureFactory.cpp:354 SceneFactory.cpp:779
 msgid "Base address"
 msgstr "Basis adres"
 
@@ -96,11 +96,11 @@ msgstr "Knop Rechts"
 msgid "Button activated!"
 msgstr "Knop geactiveerd!"
 
-#: ChaseFactory.cpp:891
+#: ChaseFactory.cpp:901
 msgid "Button::Activate"
 msgstr "Knop::Activeer"
 
-#: ChaseFactory.cpp:892
+#: ChaseFactory.cpp:902
 msgid "Button::Wait"
 msgstr "Knop::Wachten"
 
@@ -128,11 +128,11 @@ msgstr "Annuleren"
 msgid "Change Language"
 msgstr "Wijzig Taal"
 
-#: LiftFactory.cpp:579 LiftFactory.cpp:912 SceneFactory.cpp:720
+#: LiftFactory.cpp:579 LiftFactory.cpp:912 SceneFactory.cpp:782
 msgid "Channel"
 msgstr "Kanaal"
 
-#: SceneFactory.cpp:719
+#: SceneFactory.cpp:781
 msgid "Channels"
 msgstr "Kanalen"
 
@@ -153,23 +153,23 @@ msgstr "Geleegd!"
 msgid "Clone to file"
 msgstr "Clonen naar bestand"
 
-#: ChaseFactory.cpp:894
+#: ChaseFactory.cpp:904
 msgid "Clone::Merge"
 msgstr "Foto::Samenvoegen"
 
-#: ChaseFactory.cpp:893
+#: ChaseFactory.cpp:903
 msgid "Clone::Photo"
 msgstr "Foto::maken"
 
-#: ChaseFactory.cpp:897
+#: ChaseFactory.cpp:907
 msgid "Clone::clearScreen"
 msgstr "Foto::schermLeegmaken"
 
-#: ChaseFactory.cpp:896
+#: ChaseFactory.cpp:906
 msgid "Clone::onScreen"
 msgstr "Foto::opScherm"
 
-#: ChaseFactory.cpp:895
+#: ChaseFactory.cpp:905
 msgid "Clone::toFile"
 msgstr "Foto::naarBestand"
 
@@ -178,14 +178,14 @@ msgid "Clones"
 msgstr "Foto's"
 
 #: ButtonFactory.cpp:601 ButtonFactory.cpp:629 ButtonFactory.cpp:797
-#: ChaseFactory.cpp:505 ChaseFactory.cpp:522 ChaseFactory.cpp:984
+#: ChaseFactory.cpp:515 ChaseFactory.cpp:532 ChaseFactory.cpp:996
 #: CloneFactory.cpp:1241 CloneFactory.cpp:1257 CloneFactory.cpp:1841
 #: FixtureFactory.cpp:230 FixtureFactory.cpp:249 FixtureFactory.cpp:351
 #: LiftFactory.cpp:577 LiftFactory.cpp:602 LiftFactory.cpp:908
 #: MotorFactory.cpp:928 MotorFactory.cpp:952 MotorFactory.cpp:1134
 #: MusicFactory.cpp:342 MusicFactory.cpp:373 MusicFactory.cpp:590
-#: SceneFactory.cpp:516 SceneFactory.cpp:531 SceneFactory.cpp:687
-#: SceneFactory.cpp:718 SoundFactory.cpp:322 SoundFactory.cpp:353
+#: SceneFactory.cpp:564 SceneFactory.cpp:579 SceneFactory.cpp:749
+#: SceneFactory.cpp:780 SoundFactory.cpp:322 SoundFactory.cpp:353
 #: SoundFactory.cpp:570 ToggleFactory.cpp:283 ToggleFactory.cpp:302
 #: ToggleFactory.cpp:426
 msgid "Comment"
@@ -228,11 +228,11 @@ msgstr "Ellips in"
 msgid "Ellipses"
 msgstr "Ellipsen"
 
-#: SceneFactory.cpp:720
+#: SceneFactory.cpp:782
 msgid "Exclude from Fade"
 msgstr "Uitsluiten van Fade"
 
-#: MusicFactory.cpp:572 SceneFactory.cpp:673 SoundFactory.cpp:552
+#: MusicFactory.cpp:572 SceneFactory.cpp:734 SoundFactory.cpp:552
 msgid "Fade In"
 msgstr "Fade In"
 
@@ -240,7 +240,11 @@ msgstr "Fade In"
 msgid "Fade In!"
 msgstr "Fade In!"
 
-#: MusicFactory.cpp:574 SceneFactory.cpp:674 SoundFactory.cpp:554
+#: SceneFactory.cpp:735
+msgid "Fade Into"
+msgstr "Fade Naar"
+
+#: MusicFactory.cpp:574 SceneFactory.cpp:736 SoundFactory.cpp:554
 msgid "Fade Out"
 msgstr "Fade Uit"
 
@@ -252,15 +256,19 @@ msgstr "Fade Uit!"
 msgid "Fade Steps"
 msgstr "Fade Stappen"
 
-#: SceneFactory.cpp:691
+#: SceneFactory.cpp:753
 msgid "Fade Steps (~60ms per step)"
 msgstr "Fade Stappen (~60ms per stap)"
 
-#: SceneFactory.cpp:658
+#: SceneFactory.cpp:718
 msgid "Fading in!"
 msgstr "Infaden!"
 
-#: SceneFactory.cpp:664
+#: SceneFactory.cpp:712
+msgid "Fading into!"
+msgstr "Faden naar!"
+
+#: SceneFactory.cpp:724
 msgid "Fading out!"
 msgstr "Uitfaden!"
 
@@ -296,7 +304,7 @@ msgstr "Frame"
 
 #: CloneFactory.cpp:1627
 msgid "Frame Cloned!"
-msgstr "Frame GeFotod!"
+msgstr "Frame Gefotografeerd!"
 
 #: LiftFactory.cpp:886
 msgid "Get Position"
@@ -323,9 +331,9 @@ msgstr "Invoer Camera"
 msgid "Input File"
 msgstr "Invoer Bestand"
 
-#: ChaseFactory.cpp:1041 ChaseFactory.cpp:1058 ChaseFactory.cpp:1082
-#: ChaseFactory.cpp:1099 ChaseFactory.cpp:1116 ChaseFactory.cpp:1133
-#: ChaseFactory.cpp:1150 ChaseFactory.cpp:1181 ChaseFactory.cpp:1204
+#: ChaseFactory.cpp:1053 ChaseFactory.cpp:1070 ChaseFactory.cpp:1094
+#: ChaseFactory.cpp:1111 ChaseFactory.cpp:1128 ChaseFactory.cpp:1145
+#: ChaseFactory.cpp:1162 ChaseFactory.cpp:1193 ChaseFactory.cpp:1216
 msgid "Invalid Action! Forgot to save or removed?"
 msgstr "Ongeldige Actie! Vergeten op te slaan of verwijderd?"
 
@@ -349,19 +357,19 @@ msgstr "Linkse Knop"
 msgid "Left Toggle"
 msgstr "Linkse Schakelaar"
 
-#: ChaseFactory.cpp:906
+#: ChaseFactory.cpp:916
 msgid "Lift::Down"
 msgstr "Lift::Omlaag"
 
-#: ChaseFactory.cpp:907
+#: ChaseFactory.cpp:917
 msgid "Lift::Stop"
 msgstr "Lift::Stoppen"
 
-#: ChaseFactory.cpp:905
+#: ChaseFactory.cpp:915
 msgid "Lift::Up"
 msgstr "Lift::Omhoog"
 
-#: ChaseFactory.cpp:908
+#: ChaseFactory.cpp:918
 msgid "Lift::Wait"
 msgstr "Lift::Wachten"
 
@@ -373,16 +381,16 @@ msgstr "Liften"
 msgid "Lights"
 msgstr "Lampen"
 
-#: ButtonFactory.cpp:648 ChaseFactory.cpp:541 CloneFactory.cpp:1276
+#: ButtonFactory.cpp:648 ChaseFactory.cpp:551 CloneFactory.cpp:1276
 #: FixtureFactory.cpp:268 LiftFactory.cpp:621 MotorFactory.cpp:971
-#: MusicFactory.cpp:392 SceneFactory.cpp:550 SoundFactory.cpp:372
+#: MusicFactory.cpp:392 SceneFactory.cpp:598 SoundFactory.cpp:372
 #: ToggleFactory.cpp:321
 msgid "Load"
 msgstr "Laden"
 
-#: ButtonFactory.cpp:574 ChaseFactory.cpp:477 CloneFactory.cpp:1210
+#: ButtonFactory.cpp:574 ChaseFactory.cpp:487 CloneFactory.cpp:1210
 #: FixtureFactory.cpp:205 LiftFactory.cpp:543 MotorFactory.cpp:899
-#: MusicFactory.cpp:306 SceneFactory.cpp:480 SoundFactory.cpp:299
+#: MusicFactory.cpp:306 SceneFactory.cpp:528 SoundFactory.cpp:299
 #: ToggleFactory.cpp:260
 msgid "Loaded!"
 msgstr "Geladen!"
@@ -407,7 +415,7 @@ msgstr "Samengevoegd"
 msgid "Merged!"
 msgstr "Samengevoegd!"
 
-#: ChaseFactory.cpp:931
+#: ChaseFactory.cpp:943
 msgid "Milliseconds (1000 = 1 second)"
 msgstr "Milliseconden (1000 = 1 seconde)"
 
@@ -419,19 +427,19 @@ msgstr "Mix bestand"
 msgid "Morphsteps"
 msgstr "Samenvoegstappen"
 
-#: ChaseFactory.cpp:909
+#: ChaseFactory.cpp:919
 msgid "Motor::Left"
 msgstr "Motor::Links"
 
-#: ChaseFactory.cpp:910
+#: ChaseFactory.cpp:920
 msgid "Motor::Right"
 msgstr "Motor::Rechts"
 
-#: ChaseFactory.cpp:911
+#: ChaseFactory.cpp:921
 msgid "Motor::Stop"
 msgstr "Motor::Stoppen"
 
-#: ChaseFactory.cpp:912
+#: ChaseFactory.cpp:922
 msgid "Motor::Wait"
 msgstr "Motor::Wachten"
 
@@ -467,55 +475,55 @@ msgstr "Naar Boven!"
 msgid "Music"
 msgstr "Muziek"
 
-#: ChaseFactory.cpp:914
+#: ChaseFactory.cpp:924
 msgid "Music::FadeIn"
 msgstr "Muziek::Infaden"
 
-#: ChaseFactory.cpp:916
+#: ChaseFactory.cpp:926
 msgid "Music::FadeOut"
 msgstr "Muziek::Uitfaden"
 
-#: ChaseFactory.cpp:913
+#: ChaseFactory.cpp:923
 msgid "Music::Play"
 msgstr "Muziek::Afspelen"
 
-#: ChaseFactory.cpp:917
+#: ChaseFactory.cpp:927
 msgid "Music::ShakeOff"
 msgstr "Muziek::ShakeUit"
 
-#: ChaseFactory.cpp:918
+#: ChaseFactory.cpp:928
 msgid "Music::ShakeOn"
 msgstr "Muziek::ShakeAan"
 
-#: ChaseFactory.cpp:915
+#: ChaseFactory.cpp:925
 msgid "Music::Stop"
 msgstr "Muziek::Stop"
 
-#: ChaseFactory.cpp:662 ChaseFactory.cpp:726
+#: ChaseFactory.cpp:672 ChaseFactory.cpp:736
 msgid "N/A"
 msgstr "n.v.t"
 
 #: ButtonFactory.cpp:599 ButtonFactory.cpp:628 ButtonFactory.cpp:794
-#: ChaseFactory.cpp:503 ChaseFactory.cpp:521 ChaseFactory.cpp:981
+#: ChaseFactory.cpp:513 ChaseFactory.cpp:531 ChaseFactory.cpp:993
 #: CloneFactory.cpp:1239 CloneFactory.cpp:1256 CloneFactory.cpp:1838
 #: FixtureFactory.cpp:228 FixtureFactory.cpp:248 FixtureFactory.cpp:348
 #: LiftFactory.cpp:575 LiftFactory.cpp:601 LiftFactory.cpp:905
 #: MotorFactory.cpp:926 MotorFactory.cpp:951 MotorFactory.cpp:1131
 #: MusicFactory.cpp:340 MusicFactory.cpp:372 MusicFactory.cpp:587
-#: SceneFactory.cpp:514 SceneFactory.cpp:530 SceneFactory.cpp:684
+#: SceneFactory.cpp:562 SceneFactory.cpp:578 SceneFactory.cpp:746
 #: SoundFactory.cpp:320 SoundFactory.cpp:352 SoundFactory.cpp:567
 #: ToggleFactory.cpp:281 ToggleFactory.cpp:301 ToggleFactory.cpp:423
 msgid "Name"
 msgstr "Naam"
 
-#: ButtonFactory.cpp:642 ChaseFactory.cpp:535 CloneFactory.cpp:1270
+#: ButtonFactory.cpp:642 ChaseFactory.cpp:545 CloneFactory.cpp:1270
 #: FixtureFactory.cpp:262 LiftFactory.cpp:615 MotorFactory.cpp:965
-#: MusicFactory.cpp:386 SceneFactory.cpp:544 SoundFactory.cpp:366
+#: MusicFactory.cpp:386 SceneFactory.cpp:592 SoundFactory.cpp:366
 #: ToggleFactory.cpp:315
 msgid "New"
 msgstr "Nieuw"
 
-#: SceneFactory.cpp:677
+#: SceneFactory.cpp:739
 msgid "New Like"
 msgstr "Nieuw Als"
 
@@ -563,7 +571,7 @@ msgstr "Gepauzeerd"
 msgid "Pitch"
 msgstr "Pitch"
 
-#: MusicFactory.cpp:571 SceneFactory.cpp:672 SoundFactory.cpp:551
+#: MusicFactory.cpp:571 SceneFactory.cpp:732 SoundFactory.cpp:551
 msgid "Play"
 msgstr "Afspelen"
 
@@ -575,7 +583,7 @@ msgstr "Afspelen!"
 msgid "Playing"
 msgstr "Afspelen"
 
-#: SceneFactory.cpp:652
+#: SceneFactory.cpp:700
 msgid "Playing!"
 msgstr "Afspelen!"
 
@@ -583,11 +591,11 @@ msgstr "Afspelen!"
 msgid "Portret"
 msgstr "Portret"
 
-#: ChaseFactory.cpp:920
+#: ChaseFactory.cpp:930
 msgid "Portret::After"
 msgstr "Portret::Na"
 
-#: ChaseFactory.cpp:919
+#: ChaseFactory.cpp:929
 msgid "Portret::Before"
 msgstr "Portret::Voor"
 
@@ -595,16 +603,16 @@ msgstr "Portret::Voor"
 msgid "Pressed Button cannot be activated!"
 msgstr "Ingedrukte Knop kan niet geactiveerd worden!"
 
-#: ButtonFactory.cpp:781 ChaseFactory.cpp:972 CloneFactory.cpp:1829
+#: ButtonFactory.cpp:781 ChaseFactory.cpp:984 CloneFactory.cpp:1829
 #: FixtureFactory.cpp:341 HomeHandler.cpp:80 LiftFactory.cpp:881
-#: MotorFactory.cpp:1117 MusicFactory.cpp:569 SceneFactory.cpp:670
+#: MotorFactory.cpp:1117 MusicFactory.cpp:569 SceneFactory.cpp:730
 #: SoundFactory.cpp:549 ToggleFactory.cpp:413
 msgid "Refresh"
 msgstr "Verversen"
 
-#: ButtonFactory.cpp:635 ChaseFactory.cpp:528 CloneFactory.cpp:1263
+#: ButtonFactory.cpp:635 ChaseFactory.cpp:538 CloneFactory.cpp:1263
 #: FixtureFactory.cpp:255 LiftFactory.cpp:608 MotorFactory.cpp:958
-#: MusicFactory.cpp:379 SceneFactory.cpp:537 SoundFactory.cpp:359
+#: MusicFactory.cpp:379 SceneFactory.cpp:585 SoundFactory.cpp:359
 #: ToggleFactory.cpp:308
 msgid "Remove"
 msgstr "Verwijderen"
@@ -629,9 +637,9 @@ msgstr "Rechtse Knop"
 msgid "Right Toggle"
 msgstr "Rechtse Schakelaar"
 
-#: ButtonFactory.cpp:645 ChaseFactory.cpp:538 CloneFactory.cpp:1273
+#: ButtonFactory.cpp:645 ChaseFactory.cpp:548 CloneFactory.cpp:1273
 #: FixtureFactory.cpp:265 LiftFactory.cpp:618 MotorFactory.cpp:968
-#: MusicFactory.cpp:389 SceneFactory.cpp:547 SoundFactory.cpp:369
+#: MusicFactory.cpp:389 SceneFactory.cpp:595 SoundFactory.cpp:369
 #: ToggleFactory.cpp:318
 msgid "Save"
 msgstr "Opslaan"
@@ -648,24 +656,32 @@ msgstr "Log Opslaan"
 msgid "Save as File"
 msgstr "Opslaan als Bestand"
 
-#: ButtonFactory.cpp:566 ChaseFactory.cpp:469 CloneFactory.cpp:1203
+#: ButtonFactory.cpp:566 ChaseFactory.cpp:479 CloneFactory.cpp:1203
 #: FixtureFactory.cpp:197 HomeHandler.cpp:61 LiftFactory.cpp:535
-#: MotorFactory.cpp:891 MusicFactory.cpp:298 SceneFactory.cpp:472
+#: MotorFactory.cpp:891 MusicFactory.cpp:298 SceneFactory.cpp:520
 #: SoundFactory.cpp:291 ToggleFactory.cpp:252
 msgid "Saved!"
 msgstr "Opgeslagen!"
 
-#: ChaseFactory.cpp:922
+#: ChaseFactory.cpp:933
 msgid "Scene::FadeIn"
 msgstr "Scene::Infaden"
 
-#: ChaseFactory.cpp:923
+#: ChaseFactory.cpp:934
+msgid "Scene::FadeInto"
+msgstr "Scene::FadenNaar"
+
+#: ChaseFactory.cpp:935
 msgid "Scene::FadeOut"
 msgstr "Scene::Uitfaden"
 
-#: ChaseFactory.cpp:921
+#: ChaseFactory.cpp:931
 msgid "Scene::Play"
 msgstr "Scene::Afspelen"
+
+#: ChaseFactory.cpp:932
+msgid "Scene::Stop"
+msgstr "Scene::Stoppen"
 
 #: Theaterwagen.cpp:64
 msgid "Scenes"
@@ -675,9 +691,9 @@ msgstr "Scene's"
 msgid "Screen empty!"
 msgstr "Scherm leeg!"
 
-#: ButtonFactory.cpp:632 ChaseFactory.cpp:525 CloneFactory.cpp:1260
+#: ButtonFactory.cpp:632 ChaseFactory.cpp:535 CloneFactory.cpp:1260
 #: FixtureFactory.cpp:252 LiftFactory.cpp:605 MotorFactory.cpp:955
-#: MusicFactory.cpp:358 MusicFactory.cpp:376 SceneFactory.cpp:534
+#: MusicFactory.cpp:358 MusicFactory.cpp:376 SceneFactory.cpp:582
 #: SoundFactory.cpp:338 SoundFactory.cpp:356 ToggleFactory.cpp:305
 msgid "Select"
 msgstr "Selecteer"
@@ -686,7 +702,7 @@ msgstr "Selecteer"
 msgid "Select File:"
 msgstr "Selecteer Bestand:"
 
-#: SceneFactory.cpp:720
+#: SceneFactory.cpp:782
 msgid "Selected"
 msgstr "Geselecteerd"
 
@@ -710,23 +726,23 @@ msgstr "Shake Aan!"
 msgid "Show Menu"
 msgstr "Toon Menu"
 
-#: SceneFactory.cpp:720
+#: SceneFactory.cpp:782
 msgid "Slider"
 msgstr "Slider"
 
-#: ChaseFactory.cpp:902
+#: ChaseFactory.cpp:912
 msgid "Sound::FadeIn"
 msgstr "Geluid::Infaden"
 
-#: ChaseFactory.cpp:904
+#: ChaseFactory.cpp:914
 msgid "Sound::FadeOut"
 msgstr "Geluid::Uitfaden"
 
-#: ChaseFactory.cpp:901
+#: ChaseFactory.cpp:911
 msgid "Sound::Play"
 msgstr "Geluid::Afspelen"
 
-#: ChaseFactory.cpp:903
+#: ChaseFactory.cpp:913
 msgid "Sound::Stop"
 msgstr "Geluid::Stoppen"
 
@@ -734,16 +750,16 @@ msgstr "Geluid::Stoppen"
 msgid "Sounds"
 msgstr "Geluiden"
 
-#: ChaseFactory.cpp:974
+#: ChaseFactory.cpp:986
 msgid "Start"
 msgstr "Starten"
 
-#: ChaseFactory.cpp:795
+#: ChaseFactory.cpp:805
 msgid "Started!"
 msgstr "Gestart!"
 
-#: ChaseFactory.cpp:975 LiftFactory.cpp:885 MotorFactory.cpp:1120
-#: MusicFactory.cpp:573 SoundFactory.cpp:553
+#: ChaseFactory.cpp:987 LiftFactory.cpp:885 MotorFactory.cpp:1120
+#: MusicFactory.cpp:573 SceneFactory.cpp:733 SoundFactory.cpp:553
 msgid "Stop"
 msgstr "Stoppen"
 
@@ -755,15 +771,15 @@ msgstr "Stop!"
 msgid "Stopped"
 msgstr "Gestopt"
 
-#: ChaseFactory.cpp:802
+#: ChaseFactory.cpp:812
 msgid "Stopped!"
 msgstr "Gestopt!"
 
-#: LiftFactory.cpp:813
+#: LiftFactory.cpp:813 SceneFactory.cpp:706
 msgid "Stopping!"
 msgstr "Stoppen!"
 
-#: ChaseFactory.cpp:926
+#: ChaseFactory.cpp:938
 msgid "Time::Wait"
 msgstr "Tijd::Wachten"
 
@@ -803,11 +819,11 @@ msgstr "Schakelaar uit!"
 msgid "Toggle on!"
 msgstr "Schakelaar aan!"
 
-#: ChaseFactory.cpp:925
+#: ChaseFactory.cpp:937
 msgid "Toggle::Off"
 msgstr "Schakelaar::Uit"
 
-#: ChaseFactory.cpp:924
+#: ChaseFactory.cpp:936
 msgid "Toggle::On"
 msgstr "Schakelaar::Aan"
 
@@ -827,7 +843,7 @@ msgstr "Update"
 msgid "Upper Limit"
 msgstr "Bovenlimiet"
 
-#: ChaseFactory.cpp:1023 SceneFactory.cpp:720
+#: ChaseFactory.cpp:1035 SceneFactory.cpp:782
 msgid "Value"
 msgstr "Waarde"
 

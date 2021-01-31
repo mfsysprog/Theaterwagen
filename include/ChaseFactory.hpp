@@ -72,6 +72,7 @@ class ChaseFactory {
 		std::string getOmschrijving();
 		bool getAutostart();
 		std::string getUrl();
+		bool isRunning();
 		void Stop();
 		void Start();
 		private:
