@@ -44,6 +44,7 @@ bool HomeHandler::handleAll(const char *method,
 		  CivetServer::getParam(conn,"taal", value);
 
 		  /* Change language.  */
+		  setenv ("LANG", value.c_str() , 1);
 		  setenv ("LANGUAGE", value.c_str() , 1);
 
 		  /* Make change known.  */
@@ -88,14 +89,14 @@ bool HomeHandler::handleAll(const char *method,
 	ss << "<h2>" << _("Language") << ":";
 	ss << "<form action=\"/theaterwagen\" method=\"POST\">";
     ss << "<select id=\"taal\" name=\"taal\">";
-    if (std::string(getenv("LANGUAGE")).compare("en") == 0)
-    	ss << "<option selected=\"selected\" value=\"en\">English</option>";
+    if (std::string(getenv("LANGUAGE")).compare("en_US") == 0)
+    	ss << "<option selected=\"selected\" value=\"en_US\">English</option>";
     else
-    	ss << "<option value=\"en\">English</option>";
-    if (std::string(getenv("LANGUAGE")).compare("nl") == 0)
-    	ss << "<option selected=\"selected\" value=\"nl\">Nederlands</option>";
+    	ss << "<option value=\"en_US\">English</option>";
+    if (std::string(getenv("LANGUAGE")).compare("nl_NL") == 0)
+    	ss << "<option selected=\"selected\" value=\"nl_NL\">Nederlands</option>";
     else
-    	ss << "<option value=\"nl\">Nederlands</option>";
+    	ss << "<option value=\"nl_NL\">Nederlands</option>";
     ss << "</select><br>";
     ss << "<button type=\"submit\" name=\"save\" value=\"save\" id=\"save\">" << _("Change Language") << "</button>";
 	ss << "</form>";
@@ -120,7 +121,8 @@ bool HomeHandler::handleAll(const char *method,
 HomeHandler::HomeHandler() {
 	if (getenv("LANGUAGE") == NULL)
 	{
-    	setenv("LANGUAGE", "en" , 1);
+    	setenv("LANG", "en_US" , 1);
+    	setenv("LANGUAGE", "en_US" , 1);
 			  {
 			    extern int  _nl_msg_cat_cntr;
 			    ++_nl_msg_cat_cntr;

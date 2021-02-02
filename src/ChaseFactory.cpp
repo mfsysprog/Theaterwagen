@@ -236,6 +236,10 @@ void ChaseFactory::deleteChase(std::string uuid){
 	}
 }
 
+bool ChaseFactory::Chase::isRunning(){
+	return this->running;
+}
+
 void ChaseFactory::Chase::Stop(){
 	this->running = false;
 	cf.clone->clearScreen();
@@ -250,7 +254,7 @@ void ChaseFactory::Chase::Stop(){
 
 		if (action.compare("Toggle") == 0)
 			cf.toggle->togglemap.find((*it).uuid_or_milliseconds)->second->Stop();
-		if (action.compare("Action") == 0)
+		if (action.compare("Action") == 0 && cf.chasemap.find((*it).uuid_or_milliseconds)->second->isRunning())
 			cf.chasemap.find((*it).uuid_or_milliseconds)->second->Stop();
 		if (action.compare("Sound") == 0)
 			cf.sound->soundmap.find((*it).uuid_or_milliseconds)->second->stop();
@@ -270,6 +274,8 @@ void ChaseFactory::Chase::Start(){
 	{
 		std::thread( [this] { Action(); } ).detach();
 	}
+        else
+	(*syslog) << "Action " << this->naam << " already running. " << std::endl;
 }
 
 void ChaseFactory::Chase::Action()
@@ -321,6 +327,8 @@ void ChaseFactory::Chase::Action()
 		}
 		if (action.compare("Action") == 0)
 		{
+			if (method.compare("Parallel") == 0)
+			  cf.chasemap.find((*it).uuid_or_milliseconds)->second->Start();
 			if (method.compare("Play") == 0)
 			  cf.chasemap.find((*it).uuid_or_milliseconds)->second->Action();
 			if (method.compare("Stop") == 0)
@@ -386,8 +394,12 @@ void ChaseFactory::Chase::Action()
 		{
 			if (method.compare("Play") == 0)
 			  cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Play();
+                        if (method.compare("Stop") == 0)
+                          cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->Stop();
 			if (method.compare("FadeIn") == 0)
 			  cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->fadeIn();
+                        if (method.compare("FadeInto") == 0)
+                          cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->fadeInto();
 			if (method.compare("FadeOut") == 0)
 			  cf.scene->scenemap.find((*it).uuid_or_milliseconds)->second->fadeOut();
 		}
@@ -551,7 +563,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
           CivetServer *server,
           struct mg_connection *conn)
 {
-	std::string s[8] = "";
+	std::string s[8] = {""};
 	std::string dummy;
 	std::string value;
 	std::string message="&nbsp";
@@ -784,6 +796,20 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 		   meta = "<meta http-equiv=\"refresh\" content=\"0;url=\"" + chase.getUrl() + "\"/>";
 	}
 
+	if(CivetServer::getParam(conn, "change_action", dummy))
+	{
+		   CivetServer::getParam(conn,"action", s[0]);
+		   CivetServer::getParam(conn,"target", s[1]);
+		   CivetServer::getParam(conn,"iter", s[2]);
+
+		   sequence_item sequence = {s[0],s[1]};
+		   std::list<sequence_item>::iterator first = chase.sequence_list->begin();
+		   std::advance(first, atoi(s[2].c_str()));
+		   *first = sequence;
+
+		   meta = "<meta http-equiv=\"refresh\" content=\"0;url=\"" + chase.getUrl() + "\"/>";
+	}
+
 	/* if parameter start is present start button was pushed */
 	if(CivetServer::getParam(conn, "start", dummy))
 	{
@@ -838,49 +864,508 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 
 		meta = "<meta http-equiv=\"refresh\" content=\"0;url=\"" + chase.getUrl() + "\"/>";
 	}
+	if(CivetServer::getParam(conn, "change", value))
+		{
+		   tohead << "<script type=\"text/javascript\">";
+		   tohead << " function changetarget() {";
+		   tohead << "  if ($(\"#target\").val() == '') { ";
+		   tohead << "    $(\"#submit\").prop('disabled',true);";
+		   tohead << "   } else {$(\"#submit\").prop('disabled',false);}";
+		   tohead << " }";
+		   tohead << " function changetijd() {";
+		   tohead << "  if ($(\"#tijd\").val() == '') { ";
+		   tohead << "    $(\"#submit\").prop('disabled',true);";
+		   tohead << "   } else {$(\"#submit\").prop('disabled',false);}";
+		   tohead << " }";
+		   tohead << " function changefunc() {";
+		   tohead << "  if ($(\"#action\").val() == 'Time::Wait') { ";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").show();";
+		   tohead << "   } else if ($(\"#action\").val() == 'Clone::clearScreen') {";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "   } else if ($(\"#action\").val() == 'Music::ShakeOff') {";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "   } else if ($(\"#action\").val() == 'Music::ShakeOn') {";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "   } else if ($(\"#action\").val() == 'Portret::Before') {";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "   } else if ($(\"#action\").val() == 'Portret::After') {";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "   } else {";
+		   tohead << "    $(\"#target\").show();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "  }";
+		   tohead << " }";
+		   tohead << " $(document).ready(function(){";
+		   tohead << "  $(\"#tijd_div\").hide();";
+		   tohead << "  $(\"#target\").change(function(){";
+		   tohead << "  changetarget();";
+		   tohead << "  });";
+		   tohead << "  $(\"#tijd\").change(function(){";
+		   tohead << "  changetijd();";
+		   tohead << "  });";
+		   tohead << "  if ($(\"#action\").val() == 'Time::Wait') {";
+		   tohead << "    changetijd();";
+		   tohead << "  } else {";
+		   tohead << "    changetarget();";
+		   tohead << "  }";
+		   tohead << "  $(\"#action\").change(function(){";
+		   tohead << "  changefunc();";
+		   tohead << "  action_val = $(\"#action\").val();";
+		   tohead << "  $.get( \"" << chase.getUrl() << "?chosen=\"+action_val, function( data ) {";
+		   tohead << "  $( \"#target\" ).html( data );";
+		   tohead << "  if ($(\"#action\").val() == 'Time::Wait') {";
+		   tohead << "    changetijd();";
+		   tohead << "  } else {";
+		   tohead << "    changetarget();";
+		   tohead << "  }";
+		   tohead << "  });";
+		   tohead << "  });";
+		   tohead << "  changefunc();";
+		   tohead << "});";
+		   tohead << "</script>";
+
+		   std::list<sequence_item>::iterator it_list = chase.sequence_list->begin();
+		   std::advance(it_list, std::stoi(value));
+		   std::string action = (*it_list).action;
+		   std::string uuid_or_milliseconds = (*it_list).uuid_or_milliseconds;
+
+		   ss << "<form action=\"" << chase.getUrl() << "\" method=\"POST\">";
+		   ss << " <input type=\"hidden\" name=\"iter\" value=\"" << value << "\">";
+		   ss << " <select id=\"action\" name=\"action\">";
+		   ss << "  <option></option>";
+		   if (action.compare("Button::Activate") == 0)
+			   ss << "  <option value=\"Button::Activate\" selected>" << _("Button::Activate") << "</option>";
+		   else
+			   ss << "  <option value=\"Button::Activate\">" << _("Button::Activate") << "</option>";
+
+		   if (action.compare("Button::Wait") == 0)
+			   ss << "  <option value=\"Button::Wait\" selected>" << _("Button::Wait") << "</option>";
+		   else
+			   ss << "  <option value=\"Button::Wait\">" << _("Button::Wait") << "</option>";
+
+		   if (action.compare("Clone::Photo") == 0)
+		   ss << "  <option value=\"Clone::Photo\" selected>" << _("Clone::Photo") << "</option>";
+		   else
+		   ss << "  <option value=\"Clone::Photo\">" << _("Clone::Photo") << "</option>";
+
+		   if (action.compare("Clone::Merge") == 0)
+		   ss << "  <option value=\"Clone::Merge\" selected>" << _("Clone::Merge") << "</option>";
+		   else
+		   ss << "  <option value=\"Clone::Merge\">" << _("Clone::Merge") << "</option>";
+
+		   if (action.compare("Clone::toFile") == 0)
+		   ss << "  <option value=\"Clone::toFile\" selected>" << _("Clone::toFile") << "</option>";
+		   else
+		   ss << "  <option value=\"Clone::toFile\">" << _("Clone::toFile") << "</option>";
+
+		   if (action.compare("Clone::onScreen") == 0)
+		   ss << "  <option value=\"Clone::onScreen\" selected>" << _("Clone::onScreen") << "</option>";
+		   else
+		   ss << "  <option value=\"Clone::onScreen\">" << _("Clone::onScreen") << "</option>";
+
+		   if (action.compare("Clone::clearScreen") == 0)
+		   ss << "  <option value=\"Clone::clearScreen\" selected>" << _("Clone::clearScreen") << "</option>";
+		   else
+		   ss << "  <option value=\"Clone::clearScreen\">" << _("Clone::clearScreen") << "</option>";
+
+		   if (action.compare("Action::Parallel") == 0)
+		   ss << "  <option value=\"Action::Parallel\" selected>" << _("Action::Parallel") << "</option>";
+		   else
+		   ss << "  <option value=\"Action::Parallel\">" << _("Action::Parallel") << "</option>";
+
+		   if (action.compare("Action::Play") == 0)
+		   ss << "  <option value=\"Action::Play\" selected>" << _("Action::Play") << "</option>";
+		   else
+		   ss << "  <option value=\"Action::Play\">" << _("Action::Play") << "</option>";
+
+		   if (action.compare("Action::Stop") == 0)
+		   ss << "  <option value=\"Action::Stop\" selected>" << _("Action::Stop") << "</option>";
+		   else
+		   ss << "  <option value=\"Action::Stop\">" << _("Action::Stop") << "</option>";
+
+		   if (action.compare("Sound::Play") == 0)
+		   ss << "  <option value=\"Sound::Play\" selected>" << _("Sound::Play") << "</option>";
+		   else
+		   ss << "  <option value=\"Sound::Play\">" << _("Sound::Play") << "</option>";
+
+		   if (action.compare("Sound::FadeIn") == 0)
+		   ss << "  <option value=\"Sound::FadeIn\" selected>" << _("Sound::FadeIn") << "</option>";
+		   else
+		   ss << "  <option value=\"Sound::FadeIn\">" << _("Sound::FadeIn") << "</option>";
+
+		   if (action.compare("Sound::Stop") == 0)
+		   ss << "  <option value=\"Sound::Stop\" selected>" << _("Sound::Stop") << "</option>";
+		   else
+		   ss << "  <option value=\"Sound::Stop\">" << _("Sound::Stop") << "</option>";
+
+		   if (action.compare("Sound::FadeOut") == 0)
+		   ss << "  <option value=\"Sound::FadeOut\" selected>" << _("Sound::FadeOut") << "</option>";
+		   else
+		   ss << "  <option value=\"Sound::FadeOut\">" << _("Sound::FadeOut") << "</option>";
+
+		   if (action.compare("Lift::Up") == 0)
+		   ss << "  <option value=\"Lift::Up\" selected>" << _("Lift::Up") << "</option>";
+		   else
+		   ss << "  <option value=\"Lift::Up\">" << _("Lift::Up") << "</option>";
+
+		   if (action.compare("Lift::Down") == 0)
+		   ss << "  <option value=\"Lift::Down\" selected>" << _("Lift::Down") << "</option>";
+		   else
+		   ss << "  <option value=\"Lift::Down\">" << _("Lift::Down") << "</option>";
+
+		   if (action.compare("Lift::Stop") == 0)
+		   ss << "  <option value=\"Lift::Stop\" selected>" << _("Lift::Stop") << "</option>";
+		   else
+		   ss << "  <option value=\"Lift::Stop\">" << _("Lift::Stop") << "</option>";
+
+		   if (action.compare("Lift::Wait") == 0)
+		   ss << "  <option value=\"Lift::Wait\" selected>" << _("Lift::Wait") << "</option>";
+		   else
+		   ss << "  <option value=\"Lift::Wait\">" << _("Lift::Wait") << "</option>";
+
+		   if (action.compare("Motor::Left") == 0)
+		   ss << "  <option value=\"Motor::Left\" selected>" << _("Motor::Left") << "</option>";
+		   else
+		   ss << "  <option value=\"Motor::Left\">" << _("Motor::Left") << "</option>";
+
+		   if (action.compare("Motor::Right") == 0)
+		   ss << "  <option value=\"Motor::Right\" selected>" << _("Motor::Right") << "</option>";
+		   else
+		   ss << "  <option value=\"Motor::Right\">" << _("Motor::Right") << "</option>";
+
+		   if (action.compare("Motor::Stop") == 0)
+		   ss << "  <option value=\"Motor::Stop\" selected>" << _("Motor::Stop") << "</option>";
+		   else
+		   ss << "  <option value=\"Motor::Stop\">" << _("Motor::Stop") << "</option>";
+
+		   if (action.compare("Motor::Wait") == 0)
+		   ss << "  <option value=\"Motor::Wait\" selected>" << _("Motor::Wait") << "</option>";
+		   else
+		   ss << "  <option value=\"Motor::Wait\">" << _("Motor::Wait") << "</option>";
+
+		   if (action.compare("Music::Play") == 0)
+		   ss << "  <option value=\"Music::Play\" selected>" << _("Music::Play") << "</option>";
+		   else
+		   ss << "  <option value=\"Music::Play\">" << _("Music::Play") << "</option>";
+
+		   if (action.compare("Music::FadeIn") == 0)
+		   ss << "  <option value=\"Music::FadeIn\" selected>" << _("Music::FadeIn") << "</option>";
+		   else
+		   ss << "  <option value=\"Music::FadeIn\">" << _("Music::FadeIn") << "</option>";
+
+		   if (action.compare("Music::Stop") == 0)
+		   ss << "  <option value=\"Music::Stop\" selected>" << _("Music::Stop") << "</option>";
+		   else
+		   ss << "  <option value=\"Music::Stop\">" << _("Music::Stop") << "</option>";
+
+		   if (action.compare("Music::FadeOut") == 0)
+		   ss << "  <option value=\"Music::FadeOut\" selected>" << _("Music::FadeOut") << "</option>";
+		   else
+		   ss << "  <option value=\"Music::FadeOut\">" << _("Music::FadeOut") << "</option>";
+
+		   if (action.compare("Music::ShakeOff") == 0)
+		   ss << "  <option value=\"Music::ShakeOff\" selected>" << _("Music::ShakeOff") << "</option>";
+		   else
+		   ss << "  <option value=\"Music::ShakeOff\">" << _("Music::ShakeOff") << "</option>";
+
+		   if (action.compare("Music::ShakeOn") == 0)
+		   ss << "  <option value=\"Music::ShakeOn\" selected>" << _("Music::ShakeOn") << "</option>";
+		   else
+		   ss << "  <option value=\"Music::ShakeOn\">" << _("Music::ShakeOn") << "</option>";
+
+		   if (action.compare("Portret::Before") == 0)
+		   ss << "  <option value=\"Portret::Before\" selected>" << _("Portret::Before") << "</option>";
+		   else
+		   ss << "  <option value=\"Portret::Before\">" << _("Portret::Before") << "</option>";
+
+		   if (action.compare("Portret::After") == 0)
+		   ss << "  <option value=\"Portret::After\" selected>" << _("Portret::After") << "</option>";
+		   else
+		   ss << "  <option value=\"Portret::After\">" << _("Portret::After") << "</option>";
+
+		   if (action.compare("Scene::Play") == 0)
+			   ss << "  <option value=\"Scene::Play\" selected>" << _("Scene::Play") << "</option>";
+		   else
+			   ss << "  <option value=\"Scene::Play\">" << _("Scene::Play") << "</option>";
+
+		   if (action.compare("Scene::Stop") == 0)
+		   ss << "  <option value=\"Scene::Stop\" selected>" << _("Scene::Stop") << "</option>";
+		   else
+		   ss << "  <option value=\"Scene::Stop\">" << _("Scene::Stop") << "</option>";
+
+		   if (action.compare("Scene::FadeIn") == 0)
+		   ss << "  <option value=\"Scene::FadeIn\" selected>" << _("Scene::FadeIn") << "</option>";
+		   else
+		   ss << "  <option value=\"Scene::FadeIn\">" << _("Scene::FadeIn") << "</option>";
+
+		   if (action.compare("Scene::FadeInto") == 0)
+		   ss << "  <option value=\"Scene::FadeInto\" selected>" << _("Scene::FadeInto") << "</option>";
+		   else
+		   ss << "  <option value=\"Scene::FadeInto\">" << _("Scene::FadeInto") << "</option>";
+
+		   if (action.compare("Scene::FadeOut") == 0)
+		   ss << "  <option value=\"Scene::FadeOut\" selected>" << _("Scene::FadeOut") << "</option>";
+		   else
+		   ss << "  <option value=\"Scene::FadeOut\">" << _("Scene::FadeOut") << "</option>";
+
+		   if (action.compare("Toggle::On") == 0)
+		   ss << "  <option value=\"Toggle::On\" selected>" << _("Toggle::On") << "</option>";
+		   else
+		   ss << "  <option value=\"Toggle::On\">" << _("Toggle::On") << "</option>";
+
+		   if (action.compare("Toggle::Off") == 0)
+		   ss << "  <option value=\"Toggle::Off\" selected>" << _("Toggle::Off") << "</option>";
+		   else
+		   ss << "  <option value=\"Toggle::Off\">" << _("Toggle::Off") << "</option>";
+
+		   if (action.compare("Time::Wait") == 0)
+		   ss << "  <option value=\"Time::Wait\" selected>" << _("Time::Wait") << "</option>";
+		   else
+		   ss << "  <option value=\"Time::Wait\">" << _("Time::Wait") << "</option>";
+		   ss << " </select>";
+
+		   std::string::size_type pos = action.find("::");
+		   std::string actiontype = action.substr(0,pos);
+
+		   if (actiontype.compare("Toggle") == 0)
+		    {
+			   ss << "<select id=\"target\" name=\"target\">";
+			   ss << "<option value=\"\"></option>";
+	 		   for (std::pair<std::string, ToggleFactory::Toggle*> element  : chase.cf.toggle->togglemap)
+			   {
+	 			  if (uuid_or_milliseconds.compare(element.first) == 0)
+	 				  ss << "<option value=\"" << element.first << "\" selected>" << element.second->naam << "</option>";
+	 			  else
+	 				  ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+			   }
+			   ss << "</select>";
+			}
+	        else
+	    	if (actiontype.compare("Button") == 0)
+	   	    {
+	   		   ss << "<select id=\"target\" name=\"target\">";
+	   		   ss << "<option value=\"\"></option>";
+	   		   for (std::pair<std::string, ButtonFactory::Button*> element  : chase.cf.button->buttonmap)
+	   		   {
+		 			  if (uuid_or_milliseconds.compare(element.first) == 0)
+		 				  ss << "<option value=\"" << element.first << "\" selected>" << element.second->naam << "</option>";
+		 			  else
+		 				  ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+	   		   }
+	   		   ss << "</select>";
+	   		}
+	    	else
+			if (actiontype.compare("Clone") == 0)
+			{
+			   if (!(action.compare("Clone::clearScreen") == 0))
+			   {
+				   ss << "<select id=\"target\" name=\"target\">";
+				   ss << "<option value=\"\"></option>";
+				   for (std::pair<std::string, CloneFactory::Clone*> element  : chase.cf.clone->clonemap)
+				   {
+			 			  if (uuid_or_milliseconds.compare(element.first) == 0)
+			 				  ss << "<option value=\"" << element.first << "\" selected>" << element.second->naam << "</option>";
+			 			  else
+			 				  ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+				   }
+				   ss << "</select>";
+			   }
+			   else
+			   {
+	     		   ss << "<select id=\"target\" name=\"target\">";
+		     	   ss << "<option value=\"n.v.t.\">" << _("N/A") << "</option>";
+		     	   ss << "</select>";
+			   }
+			}
+			else
+			if (actiontype.compare("Action") == 0)
+			{
+			   ss << "<select id=\"target\" name=\"target\">";
+			   ss << "<option value=\"\"></option>";
+		 	   for (std::pair<std::string, ChaseFactory::Chase*> element  : chase.cf.chasemap)
+			   {
+		 			  if (uuid_or_milliseconds.compare(element.first) == 0)
+		 				  ss << "<option value=\"" << element.first << "\" selected>" << element.second->naam << "</option>";
+		 			  else
+		 				  ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+			   }
+			   ss << "</select>";
+			}
+			else
+			if (actiontype.compare("Sound") == 0)
+			{
+			   ss << "<select id=\"target\" name=\"target\">";
+			   ss << "<option value=\"\"></option>";
+		 	   for (std::pair<std::string, SoundFactory::Sound*> element  : chase.cf.sound->soundmap)
+			   {
+		 			  if (uuid_or_milliseconds.compare(element.first) == 0)
+		 				  ss << "<option value=\"" << element.first << "\" selected>" << element.second->naam << "</option>";
+		 			  else
+		 				  ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+			   }
+			   ss << "</select>";
+			}
+			else
+			if (actiontype.compare("Motor") == 0)
+			{
+			   ss << "<select id=\"target\" name=\"target\">";
+			   ss << "<option value=\"\"></option>";
+	 		   for (std::pair<std::string, MotorFactory::Motor*> element  : chase.cf.motor->motormap)
+			   {
+		 			  if (uuid_or_milliseconds.compare(element.first) == 0)
+		 				  ss << "<option value=\"" << element.first << "\" selected>" << element.second->naam << "</option>";
+		 			  else
+		 				  ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+			   }
+			   ss << "</select>";
+			}
+			else
+			if (actiontype.compare("Lift") == 0)
+			{
+			   ss << "<select id=\"target\" name=\"target\">";
+			   ss << "<option value=\"\"></option>";
+	 		   for (std::pair<std::string, LiftFactory::Lift*> element  : chase.cf.lift->liftmap)
+			   {
+		 			  if (uuid_or_milliseconds.compare(element.first) == 0)
+		 				  ss << "<option value=\"" << element.first << "\" selected>" << element.second->naam << "</option>";
+		 			  else
+		 				  ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+			   }
+			   ss << "</select>";
+			}
+			else
+			if (actiontype.compare("Music") == 0)
+			{
+				if (action.find("Music::Shake") ==  std::string::npos)
+				{
+					ss << "<select id=\"target\" name=\"target\">";
+					ss << "<option value=\"\"></option>";
+					for (std::pair<std::string, MusicFactory::Music*> element  : chase.cf.music->musicmap)
+					{
+			 			  if (uuid_or_milliseconds.compare(element.first) == 0)
+			 				  ss << "<option value=\"" << element.first << "\" selected>" << element.second->naam << "</option>";
+			 			  else
+			 				  ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+					}
+					ss << "</select>";
+				}
+				else
+				{
+				   ss << "<select id=\"target\" name=\"target\">";
+				   ss << "<option value=\"n.v.t.\">" << _("N/A") << "</option>";
+				   ss << "</select>";
+				}
+			}
+			else
+			if (actiontype.compare("Portret") == 0)
+			{
+			   ss << "<select id=\"target\" name=\"target\">";
+		       ss << "<option value=\"n.v.t.\">n.v.t.</option>";
+	           ss << "</select>";
+			}
+			else
+			if (actiontype.compare("Scene") == 0)
+			{
+			   ss << "<select id=\"target\" name=\"target\">";
+			   ss << "<option value=\"\"></option>";
+	 		   for (std::pair<std::string, SceneFactory::Scene*> element  : chase.cf.scene->scenemap)
+			   {
+	 			   if (uuid_or_milliseconds.compare(element.first) == 0)
+	 				   ss << "<option value=\"" << element.first << "\" selected>" << element.second->naam << "</option>";
+	 			   else
+	 				   ss << "<option value=\"" << element.first << "\">" << element.second->naam << "</option>";
+			   }
+			   ss << "</select>";
+			}
+
+			if (actiontype.compare("Time") == 0)
+			{
+				ss << "<select id=\"target\" name=\"target\">";
+                ss << "</select>";
+				ss << "<div id=\"tijd_div\"><label for=\"tijd\">" << _("Milliseconds (1000 = 1 second)") << ":</label>"
+					"<input id=\"tijd\" type=\"number\" min=\"0\" placeholder=\"1000\" step=\"1\" name=\"target\" value=\"" << uuid_or_milliseconds << "\"/>" << "</div><br>";
+			}
+			else
+			{
+				ss << "<div id=\"tijd_div\"><label for=\"tijd\">" << _("Milliseconds (1000 = 1 second)") << ":</label>"
+					"<input id=\"tijd\" type=\"number\" min=\"0\" placeholder=\"1000\" step=\"1\" name=\"target\"/>" << "</div><br>";
+			}
+		   ss << "<button type=\"submit\" name=\"change_action\" value=\"change_action\" id=\"submit\" disabled>" << _("Change") << "</button></br>";
+		   ss << "</br>";
+		   ss << "</form>";
+		}
+	else
 	if(CivetServer::getParam(conn, "add", value))
 	{
-	   tohead << "<script type=\"text/javascript\">";
-	   tohead << " $(document).ready(function(){";
-	   tohead << "  $(\"#tijd_div\").hide();";
-	   tohead << "  $(\"#action\").change(function(){";
-	   tohead << "  if ($(\"#action\").val() == 'Time::Wait') { ";
-	   tohead << "    $(\"#target\").hide();";
-	   tohead << "    $(\"#tijd_div\").show();";
-	   tohead << "   } else if ($(\"#action\").val() == 'Clone::clearScreen') {";
-	   tohead << "    $(\"#target\").hide();";
-	   tohead << "   } else if ($(\"#action\").val() == 'Music::ShakeOff') {";
-	   tohead << "    $(\"#target\").hide();";
-	   tohead << "   } else if ($(\"#action\").val() == 'Music::ShakeOn') {";
-	   tohead << "    $(\"#target\").hide();";
-	   tohead << "   } else if ($(\"#action\").val() == 'Portret::Before') {";
-	   tohead << "    $(\"#target\").hide();";
-	   tohead << "   } else if ($(\"#action\").val() == 'Portret::After') {";
-	   tohead << "    $(\"#target\").hide();";
-	   tohead << "   } else {";
-	   tohead << "    $(\"#target\").show();";
-	   tohead << "    $(\"#tijd_div\").hide();";
-	   tohead << "  }";
-	   tohead << "  action_val = $(\"#action\").val();";
-	   tohead << "  $.get( \"" << chase.getUrl() << "?chosen=\"+action_val, function( data ) {";
-	   tohead << "  $( \"#target\" ).html( data );";
-	   tohead << "  if ($(\"#target\").val() != '') { ";
-	   tohead << "    $(\"#submit\").prop('disabled',false);";
-	   tohead << "   } else";
-	   tohead << "   {$(\"#submit\").prop('disabled',true);}";
-	   tohead << "  });";
-	   tohead << " });";
-	   tohead << "});";
-	   tohead << "</script>";
-	   tohead << "<script type=\"text/javascript\">";
-	   tohead << " $(document).ready(function(){";
-	   tohead << "  $(\"#target\").change(function(){";
-	   tohead << "  if ($(\"#target\").val() != '') { ";
-	   tohead << "    $(\"#submit\").prop('disabled',false);";
-	   tohead << "   } else {$(\"#submit\").prop('disabled',true);}";
-	   tohead << "  });";
-	   tohead << " });";
-	   tohead << "</script>";
+		   tohead << "<script type=\"text/javascript\">";
+		   tohead << " function changetarget() {";
+		   tohead << "  if ($(\"#target\").val() == '') { ";
+		   tohead << "    $(\"#submit\").prop('disabled',true);";
+		   tohead << "   } else {$(\"#submit\").prop('disabled',false);}";
+		   tohead << " }";
+		   tohead << " function changetijd() {";
+		   tohead << "  if ($(\"#tijd\").val() == '') { ";
+		   tohead << "    $(\"#submit\").prop('disabled',true);";
+		   tohead << "   } else {$(\"#submit\").prop('disabled',false);}";
+		   tohead << " }";
+		   tohead << " function changefunc() {";
+		   tohead << "  if ($(\"#action\").val() == 'Time::Wait') { ";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").show();";
+		   tohead << "   } else if ($(\"#action\").val() == 'Clone::clearScreen') {";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "   } else if ($(\"#action\").val() == 'Music::ShakeOff') {";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "   } else if ($(\"#action\").val() == 'Music::ShakeOn') {";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "   } else if ($(\"#action\").val() == 'Portret::Before') {";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "   } else if ($(\"#action\").val() == 'Portret::After') {";
+		   tohead << "    $(\"#target\").hide();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "   } else {";
+		   tohead << "    $(\"#target\").show();";
+		   tohead << "    $(\"#tijd_div\").hide();";
+		   tohead << "  }";
+		   tohead << " }";
+		   tohead << " $(document).ready(function(){";
+		   tohead << "  $(\"#tijd_div\").hide();";
+		   tohead << "  $(\"#target\").change(function(){";
+		   tohead << "  changetarget();";
+		   tohead << "  });";
+		   tohead << "  $(\"#tijd\").change(function(){";
+		   tohead << "  changetijd();";
+		   tohead << "  });";
+		   tohead << "  if ($(\"#action\").val() == 'Time::Wait') {";
+		   tohead << "    changetijd();";
+		   tohead << "  } else {";
+		   tohead << "    changetarget();";
+		   tohead << "  }";
+		   tohead << "  $(\"#action\").change(function(){";
+		   tohead << "  changefunc();";
+		   tohead << "  action_val = $(\"#action\").val();";
+		   tohead << "  $.get( \"" << chase.getUrl() << "?chosen=\"+action_val, function( data ) {";
+		   tohead << "  $( \"#target\" ).html( data );";
+		   tohead << "  if ($(\"#action\").val() == 'Time::Wait') {";
+		   tohead << "    changetijd();";
+		   tohead << "  } else {";
+		   tohead << "    changetarget();";
+		   tohead << "  }";
+		   tohead << "  });";
+		   tohead << "  });";
+		   tohead << "  changefunc();";
+		   tohead << "});";
+		   tohead << "</script>";
 
 	   ss << "<form action=\"" << chase.getUrl() << "\" method=\"POST\">";
 	   ss << " <input type=\"hidden\" name=\"iter\" value=\"" << value << "\">";
@@ -893,6 +1378,7 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option value=\"Clone::toFile\">" << _("Clone::toFile") << "</option>";
 	   ss << "  <option value=\"Clone::onScreen\">" << _("Clone::onScreen") << "</option>";
 	   ss << "  <option value=\"Clone::clearScreen\">" << _("Clone::clearScreen") << "</option>";
+	   ss << "  <option value=\"Action::Parallel\">" << _("Action::Parallel") << "</option>";
 	   ss << "  <option value=\"Action::Play\">" << _("Action::Play") << "</option>";
 	   ss << "  <option value=\"Action::Stop\">" << _("Action::Stop") << "</option>";
 	   ss << "  <option value=\"Sound::Play\">" << _("Sound::Play") << "</option>";
@@ -916,7 +1402,9 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	   ss << "  <option value=\"Portret::Before\">" << _("Portret::Before") << "</option>";
 	   ss << "  <option value=\"Portret::After\">" << _("Portret::After") << "</option>";
 	   ss << "  <option value=\"Scene::Play\">" << _("Scene::Play") << "</option>";
+	   ss << "  <option value=\"Scene::Stop\">" << _("Scene::Stop") << "</option>";
 	   ss << "  <option value=\"Scene::FadeIn\">" << _("Scene::FadeIn") << "</option>";
+	   ss << "  <option value=\"Scene::FadeInto\">" << _("Scene::FadeInto") << "</option>";
 	   ss << "  <option value=\"Scene::FadeOut\">" << _("Scene::FadeOut") << "</option>";
 	   ss << "  <option value=\"Toggle::On\">" << _("Toggle::On") << "</option>";
 	   ss << "  <option value=\"Toggle::Off\">" << _("Toggle::Off") << "</option>";
@@ -1017,13 +1505,14 @@ bool ChaseFactory::Chase::ChaseHandler::handleAll(const char *method,
 	    ss << "<div class=\"cell-wrap rechts\">";
 	    ss << "<table class=\"rechts\">";
 	    ss << "<thead><tr><th class=\"kort\"><div class=\"waarde\"><button type=\"submit\" name=\"add\" value=\"-1\" id=\"add\">&#8627;</button></div></th>";
-	    ss << "<th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th><div class=\"waarde\">" << _("Action") << "</div></th><th><div class=\"waarde\">" << _("Value") << "</div></th></tr></thead>";
+	    ss << "<th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th class=\"kort\"><div class=\"waarde\">&nbsp;</div></th><th><div class=\"waarde\">" << _("Action") << "</div></th><th><div class=\"waarde\">" << _("Value") << "</div></th></tr></thead>";
 		for (it_list = chase.sequence_list->begin(); it_list != chase.sequence_list->end(); ++it_list)
 		{
 			std::string::size_type pos = (*it_list).action.find("::");
 			std::string action = (*it_list).action.substr(0,pos);
 			ss << "<tr>";
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"add\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"add\">&#8627;</button>";
+			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"change\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"change\">&#8634;</button>";
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"delete\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"delete\" style=\"font-weight:bold\">&#x1f5d1;</button>";
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"up\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"up\">&uarr;</button>";
 			ss << "<td class=\"kort\"><div class=\"waarde\">" << "<button type=\"submit\" name=\"down\" value=\"" << std::distance(chase.sequence_list->begin(), it_list) << "\" id=\"down\">&darr;</button>";

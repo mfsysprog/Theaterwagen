@@ -1,4 +1,4 @@
-   //============================================================================
+//============================================================================
 // Name        : Theaterwagen.cpp
 // Author      : Erik Janssen
 // Version     :
@@ -15,7 +15,7 @@
 
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
-#include "CivetServer.h"
+#include <CivetServer.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 
@@ -73,23 +73,55 @@ std::stringstream getHtml(std::string meta, std::string message, std::string bod
 	return ss;
 }
 
+void settext(std::string home)
+{
+        setlocale (LC_ALL, getenv("LANGUAGE"));
+        /* this will keep all floats to . as decimal point */
+        setlocale (LC_NUMERIC, "C");
+        bindtextdomain ("theaterwagen", (home + "languages/").c_str());
+        textdomain ("theaterwagen");
+	bind_textdomain_codeset("theaterwagen","UTF-8");
+        if (getenv("LANGUAGE") == NULL)
+        {
+        setenv("LANGUAGE", "nl_NL" , 1);
+                          {
+                            extern int  _nl_msg_cat_cntr;
+                            ++_nl_msg_cat_cntr;
+                          }
+        }
+}
+
 /*
- * Lesson 0: Test to make sure SDL is setup properly
+void * init_thread(const struct mg_context *ctx, int thread_type)
+{
+	//std::cerr << "CivetWeb initializing thread: " << thread_type << "\n";
+	//std::string home = std::string(getenv("HOME")) + "/" + ROOT_DIR;
+        //settext(home);
+        std::cerr << "Language: " << getenv("LANGUAGE") <<"\n";
+        std::cerr << "Domain: " << textdomain(NULL) << "\n";
+        std::cerr << "BindtextDomain: " << bindtextdomain("theaterwagen",NULL) << "\n";
+        //std::cerr << "Lang: " << getenv("LANG") << "\n";
+	std::cerr << "bind_textdomain_codeset: " << bind_textdomain_codeset("theaterwagen",NULL) << "\n";
+	std::cerr << "locale LC_ALL: " << setlocale(LC_ALL,NULL) << "\n";
+
+}
+*/
+
+/*
  */
 int main(int, char**){
 
+        //CivetCallbacks callbacks;
+
 	syslog = new std::stringstream();
+
 	std::string home = std::string(getenv("HOME")) + "/" + ROOT_DIR;
 
-	/* Setting the i18n environment */
-	setlocale (LC_ALL, "");
-	/* this will keep all floats to . as decimal point */
-	setlocale (LC_NUMERIC, "C");
-	bindtextdomain ("theaterwagen", (home + "languages/").c_str());
-	textdomain ("theaterwagen");
+	settext(home);
 
 	const char *options[] = {"cgi_interpreter", "/usr/bin/php-cgi",
-//			"access_log_file", "access.log",
+	//		"access_log_file", "access.log",
+	//		"error_log_file", "error.log",
 		    "document_root", home.c_str(), "listening_ports", PORT, 0};
 
 	    std::vector<std::string> cpp_options;
@@ -97,7 +129,9 @@ int main(int, char**){
 	        cpp_options.push_back(options[i]);
 	    }
 
-    // CivetServer server(options); // <-- C style start
+    	// CivetServer server(options); // <-- C style start
+        //callbacks.init_thread = init_thread;
+	//CivetServer server_start(cpp_options, &callbacks); // <-- C++ style start
 	CivetServer server_start(cpp_options); // <-- C++ style start
 	server = &server_start;
 
@@ -127,6 +161,6 @@ int main(int, char**){
 	{
 		delay(1000);
 	} while(true);
-    delete chase;
+        delete chase;
 	return 0;
 }

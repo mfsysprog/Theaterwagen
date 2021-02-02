@@ -61,10 +61,10 @@ static std::string matToJPG(cv::Mat* input)
     try
     {
         cv::resize((*input), resized, cv::Size(VIDEO_WIDTH,VIDEO_HEIGHT), 0, 0);
-        int params[2] = {0};
-        params[0] = cv::IMWRITE_JPEG_QUALITY;
-        params[1] = 100;
-    	cv::imencode(".jpg", resized, buf, std::vector<int>(params, params+1) );
+        std::vector<int> params;
+        params.push_back(cv::IMWRITE_JPEG_QUALITY);
+        params.push_back(90);
+    	cv::imencode(".jpg", resized, buf, params);
     }
     catch( cv::Exception& e )
     {
@@ -92,7 +92,7 @@ static cv::Mat ImgToMat(std::string* input)
     cv::Mat restored;
     try
     {
-        cv::imdecode(buf, cv::IMREAD_UNCHANGED, &restored);
+        cv::imdecode(buf, cv::IMREAD_COLOR, &restored);
         //cv::cvtColor(restored, restored, CV_RGB2BGR);
     }
     catch( cv::Exception& e )
@@ -141,6 +141,7 @@ CloneFactory::CloneFactory(){
 		//this->window = new sf::RenderWindow(sf::VideoMode(1024, 768), "RenderWindow");
 		//sf::RenderWindow window(sf::VideoMode(640, 480), "RenderWindow");
 		sf::VideoMode desktop = sf::VideoMode().getDesktopMode();
+		//sf::VideoMode desktop = sf::VideoMode(1024, 768);
 		this->window = new sf::RenderWindow(desktop, "Theaterwagen", sf::Style::None);
 	    window->setMouseCursorVisible(false);
 	    window->setVerticalSyncEnabled(true);
@@ -512,6 +513,9 @@ bool CloneFactory::Clone::openCap(cloneType type)
 	{
 		if(!cap->isOpened()){
 			cap->open(cv::CAP_GPHOTO2); // connect to the camera
+			//opencv seems to destroy locale settings...
+		        setlocale (LC_ALL, getenv("LANGUAGE"));
+		        setlocale (LC_NUMERIC, "C");
 			if(!cap->isOpened())
 				{
 					if (first_open)
@@ -746,6 +750,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 	while (true)
 	{
 		img_file = cloneFrame(type, false);
+
 		if (img_file.empty()) break;
 		if ((type == CAP_FILE && clone_to_file) || (type == CAP_FILE2 && clone_to_file2))
 		{
@@ -796,6 +801,7 @@ std::vector<std::string> CloneFactory::Clone::copyEllipses(cloneType type, unsig
 			{
 			   Mat src_resized;
 			   resize((*cf.camMat)(srcRect[i]), src_resized, Size(tgtRect[i].width, tgtRect[i].height));
+                           addWeighted(img_file(tgtRect[i]), 1.0 - mix_file / 100.0, src_resized, mix_file / 100.0, 0.0, src_resized);
 			   src_resized.copyTo(img_file(tgtRect[i]),tgt_mask(tgtRect[i]));
 			}
 		}
@@ -839,7 +845,7 @@ void CloneFactory::Clone::mergeFrames()
 	t2 = high_resolution_clock::now();
 
 	auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-	std::cout << "merging file took: " << int_ms.count() << " milliseconds" << endl;
+	// std::cout << "merging file took: " << int_ms.count() << " milliseconds" << endl;
 
 	if (this->filename2.compare("") != 0)
 	{
@@ -848,7 +854,7 @@ void CloneFactory::Clone::mergeFrames()
 		t2 = high_resolution_clock::now();
 
 		auto int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-		std::cout << "merging file2 took: " << int_ms.count() << " milliseconds" << endl;
+		// std::cout << "merging file2 took: " << int_ms.count() << " milliseconds" << endl;
 
 		t1 = high_resolution_clock::now();
 		morph = this->morph(ImgToMat(&file[file.size()-1]),ImgToMat(&file2[0]),this->morphsteps);
@@ -856,7 +862,7 @@ void CloneFactory::Clone::mergeFrames()
 		t2 = high_resolution_clock::now();
 
 		int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-		std::cout << "morphing file and file2 took: " << int_ms.count() << " milliseconds" << endl;
+		// std::cout << "morphing file and file2 took: " << int_ms.count() << " milliseconds" << endl;
 
 		while (file.size() % VIDEO_FPS != 0) file.push_back(file[(file.size()-1)]);
 		for (unsigned int i = 0; i < filesteps; i++)
@@ -885,76 +891,16 @@ void CloneFactory::Clone::mergeFrames()
 		}
 	}
 
-	fprintf(stderr,"starting encoding...\n");
+	// fprintf(stderr,"starting encoding...\n");
     std::string recordname = TMP_DIR + this->getUuid() + "." + VIDEO_EXT;
 
 	//av_log_set_level(AV_LOG_DEBUG);
 
 	t1 = high_resolution_clock::now();	t1 = high_resolution_clock::now();
 
-	/*
-    VideoWriter record(recordname, CV_FOURCC('M','P','4','V'),
-			  VIDEO_FPS, cv::Size(1024,768), true);
-
-
-    for (unsigned int i = 0; i < totaal.size(); i++) {
-    	record.write(ImgToMat(&totaal[i]));
-    }
-	*/
-
-	/*
-	fprintf(stderr,"av_register_all call\n");
-
-    av_register_all();
-
-	fprintf(stderr,"avcodec_find_encoder_by_name\n");
-
-    // auto codec = avcodec_find_encoder_by_name( "libx264" ); // works
-    auto codec = avcodec_find_encoder_by_name( "h264_omx" );
-    if( !codec )
-    {
-        throw std::runtime_error( "Unable to find codec" );
-    }
-
-	fprintf(stderr,"avcodec_alloc_context3\n");
-
-    auto context =
-        std::shared_ptr< AVCodecContext >( avcodec_alloc_context3( codec ), freeContext );
-
-    if( !context )
-    {
-        throw std::runtime_error( "Unable to allocate context" );
-    }
-
-    std::cout << "Setting options" << std::endl;
-
-    //context->bit_rate = 400 * 1024;  // 400 KBit/s
-    context->width = 640;
-    context->height = 480;
-    //context->pix_fmt = AV_PIX_FMT_YUV420P;
-    context->time_base.num = 30; // milliseconds
-    context->time_base.den = 1;
-    //context->thread_count = 0;
-    //context->level = 31;
-
-    // av_opt_set( m_context->priv_data, "tune", "zerolatency", 0 );
-    av_opt_set( context->priv_data, "preset", "slow", 0 );
-
-    std::cout << "Opening context" << std::endl;
-
-    auto errorCode = avcodec_open2( context.get(), codec, nullptr );
-    if( errorCode < 0 )
-    {
-        throw std::runtime_error( "Unable to open codec (" + avError( errorCode ) + ")" );
-    }
-
-    std::cout << "Done" << std::endl;
-
-    */
-
     // initialize FFmpeg library
     av_register_all();
-	//av_log_set_level(AV_LOG_DEBUG);
+    //av_log_set_level(AV_LOG_DEBUG);
     int ret;
 
     const int dst_width = VIDEO_WIDTH;
@@ -984,6 +930,9 @@ void CloneFactory::Clone::mergeFrames()
     // create new video stream
     //AVCodec* vcodec = avcodec_find_encoder(outctx->oformat->video_codec);
     AVCodec* vcodec = avcodec_find_encoder_by_name("h264_omx");
+    //AVCodec* vcodec = avcodec_find_encoder_by_name("h264_v4l2m2m");
+    //AVCodec* vcodec = avcodec_find_encoder_by_name("libx264");
+    //AVCodec* vcodec = avcodec_find_encoder_by_name("mpeg4");
     if (!vcodec)
     {
     	fprintf(stderr,"Kan codec nie vinden nie \n");
@@ -996,56 +945,80 @@ void CloneFactory::Clone::mergeFrames()
         return;
     }
 
-    avcodec_get_context_defaults3(vstrm->codec, vcodec);
-    vstrm->codec->width = dst_width;
-    vstrm->codec->height = dst_height;
-    //vstrm->codec->level = 32;
+    AVCodecContext *avctx = NULL;
+
+    //avctx = avcodec_alloc_context3(vcodec);
+
+    // vstrm->codec = avcodec_alloc_context3(vcodec);
+
+    //avcodec_get_context_defaults3(avctx, vcodec);
+    avctx = vstrm->codec;
+    //vstrm->codec->width = dst_width;
+    avctx->width = dst_width;
+    //vstrm->codec->height = dst_height;
+    avctx->height = dst_height;
+    avctx->level = 32;
     //vstrm->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vstrm->codec->pix_fmt = AV_PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     //vstrm->codec->pix_fmt = vcodec->pix_fmts[0];
     //vstrm->codec->time_base = vstrm->time_base = av_inv_q(dst_fps);
-    vstrm->codec->time_base = dst_timebase;
-    vstrm->codec->framerate = dst_fps;
+    avctx->time_base = dst_timebase;
+    //vstrm->codec->time_base = dst_timebase;
+    avctx->framerate = dst_fps;
     //vstrm->codec->max_b_frames = 1;
-    vstrm->codec->gop_size = 10;
+    avctx->gop_size = 10;
     //vstrm->codec->compression_level = 0;
     //vstrm->r_frame_rate = vstrm->avg_frame_rate = dst_fps;
     //vstrm->codec->thread_count = 0;
-    vstrm->codec->bit_rate = 6000 * 1024;
+    //vstrm->codec->bit_rate = 2000 * 1024;
+    avctx->profile = FF_PROFILE_H264_HIGH;
+    //avctx->crf = 0;
+    avctx->bit_rate = dst_height * dst_width * 3;
     //vstrm->codec->delay = 0;
     //vstrm->codec->max_b_frames = 0;
     //vstrm->codec->thread_count = 1;
 
    	//av_opt_set(vstrm->codec->priv_data, "preset", "slow", 0);
    	//av_opt_set(vstrm->codec->priv_data, "tune", "film", 0);
-    //av_opt_set(vstrm->codec->priv_data, "crf", "1", AV_OPT_SEARCH_CHILDREN);
+    //av_opt_set(avctx->priv_data, "crf", "1", AV_OPT_SEARCH_CHILDREN);
     //av_opt_set(vstrm->codec->priv_data, "qp", "10", 0);
 
     //vstrm->codec->flags &= ~AV_CODEC_CAP_DELAY;
     //fprintf(stderr,"Capabilities %i",vstrm->codec->codec->capabilities);
+
+    //av_dump_format(outctx, 0 , recordname.c_str(), 1);
+
     if (outctx->oformat->flags & AVFMT_GLOBALHEADER)
-        vstrm->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        avctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+	/*
+    ret = avcodec_parameters_from_context(vstrm->codecpar, vstrm->codec);
+    if (ret < 0) {
+        std::cerr << "fail to avcodec_parameters_from_context: ret=" << ret;
+        return;
+    } */
 
     // open video encoder
-    ret = avcodec_open2(vstrm->codec, vcodec, nullptr);
+    ret = avcodec_open2(avctx, vcodec, nullptr);
     if (ret < 0) {
         std::cerr << "fail to avcodec_open2: ret=" << ret;
         return;
     }
-
+    /*
     std::cout
         << "outfile: " << recordname.c_str() << "\n"
         << "format:  " << outctx->oformat->name << "\n"
         << "vcodec:  " << vcodec->name << "\n"
         << "size:    " << dst_width << 'x' << dst_height << "\n"
         << "fps:     " << av_q2d(dst_fps) << "\n"
-        << "pixfmt:  " << av_get_pix_fmt_name(vstrm->codec->pix_fmt) << "\n"
+        << "pixfmt:  " << av_get_pix_fmt_name(avctx->pix_fmt) << "\n"
         << std::flush;
-
+    */
     // initialize sample scaler
-    SwsContext* swsctx = sws_getCachedContext(
-        nullptr, dst_width, dst_height, AV_PIX_FMT_BGR24,
-        dst_width, dst_height, vstrm->codec->pix_fmt, SWS_BICUBIC, nullptr, nullptr, nullptr);
+    //SwsContext* swsctx = sws_getCachedContext(
+    SwsContext* swsctx = sws_getContext(
+        dst_width, dst_height, AV_PIX_FMT_BGR24,
+        dst_width, dst_height, avctx->pix_fmt, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
     if (!swsctx) {
         std::cerr << "fail to sws_getCachedContext";
         return;
@@ -1053,11 +1026,12 @@ void CloneFactory::Clone::mergeFrames()
 
     // allocate frame buffer for encoding
     AVFrame* frame = av_frame_alloc();
-    std::vector<uint8_t> framebuf(avpicture_get_size(vstrm->codec->pix_fmt, dst_width, dst_height));
-    avpicture_fill(reinterpret_cast<AVPicture*>(frame), framebuf.data(), vstrm->codec->pix_fmt, dst_width, dst_height);
+    //std::vector<uint8_t> framebuf(avpicture_get_size(vstrm->codec->pix_fmt, dst_width, dst_height));
+    //avpicture_fill(reinterpret_cast<AVPicture*>(frame), framebuf.data(), vstrm->codec->pix_fmt, dst_width, dst_height);
     frame->width = dst_width;
     frame->height = dst_height;
-    frame->format = static_cast<int>(vstrm->codec->pix_fmt);
+    frame->format = static_cast<int>(avctx->pix_fmt);
+    av_frame_get_buffer(frame,32);
 
     // encoding loop
     avformat_write_header(outctx, nullptr);
@@ -1075,16 +1049,23 @@ void CloneFactory::Clone::mergeFrames()
         pkt.data = nullptr;
         pkt.size = 0;
         av_init_packet(&pkt);
-        ret = avcodec_encode_video2(vstrm->codec, &pkt, frame, &got_pkt);
+        //ret = avcodec_encode_video2(vstrm->codec, &pkt, frame, &got_pkt);
+        //std::cout << "sending frame " << frame->pts << "\n";
+	avcodec_send_frame(avctx, frame);
         //fprintf(stderr, "image size is %i\n",pkt.size);
         if (ret < 0) {
             std::cerr << "fail to avcodec_encode_video2: ret=" << ret << "\n";
             break;
         }
-        if (got_pkt) {
+        if (avcodec_receive_packet(avctx, &pkt) >= 0) {
             // rescale packet timestamp
             pkt.duration = 1;
-            av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            //av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            int64_t scaled_pts = av_rescale_q(pkt.pts, avctx->time_base, vstrm->time_base);
+            int64_t scaled_dts = av_rescale_q(pkt.dts, avctx->time_base, vstrm->time_base);
+            pkt.pts = scaled_pts;
+            pkt.dts = scaled_dts;
+            //std::cout << "receive packed for frame " << pkt.pts << " with size " << pkt.size << "\n";
             // write packet
             av_write_frame(outctx, &pkt);
             std::cout << nb_frames << '\r' << std::flush;  // dump progress
@@ -1092,32 +1073,38 @@ void CloneFactory::Clone::mergeFrames()
             av_free_packet(&pkt);
         }
     }
-
-    do {
         // encode video frame
         AVPacket pkt;
         pkt.data = nullptr;
         pkt.size = 0;
         av_init_packet(&pkt);
-        ret = avcodec_encode_video2(vstrm->codec, &pkt, NULL, &got_pkt);
+        //std::cout << "sending flush frame \n";
+	ret = avcodec_send_frame(avctx, NULL);
+        //ret = avcodec_encode_video2(vstrm->codec, &pkt, NULL, &got_pkt);
         if (ret < 0) {
             fprintf(stderr, "Error encoding frame\n");
             exit(1);
         }
-        if (got_pkt) {
-            // rescale packet timestamp
-            pkt.duration = 1;
-            av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+    do {
+            ret = avcodec_receive_packet(avctx, &pkt);
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+            if (pkt.size == 0) break;
+	    pkt.duration = 1;
+            //av_packet_rescale_ts(&pkt, vstrm->codec->time_base, vstrm->time_base);
+            int64_t scaled_pts = av_rescale_q(pkt.pts, avctx->time_base, vstrm->time_base);
+            int64_t scaled_dts = av_rescale_q(pkt.dts, avctx->time_base, vstrm->time_base);
+            pkt.pts = scaled_pts;
+            pkt.dts = scaled_dts;
+            //std::cout << "receive packed for frame " << pkt.pts << " with size " << pkt.size << "\n";
             // write packet
             av_write_frame(outctx, &pkt);
             std::cout << nb_frames << '\r' << std::flush;  // dump progress
             ++nb_frames;
             av_free_packet(&pkt);
-        }
-    } while (got_pkt);
+        } while (1==1);
 
     av_write_trailer(outctx);
-    std::cout << nb_frames << " frames encoded" << std::endl;
+    //std::cout << nb_frames << " frames encoded" << std::endl;
 
     av_frame_free(&frame);
     avcodec_close(vstrm->codec);
@@ -1126,7 +1113,7 @@ void CloneFactory::Clone::mergeFrames()
 
     t2 = high_resolution_clock::now();
 	int_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-	std::cout << "H264 encoding took: " << int_ms.count() << " milliseconds" << endl;
+	//std::cout << "H264 encoding took: " << int_ms.count() << " milliseconds" << endl;
 }
 
 
@@ -1305,7 +1292,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
           CivetServer *server,
           struct mg_connection *conn)
 {
-	std::string s[8] = "";
+	std::string s[8] = {""};
 	std::string dummy;
 	std::string value;
 	std::string message="&nbsp;";
@@ -1634,7 +1621,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	{
 	    if (clone.openCap(CAP_CAM))
 	    {
-	    	clone.cf.camMat->release();
+		clone.cf.camMat->release();
 	    	(*clone.cf.camMat) = clone.cloneFrame(CAP_CAM, false);
 	    	clone.closeCap();
 			message = _("Frame Cloned!");
@@ -1680,7 +1667,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "add", value))
 	{
 	  	ss << "<form action=\"" << clone.getUrl() << "\" method=\"POST\">";
-	    ss << "<h2>" << _("Ellipse in") << ":</h2>";
+	    ss << "<h2>" << _("Ellipse in") << ":</h2><br>";
 		ss << "<label for=\"centerx\">" << _("centerx") << ":</label>"
 					  "<input class=\"inside\" id=\"centerx\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
 					  " name=\"centerx\"/>" << "<br>";
@@ -1693,7 +1680,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 		ss << "<label for=\"axewidth\">" << _("axewidth") << ":</label>"
 					  "<input class=\"inside\" id=\"axewidth\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
 					  " name=\"axewidth\"/>" << "<br>";
-		ss << "<h2>" << _("Ellipse Out") << ":</h2>";
+		ss << "<h2>" << _("Ellipse Out") << ":</h2><br>";
 		ss << "<label for=\"centerxo\">" << _("centerx") << ":</label>"
 					  "<input class=\"inside\" id=\"centerxo\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
 					  " name=\"centerxo\"/>" << "<br>";
@@ -1714,7 +1701,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 	if(CivetServer::getParam(conn, "update", value))
 	{
 	  	ss << "<form action=\"" << clone.getUrl() << "\" method=\"POST\">";
-	    ss << "<h2>" << _("Ellipse in") << ":</h2>";
+	    ss << "<h2>" << _("Ellipse in") << ":</h2><br>";
 		ss << "<label for=\"centerx\">" << _("centerx") << ":</label>"
 					  "<input class=\"inside\" id=\"centerx\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
 					  " name=\"centerx\" value=\"" << (*clone.ellipses_in)[(atoi(value.c_str()))].centerx << "\" />" << "<br>";
@@ -1727,7 +1714,7 @@ bool CloneFactory::Clone::CloneHandler::handleAll(const char *method,
 		ss << "<label for=\"axewidth\">" << _("axewidth") << ":</label>"
 					  "<input class=\"inside\" id=\"axewidth\" type=\"number\" min=\"0\" max=\"1000\" placeholder=\"0.00\" step=\"any\" " <<
 					  " name=\"axewidth\" value=\"" << (*clone.ellipses_in)[(atoi(value.c_str()))].axewidth << "\" />" << "<br>";
-		ss << "<h2>" << _("Ellipse Out") << ":</h2>";
+		ss << "<h2>" << _("Ellipse Out") << ":</h2><br>";
 		ss << "<label for=\"centerxo\">" << _("centerx") << ":</label>"
 					  "<input class=\"inside\" id=\"centerxo\" type=\"number\" min=\"0\" max=\"10000\" placeholder=\"0\" step=\"1\"" <<
 					  " name=\"centerxo\" value=\"" << (*clone.ellipses_out)[(atoi(value.c_str()))].centerx << "\" />" << "<br>";

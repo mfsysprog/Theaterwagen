@@ -290,6 +290,68 @@ std::string SceneFactory::Scene::getUrl(){
 	return url;
 }
 
+void SceneFactory::Scene::Stop(){
+        int nBytes;
+
+    for (int k = 0; k < 512; k++)
+          {
+                  // if channel is not selected we do nothing
+                  if ((*channels)[k][2] == '0') continue;
+                  main_channel[k] = 0;
+          }
+
+      std::unique_lock<std::mutex> l(m_scene);
+      if (uDMX_found)
+      {
+                  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+                                                                                                cmd_SetChannelRange, 512, 0, (char *)main_channel, 512, 1000);
+                  if (nBytes < 0)
+                         fprintf(stderr, "USB error: %s\n", usb_strerror());
+      }
+      l.unlock();
+          delay(20);
+}
+
+void SceneFactory::Scene::fadeInto(){
+        std::thread t1( [this] {
+        int nBytes;
+
+	unsigned char copy_channel[512] = {0};
+        memcpy(copy_channel, main_channel, sizeof(copy_channel));
+        for (unsigned int i = 1; i <= fadesteps; ++i)
+        {
+          for (int k = 0; k < 512; k++)
+          {
+                  // if channel is not selected we do nothing
+                  if ((*channels)[k][2] == '0') continue;
+                  // exclude channel
+                  if ((*channels)[k][1] == '1')
+                          main_channel[k] =  (*channels)[k][0];
+                  else
+		     if (copy_channel[k] < (*channels)[k][0])
+                        main_channel[k] = copy_channel[k] + ((int)((float)((*channels)[k][0]-copy_channel[k]) / (float)fadesteps) * i);
+                     else
+		     if (copy_channel[k] > (*channels)[k][0])
+			main_channel[k] = (int)(float)copy_channel[k] - (((float)(copy_channel[k] - (*channels)[k][0]) / (float)fadesteps) * i);
+		     else
+			main_channel[k] =  (*channels)[k][0];
+	   }
+      std::unique_lock<std::mutex> l(m_scene);
+      if (uDMX_found)
+      {
+                  nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+                                                                                                cmd_SetChannelRange, 512, 0, (char *)main_channel, 512, 1000);
+                  if (nBytes < 0)
+                         fprintf(stderr, "USB error: %s\n", usb_strerror());
+      }
+          l.unlock();
+          delay(20);
+        }
+        Play();
+        });
+        t1.detach();
+}
+
 void SceneFactory::Scene::fadeIn(){
 	std::thread t1( [this] {
 	int nBytes;
@@ -352,20 +414,6 @@ void SceneFactory::Scene::fadeOut(){
 	}
 	});
 	t1.detach();
-}
-
-void SceneFactory::Scene::Stop(){
-	int nBytes;
-	unsigned char channels_tmp[512] = {0};
-
-    if (uDMX_found)
-    {
-		nBytes = usb_control_msg(handle, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-												cmd_SetChannelRange, 512, 0, (char *)channels_tmp, 512, 1000);
-		if (nBytes < 0)
-			fprintf(stderr, "USB error: %s\n", usb_strerror());
-    }
-	delay(20);
 }
 
 void SceneFactory::Scene::Play(){
@@ -651,6 +699,18 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
 		message = _("Playing!");
 	}
+        if(CivetServer::getParam(conn, "stop", dummy))
+        {
+                scene.Stop();
+                meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
+                message = _("Stopping!");
+        }
+        if(CivetServer::getParam(conn, "fadeinto", dummy))
+        {
+                scene.fadeInto();
+                meta = "<meta http-equiv=\"refresh\" content=\"1;url=\"" + scene.getUrl() + "\"/>";
+                message = _("Fading into!");
+        }
 	if(CivetServer::getParam(conn, "fadein", dummy))
 	{
 		scene.fadeIn();
@@ -670,7 +730,9 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 		ss << "<button type=\"submit\" name=\"refresh\" value=\"true\" id=\"refresh\">" << _("Refresh") << "</button><br>";
 		ss << "<br>";
 		ss << "<button type=\"submit\" name=\"play\" value=\"play\" id=\"play\">" << _("Play") << "</button>";
+		ss << "<button type=\"submit\" name=\"stop\" value=\"stop\" id=\"stop\">" << _("Stop") << "</button>";
 		ss << "<button type=\"submit\" name=\"fadein\" value=\"fadein\" id=\"fadein\">" << _("Fade In") << "</button>";
+		ss << "<button type=\"submit\" name=\"fadeinto\" value=\"fadeinto\" id=\"fadeinto\">" << _("Fade Into") << "</button>";
 		ss << "<button type=\"submit\" name=\"fadeout\" value=\"fadeout\" id=\"fadeout\">" << _("Fade Out") << "</button>";
 	    ss << "</form>";
 	    ss << "<form style ='float: left; padding: 0px;' action=\"/scenefactory\" method=\"POST\">";
@@ -688,10 +750,11 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 					  "<input class=\"inside\" id=\"omschrijving\" type=\"text\" size=\"30\" value=\"" <<
 					  scene.getOmschrijving() << "\"" << " name=\"omschrijving\"/>" << "</br>";
 		ss << "<br>";
-		ss << "<label for=\"fadesteps\">" << _("Fade Steps") << ":</label>";
+		ss << "<label for=\"fadesteps\">" << _("Fade Steps (~60ms per step)") << ":</label>";
 		ss << "<td><input class=\"inside\" id=\"fadesteps\" type=\"range\" min=\"1\" max=\"100\" step=\"1\" value=\"" <<
 			  scene.getFadeSteps() << "\"" << " name=\"fadesteps\" />";
-		ss << "</tr>";
+    		ss << "<td style=\"text-align:center;\"><output for=\"fadesteps\" id=\"fadeinfo\">" << std::to_string((scene.getFadeSteps() * 60)).c_str() << "</output></td><td>ms</td>";
+                ss << "</tr>";
 		ss << "</div>";
 		ss << "<br>";
 		ss << "<br>";
@@ -707,7 +770,7 @@ bool SceneFactory::Scene::SceneHandler::handleAll(const char *method,
 	    tohead << "});";
 		tohead << " $('#fadesteps').on('change', function() {";
 		tohead << " $.get( \"" << scene.getUrl() << "\", { fadesteps: 'true', value: $('#fadesteps').val() }, function( data ) {";
-		tohead << "  $( \"#fadesteps\" ).html( data );})";
+		tohead << "  $( \"#fadesteps\" ).html( data );  $( \"#fadeinfo\" ).html( data * 60 );})";
 	    tohead << "});";
 
 
