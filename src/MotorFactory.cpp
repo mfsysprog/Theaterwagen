@@ -609,9 +609,16 @@ MotorFactory::Motor::MotorHandler::~MotorHandler(){
  */
 
 void MotorFactory::load(){
-	for (std::pair<std::string, MotorFactory::Motor*> element  : motormap)
+	// get a list of loaded uuids
+    std::vector<std::string> loaded_uuids;
+
+	for (std::map<std::string, MotorFactory::Motor*>::const_iterator it=motormap.begin(); it!=motormap.end(); ++it) {
+ 	    loaded_uuids.push_back( it->first );
+	}
+	// and delete all of them
+	for (std::string element  : loaded_uuids)
 	{
-		deleteMotor(element.first);
+		deleteMotor(element);
 	}
 
 	char filename[] = CONFIG_FILE_MOTOR;

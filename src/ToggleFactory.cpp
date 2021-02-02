@@ -103,9 +103,16 @@ ToggleFactory::Toggle::ToggleHandler::~ToggleHandler(){
  */
 
 void ToggleFactory::load(){
-	for (std::pair<std::string, ToggleFactory::Toggle*> element  : togglemap)
+	// get a list of loaded uuids
+    std::vector<std::string> loaded_uuids;
+
+	for (std::map<std::string, ToggleFactory::Toggle*>::const_iterator it=togglemap.begin(); it!=togglemap.end(); ++it) {
+ 	    loaded_uuids.push_back( it->first );
+	}
+	// and delete all of them
+	for (std::string element  : loaded_uuids)
 	{
-		deleteToggle(element.first);
+		deleteToggle(element);
 	}
 
 	char filename[] = CONFIG_FILE_TOGGLE;

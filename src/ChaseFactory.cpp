@@ -129,9 +129,16 @@ ChaseFactory::Chase::ChaseHandler::~ChaseHandler(){
  */
 
 void ChaseFactory::load(){
-	for (std::pair<std::string, ChaseFactory::Chase*> element  : chasemap)
+	// get a list of loaded uuids
+        std::vector<std::string> loaded_uuids;
+
+	for (std::map<std::string, ChaseFactory::Chase*>::const_iterator it=chasemap.begin(); it!=chasemap.end(); ++it) {
+ 	    loaded_uuids.push_back( it->first );
+	}
+	// and delete all of them
+	for (std::string element  : loaded_uuids)
 	{
-		deleteChase(element.first);
+		deleteChase(element);
 	}
 
 	char filename[] = CONFIG_FILE_CHASE;

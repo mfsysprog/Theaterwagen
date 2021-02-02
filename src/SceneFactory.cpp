@@ -204,9 +204,16 @@ SceneFactory::Scene::SceneHandler::~SceneHandler(){
  */
 
 void SceneFactory::load(){
-	for (std::pair<std::string, SceneFactory::Scene*> element  : scenemap)
+	// get a list of loaded uuids
+        std::vector<std::string> loaded_uuids;
+
+	for (std::map<std::string, SceneFactory::Scene*>::const_iterator it=scenemap.begin(); it!=scenemap.end(); ++it) {
+ 	    loaded_uuids.push_back( it->first );
+	}
+	// and delete all of them
+	for (std::string element  : loaded_uuids)
 	{
-		deleteScene(element.first);
+		deleteScene(element);
 	}
 
 	char filename[] = CONFIG_FILE_SCENE;

@@ -73,9 +73,16 @@ FixtureFactory::Fixture::FixtureHandler::~FixtureHandler(){
  */
 
 void FixtureFactory::load(){
-	for (std::pair<int, FixtureFactory::Fixture*> element  : fixturemap)
+	// get a list of loaded uuids
+    std::vector<int> loaded_uuids;
+
+	for (std::map<int, FixtureFactory::Fixture*>::const_iterator it=fixturemap.begin(); it!=fixturemap.end(); ++it) {
+ 	    loaded_uuids.push_back( it->first );
+	}
+	// and delete all of them
+	for (int element  : loaded_uuids)
 	{
-		deleteFixture(element.first);
+		deleteFixture(element);
 	}
 
 	char filename[] = CONFIG_FILE_FIXTURE;

@@ -363,9 +363,16 @@ ButtonFactory::Button::ButtonHandler::~ButtonHandler(){
  */
 
 void ButtonFactory::load(){
-	for (std::pair<std::string, ButtonFactory::Button*> element  : buttonmap)
+	// get a list of loaded uuids
+    std::vector<std::string> loaded_uuids;
+
+	for (std::map<std::string, ButtonFactory::Button*>::const_iterator it=buttonmap.begin(); it!=buttonmap.end(); ++it) {
+ 	    loaded_uuids.push_back( it->first );
+	}
+	// and delete all of them
+	for (std::string element  : loaded_uuids)
 	{
-		deleteButton(element.first);
+		deleteButton(element);
 	}
 
 	char filename[] = CONFIG_FILE_BUTTON;

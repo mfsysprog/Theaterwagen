@@ -96,9 +96,16 @@ MusicFactory::Music::MusicHandler::~MusicHandler(){
  */
 
 void MusicFactory::load(){
-	for (std::pair<std::string, MusicFactory::Music*> element  : musicmap)
+	// get a list of loaded uuids
+    std::vector<std::string> loaded_uuids;
+
+	for (std::map<std::string, MusicFactory::Music*>::const_iterator it=musicmap.begin(); it!=musicmap.end(); ++it) {
+ 	    loaded_uuids.push_back( it->first );
+	}
+	// and delete all of them
+	for (std::string element  : loaded_uuids)
 	{
-		deleteMusic(element.first);
+		deleteMusic(element);
 	}
 
 	char filename[] = CONFIG_FILE_MUSIC;

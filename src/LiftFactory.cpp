@@ -359,9 +359,16 @@ bool LiftFactory::Lift::getPosition(liftdir direction){
  */
 
 void LiftFactory::load(){
-	for (std::pair<std::string, LiftFactory::Lift*> element  : liftmap)
+	// get a list of loaded uuids
+    std::vector<std::string> loaded_uuids;
+
+	for (std::map<std::string, LiftFactory::Lift*>::const_iterator it=liftmap.begin(); it!=liftmap.end(); ++it) {
+ 	    loaded_uuids.push_back( it->first );
+	}
+	// and delete all of them
+	for (std::string element  : loaded_uuids)
 	{
-		deleteLift(element.first);
+		deleteLift(element);
 	}
 
 	char filename[] = CONFIG_FILE_LIFT;

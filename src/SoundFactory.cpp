@@ -101,9 +101,16 @@ SoundFactory::Sound::SoundHandler::~SoundHandler(){
  */
 
 void SoundFactory::load(){
-	for (std::pair<std::string, SoundFactory::Sound*> element  : soundmap)
+	// get a list of loaded uuids
+    std::vector<std::string> loaded_uuids;
+
+	for (std::map<std::string, SoundFactory::Sound*>::const_iterator it=soundmap.begin(); it!=soundmap.end(); ++it) {
+ 	    loaded_uuids.push_back( it->first );
+	}
+	// and delete all of them
+	for (std::string element  : loaded_uuids)
 	{
-		deleteSound(element.first);
+		deleteSound(element);
 	}
 
 	char filename[] = CONFIG_FILE_SOUND;

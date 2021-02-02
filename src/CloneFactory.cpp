@@ -331,9 +331,16 @@ void CloneFactory::renderingThread(sf::RenderWindow *window)
 
 
 void CloneFactory::load(){
-	for (std::pair<std::string, CloneFactory::Clone*> element  : clonemap)
+	// get a list of loaded uuids
+    std::vector<std::string> loaded_uuids;
+
+	for (std::map<std::string, CloneFactory::Clone*>::const_iterator it=clonemap.begin(); it!=clonemap.end(); ++it) {
+ 	    loaded_uuids.push_back( it->first );
+	}
+	// and delete all of them
+	for (std::string element  : loaded_uuids)
 	{
-		deleteClone(element.first);
+		deleteClone(element);
 	}
 
 	char filename[] = CONFIG_FILE_CLONE;
