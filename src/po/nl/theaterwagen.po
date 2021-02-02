@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-01-31 13:36+0100\n"
+"POT-Creation-Date: 2021-02-02 11:34+0100\n"
 "PO-Revision-Date: 2020-03-19 20:28+0100\n"
 "Last-Translator: erik <eaw.janssen@chello.nl>\n"
 "Language-Team: Dutch\n"
@@ -33,19 +33,19 @@ msgstr "0 - Knop actief"
 msgid "1 - Button inactive"
 msgstr "1 - Knop inactief"
 
-#: ButtonFactory.cpp:608 ButtonFactory.cpp:806 ChaseFactory.cpp:1035
+#: ButtonFactory.cpp:608 ButtonFactory.cpp:806 ChaseFactory.cpp:1508
 msgid "Action"
 msgstr "Actie"
 
-#: ChaseFactory.cpp:908
+#: ChaseFactory.cpp:978 ChaseFactory.cpp:980 ChaseFactory.cpp:1381
 msgid "Action::Parallel"
 msgstr "Actie::Parallel"
 
-#: ChaseFactory.cpp:909
+#: ChaseFactory.cpp:983 ChaseFactory.cpp:985 ChaseFactory.cpp:1382
 msgid "Action::Play"
 msgstr "Actie::Afspelen"
 
-#: ChaseFactory.cpp:910
+#: ChaseFactory.cpp:988 ChaseFactory.cpp:990 ChaseFactory.cpp:1383
 msgid "Action::Stop"
 msgstr "Actie::Stoppen"
 
@@ -57,11 +57,11 @@ msgstr "Acties"
 msgid "Activate"
 msgstr "Activeer"
 
-#: ChaseFactory.cpp:1017
+#: ChaseFactory.cpp:1490
 msgid "Active"
 msgstr "Actief"
 
-#: ButtonFactory.cpp:617 ChaseFactory.cpp:520 ChaseFactory.cpp:945
+#: ButtonFactory.cpp:617 ChaseFactory.cpp:520 ChaseFactory.cpp:1418
 #: CloneFactory.cpp:1245 CloneFactory.cpp:1696 FixtureFactory.cpp:238
 #: LiftFactory.cpp:591 MotorFactory.cpp:940 SceneFactory.cpp:568
 #: ToggleFactory.cpp:289
@@ -72,7 +72,7 @@ msgstr "Toevoegen"
 msgid "All saved!"
 msgstr "Alles opgeslagen!"
 
-#: ChaseFactory.cpp:517 ChaseFactory.cpp:1001 ChaseFactory.cpp:1006
+#: ChaseFactory.cpp:517 ChaseFactory.cpp:1474 ChaseFactory.cpp:1479
 msgid "Automatic Start"
 msgstr "Automatisch Starten"
 
@@ -96,11 +96,11 @@ msgstr "Knop Rechts"
 msgid "Button activated!"
 msgstr "Knop geactiveerd!"
 
-#: ChaseFactory.cpp:901
+#: ChaseFactory.cpp:943 ChaseFactory.cpp:945 ChaseFactory.cpp:1374
 msgid "Button::Activate"
 msgstr "Knop::Activeer"
 
-#: ChaseFactory.cpp:902
+#: ChaseFactory.cpp:948 ChaseFactory.cpp:950 ChaseFactory.cpp:1375
 msgid "Button::Wait"
 msgstr "Knop::Wachten"
 
@@ -123,6 +123,10 @@ msgstr "Camera open fout!"
 #: CloneFactory.cpp:1662
 msgid "Cancel"
 msgstr "Annuleren"
+
+#: ChaseFactory.cpp:1299
+msgid "Change"
+msgstr "Wijzig"
 
 #: HomeHandler.cpp:101
 msgid "Change Language"
@@ -153,23 +157,23 @@ msgstr "Geleegd!"
 msgid "Clone to file"
 msgstr "Clonen naar bestand"
 
-#: ChaseFactory.cpp:904
+#: ChaseFactory.cpp:958 ChaseFactory.cpp:960 ChaseFactory.cpp:1377
 msgid "Clone::Merge"
 msgstr "Foto::Samenvoegen"
 
-#: ChaseFactory.cpp:903
+#: ChaseFactory.cpp:953 ChaseFactory.cpp:955 ChaseFactory.cpp:1376
 msgid "Clone::Photo"
 msgstr "Foto::maken"
 
-#: ChaseFactory.cpp:907
+#: ChaseFactory.cpp:973 ChaseFactory.cpp:975 ChaseFactory.cpp:1380
 msgid "Clone::clearScreen"
 msgstr "Foto::schermLeegmaken"
 
-#: ChaseFactory.cpp:906
+#: ChaseFactory.cpp:968 ChaseFactory.cpp:970 ChaseFactory.cpp:1379
 msgid "Clone::onScreen"
 msgstr "Foto::opScherm"
 
-#: ChaseFactory.cpp:905
+#: ChaseFactory.cpp:963 ChaseFactory.cpp:965 ChaseFactory.cpp:1378
 msgid "Clone::toFile"
 msgstr "Foto::naarBestand"
 
@@ -178,7 +182,7 @@ msgid "Clones"
 msgstr "Foto's"
 
 #: ButtonFactory.cpp:601 ButtonFactory.cpp:629 ButtonFactory.cpp:797
-#: ChaseFactory.cpp:515 ChaseFactory.cpp:532 ChaseFactory.cpp:996
+#: ChaseFactory.cpp:515 ChaseFactory.cpp:532 ChaseFactory.cpp:1469
 #: CloneFactory.cpp:1241 CloneFactory.cpp:1257 CloneFactory.cpp:1841
 #: FixtureFactory.cpp:230 FixtureFactory.cpp:249 FixtureFactory.cpp:351
 #: LiftFactory.cpp:577 LiftFactory.cpp:602 LiftFactory.cpp:908
@@ -331,9 +335,9 @@ msgstr "Invoer Camera"
 msgid "Input File"
 msgstr "Invoer Bestand"
 
-#: ChaseFactory.cpp:1053 ChaseFactory.cpp:1070 ChaseFactory.cpp:1094
-#: ChaseFactory.cpp:1111 ChaseFactory.cpp:1128 ChaseFactory.cpp:1145
-#: ChaseFactory.cpp:1162 ChaseFactory.cpp:1193 ChaseFactory.cpp:1216
+#: ChaseFactory.cpp:1527 ChaseFactory.cpp:1544 ChaseFactory.cpp:1568
+#: ChaseFactory.cpp:1585 ChaseFactory.cpp:1602 ChaseFactory.cpp:1619
+#: ChaseFactory.cpp:1636 ChaseFactory.cpp:1667 ChaseFactory.cpp:1690
 msgid "Invalid Action! Forgot to save or removed?"
 msgstr "Ongeldige Actie! Vergeten op te slaan of verwijderd?"
 
@@ -357,19 +361,19 @@ msgstr "Linkse Knop"
 msgid "Left Toggle"
 msgstr "Linkse Schakelaar"
 
-#: ChaseFactory.cpp:916
+#: ChaseFactory.cpp:1018 ChaseFactory.cpp:1020 ChaseFactory.cpp:1389
 msgid "Lift::Down"
 msgstr "Lift::Omlaag"
 
-#: ChaseFactory.cpp:917
+#: ChaseFactory.cpp:1023 ChaseFactory.cpp:1025 ChaseFactory.cpp:1390
 msgid "Lift::Stop"
 msgstr "Lift::Stoppen"
 
-#: ChaseFactory.cpp:915
+#: ChaseFactory.cpp:1013 ChaseFactory.cpp:1015 ChaseFactory.cpp:1388
 msgid "Lift::Up"
 msgstr "Lift::Omhoog"
 
-#: ChaseFactory.cpp:918
+#: ChaseFactory.cpp:1028 ChaseFactory.cpp:1030 ChaseFactory.cpp:1391
 msgid "Lift::Wait"
 msgstr "Lift::Wachten"
 
@@ -415,7 +419,7 @@ msgstr "Samengevoegd"
 msgid "Merged!"
 msgstr "Samengevoegd!"
 
-#: ChaseFactory.cpp:943
+#: ChaseFactory.cpp:1291 ChaseFactory.cpp:1296 ChaseFactory.cpp:1416
 msgid "Milliseconds (1000 = 1 second)"
 msgstr "Milliseconden (1000 = 1 seconde)"
 
@@ -427,19 +431,19 @@ msgstr "Mix bestand"
 msgid "Morphsteps"
 msgstr "Samenvoegstappen"
 
-#: ChaseFactory.cpp:919
+#: ChaseFactory.cpp:1033 ChaseFactory.cpp:1035 ChaseFactory.cpp:1392
 msgid "Motor::Left"
 msgstr "Motor::Links"
 
-#: ChaseFactory.cpp:920
+#: ChaseFactory.cpp:1038 ChaseFactory.cpp:1040 ChaseFactory.cpp:1393
 msgid "Motor::Right"
 msgstr "Motor::Rechts"
 
-#: ChaseFactory.cpp:921
+#: ChaseFactory.cpp:1043 ChaseFactory.cpp:1045 ChaseFactory.cpp:1394
 msgid "Motor::Stop"
 msgstr "Motor::Stoppen"
 
-#: ChaseFactory.cpp:922
+#: ChaseFactory.cpp:1048 ChaseFactory.cpp:1050 ChaseFactory.cpp:1395
 msgid "Motor::Wait"
 msgstr "Motor::Wachten"
 
@@ -475,36 +479,37 @@ msgstr "Naar Boven!"
 msgid "Music"
 msgstr "Muziek"
 
-#: ChaseFactory.cpp:924
+#: ChaseFactory.cpp:1058 ChaseFactory.cpp:1060 ChaseFactory.cpp:1397
 msgid "Music::FadeIn"
 msgstr "Muziek::Infaden"
 
-#: ChaseFactory.cpp:926
+#: ChaseFactory.cpp:1068 ChaseFactory.cpp:1070 ChaseFactory.cpp:1399
 msgid "Music::FadeOut"
 msgstr "Muziek::Uitfaden"
 
-#: ChaseFactory.cpp:923
+#: ChaseFactory.cpp:1053 ChaseFactory.cpp:1055 ChaseFactory.cpp:1396
 msgid "Music::Play"
 msgstr "Muziek::Afspelen"
 
-#: ChaseFactory.cpp:927
+#: ChaseFactory.cpp:1073 ChaseFactory.cpp:1075 ChaseFactory.cpp:1400
 msgid "Music::ShakeOff"
 msgstr "Muziek::ShakeUit"
 
-#: ChaseFactory.cpp:928
+#: ChaseFactory.cpp:1078 ChaseFactory.cpp:1080 ChaseFactory.cpp:1401
 msgid "Music::ShakeOn"
 msgstr "Muziek::ShakeAan"
 
-#: ChaseFactory.cpp:925
+#: ChaseFactory.cpp:1063 ChaseFactory.cpp:1065 ChaseFactory.cpp:1398
 msgid "Music::Stop"
 msgstr "Muziek::Stop"
 
-#: ChaseFactory.cpp:672 ChaseFactory.cpp:736
+#: ChaseFactory.cpp:672 ChaseFactory.cpp:736 ChaseFactory.cpp:1182
+#: ChaseFactory.cpp:1261
 msgid "N/A"
 msgstr "n.v.t"
 
 #: ButtonFactory.cpp:599 ButtonFactory.cpp:628 ButtonFactory.cpp:794
-#: ChaseFactory.cpp:513 ChaseFactory.cpp:531 ChaseFactory.cpp:993
+#: ChaseFactory.cpp:513 ChaseFactory.cpp:531 ChaseFactory.cpp:1466
 #: CloneFactory.cpp:1239 CloneFactory.cpp:1256 CloneFactory.cpp:1838
 #: FixtureFactory.cpp:228 FixtureFactory.cpp:248 FixtureFactory.cpp:348
 #: LiftFactory.cpp:575 LiftFactory.cpp:601 LiftFactory.cpp:905
@@ -591,11 +596,11 @@ msgstr "Afspelen!"
 msgid "Portret"
 msgstr "Portret"
 
-#: ChaseFactory.cpp:930
+#: ChaseFactory.cpp:1088 ChaseFactory.cpp:1090 ChaseFactory.cpp:1403
 msgid "Portret::After"
 msgstr "Portret::Na"
 
-#: ChaseFactory.cpp:929
+#: ChaseFactory.cpp:1083 ChaseFactory.cpp:1085 ChaseFactory.cpp:1402
 msgid "Portret::Before"
 msgstr "Portret::Voor"
 
@@ -603,7 +608,7 @@ msgstr "Portret::Voor"
 msgid "Pressed Button cannot be activated!"
 msgstr "Ingedrukte Knop kan niet geactiveerd worden!"
 
-#: ButtonFactory.cpp:781 ChaseFactory.cpp:984 CloneFactory.cpp:1829
+#: ButtonFactory.cpp:781 ChaseFactory.cpp:1457 CloneFactory.cpp:1829
 #: FixtureFactory.cpp:341 HomeHandler.cpp:80 LiftFactory.cpp:881
 #: MotorFactory.cpp:1117 MusicFactory.cpp:569 SceneFactory.cpp:730
 #: SoundFactory.cpp:549 ToggleFactory.cpp:413
@@ -663,23 +668,23 @@ msgstr "Opslaan als Bestand"
 msgid "Saved!"
 msgstr "Opgeslagen!"
 
-#: ChaseFactory.cpp:933
+#: ChaseFactory.cpp:1103 ChaseFactory.cpp:1105 ChaseFactory.cpp:1406
 msgid "Scene::FadeIn"
 msgstr "Scene::Infaden"
 
-#: ChaseFactory.cpp:934
+#: ChaseFactory.cpp:1108 ChaseFactory.cpp:1110 ChaseFactory.cpp:1407
 msgid "Scene::FadeInto"
 msgstr "Scene::FadenNaar"
 
-#: ChaseFactory.cpp:935
+#: ChaseFactory.cpp:1113 ChaseFactory.cpp:1115 ChaseFactory.cpp:1408
 msgid "Scene::FadeOut"
 msgstr "Scene::Uitfaden"
 
-#: ChaseFactory.cpp:931
+#: ChaseFactory.cpp:1093 ChaseFactory.cpp:1095 ChaseFactory.cpp:1404
 msgid "Scene::Play"
 msgstr "Scene::Afspelen"
 
-#: ChaseFactory.cpp:932
+#: ChaseFactory.cpp:1098 ChaseFactory.cpp:1100 ChaseFactory.cpp:1405
 msgid "Scene::Stop"
 msgstr "Scene::Stoppen"
 
@@ -730,19 +735,19 @@ msgstr "Toon Menu"
 msgid "Slider"
 msgstr "Slider"
 
-#: ChaseFactory.cpp:912
+#: ChaseFactory.cpp:998 ChaseFactory.cpp:1000 ChaseFactory.cpp:1385
 msgid "Sound::FadeIn"
 msgstr "Geluid::Infaden"
 
-#: ChaseFactory.cpp:914
+#: ChaseFactory.cpp:1008 ChaseFactory.cpp:1010 ChaseFactory.cpp:1387
 msgid "Sound::FadeOut"
 msgstr "Geluid::Uitfaden"
 
-#: ChaseFactory.cpp:911
+#: ChaseFactory.cpp:993 ChaseFactory.cpp:995 ChaseFactory.cpp:1384
 msgid "Sound::Play"
 msgstr "Geluid::Afspelen"
 
-#: ChaseFactory.cpp:913
+#: ChaseFactory.cpp:1003 ChaseFactory.cpp:1005 ChaseFactory.cpp:1386
 msgid "Sound::Stop"
 msgstr "Geluid::Stoppen"
 
@@ -750,15 +755,15 @@ msgstr "Geluid::Stoppen"
 msgid "Sounds"
 msgstr "Geluiden"
 
-#: ChaseFactory.cpp:986
+#: ChaseFactory.cpp:1459
 msgid "Start"
 msgstr "Starten"
 
-#: ChaseFactory.cpp:805
+#: ChaseFactory.cpp:819
 msgid "Started!"
 msgstr "Gestart!"
 
-#: ChaseFactory.cpp:987 LiftFactory.cpp:885 MotorFactory.cpp:1120
+#: ChaseFactory.cpp:1460 LiftFactory.cpp:885 MotorFactory.cpp:1120
 #: MusicFactory.cpp:573 SceneFactory.cpp:733 SoundFactory.cpp:553
 msgid "Stop"
 msgstr "Stoppen"
@@ -771,7 +776,7 @@ msgstr "Stop!"
 msgid "Stopped"
 msgstr "Gestopt"
 
-#: ChaseFactory.cpp:812
+#: ChaseFactory.cpp:826
 msgid "Stopped!"
 msgstr "Gestopt!"
 
@@ -779,7 +784,7 @@ msgstr "Gestopt!"
 msgid "Stopping!"
 msgstr "Stoppen!"
 
-#: ChaseFactory.cpp:938
+#: ChaseFactory.cpp:1128 ChaseFactory.cpp:1130 ChaseFactory.cpp:1411
 msgid "Time::Wait"
 msgstr "Tijd::Wachten"
 
@@ -819,11 +824,11 @@ msgstr "Schakelaar uit!"
 msgid "Toggle on!"
 msgstr "Schakelaar aan!"
 
-#: ChaseFactory.cpp:937
+#: ChaseFactory.cpp:1123 ChaseFactory.cpp:1125 ChaseFactory.cpp:1410
 msgid "Toggle::Off"
 msgstr "Schakelaar::Uit"
 
-#: ChaseFactory.cpp:936
+#: ChaseFactory.cpp:1118 ChaseFactory.cpp:1120 ChaseFactory.cpp:1409
 msgid "Toggle::On"
 msgstr "Schakelaar::Aan"
 
@@ -843,7 +848,7 @@ msgstr "Update"
 msgid "Upper Limit"
 msgstr "Bovenlimiet"
 
-#: ChaseFactory.cpp:1035 SceneFactory.cpp:782
+#: ChaseFactory.cpp:1508 SceneFactory.cpp:782
 msgid "Value"
 msgstr "Waarde"
 
